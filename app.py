@@ -34,8 +34,8 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 # temporary configurations
 context_model = "gpt-3.5-turbo-0613"
 chat_model = "gpt-3.5-turbo"
-AI_name = 'Mira'
-username = 'Average'
+AI_name = ''
+username = ''
 
 # database and session configurations
 app = Flask(__name__,
