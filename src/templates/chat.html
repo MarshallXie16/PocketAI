@@ -1,0 +1,107 @@
+{% extends 'index.html' %}
+
+{% block title %}
+<title>Chat with {{ ai_name }}</title>
+{% endblock %}
+
+{% block body %}
+<div class="chat-layer flex justify-center items-center p-4">
+    <div class="chat-container flex flex-col bg-white rounded-xl shadow-lg overflow-x-hidden">
+
+        <!-- Top bar -->
+        <div class="bg-gray-200 px-6 py-4">
+            <h1 class="text-lg font-bold">Chat with {{ ai_name }}</h1>
+        </div>
+
+        <!-- Message area -->
+        <div class="message-area overflow-y-auto overflow-x-hidden flex-grow p-6">
+
+            {% for message in messages %}
+
+            {% if message.sender == 'assistant' %}
+            <!-- Bot message -->
+            <div class="message-container bot-message flex flex-col">
+                <div class="message-wrapper flex flex-row items-center items-end">
+                    <div class="chat-profile-container">
+                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + user_id + '.png') }}"
+                             class="rounded-full">
+                    </div>
+                    <div class="text-sm bg-blue-100 text-blue-800 rounded-full rounded-bl-none px-4 py-2">
+                        {{ message.message }}
+                    </div>
+                </div>
+                <div class="timestamp text-xs text-gray-500 mt-1 l" data-timestamp="{{ message.timestamp }}">
+                    {{ message.timestamp }}
+                </div>
+            </div>
+            {% else %}
+            <!-- User message -->
+            <div class="message-container user-message flex flex-col">
+                <div class="message-wrapper flex flex-row items-center justify-end">
+                    <div class="text-sm bg-blue-100 text-blue-800 rounded-full rounded-br-none px-4 py-2">
+                        {{ message.message }}
+                    </div>
+                    <div class="chat-profile-container">
+                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image' + user_id + '.png') }}"
+                             class="rounded-full">
+                    </div>
+                </div>
+                <div class="timestamp-wrapper flex justify-end">
+                    <div class="timestamp text-xs text-gray-500 mt-1 l" data-timestamp="{{ message.timestamp }}">
+
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% endfor %}
+
+        </div>
+
+        <!-- Bottom panel -->
+        <div class="bottom-panel px-4 py-3 flex justify-center items-center">
+            <div class="message-bar flex items-center">
+                <button class="mic-button text-gray-500">
+                    <i class="fas fa-microphone" style="font-size: 24px;"></i>
+                </button>
+                <textarea class="message-input flex-grow rounded-lg border overflow-hidden resize-none"
+                          placeholder="Type your message here..." oninput="autoGrow(this)"></textarea>
+                <button class="send-button text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-send" style="font-size: 24px; margin: auto;" onclick="sendMessage()"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+<style>
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.loading-dots > div {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 2px;
+  background-color: #333;
+  border-radius: 50%;
+  animation: bounce 0.6s infinite alternate;
+}
+
+.loading-dots > div:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots > div:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+
+</style>
+
+{% endblock %}
+
+
+
