@@ -1,0 +1,127 @@
+{% extends 'index.html' %}<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Plans</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+</head>
+{% block body %}
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Free Plan -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold">Free</h3>
+                <p class="text-4xl font-bold">$0</p>
+                <p class="text-gray-600">Get a taste of human-like AI</p>
+                <ul class="mt-6 space-y-4">
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Limited access to LOW model
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> 300 free tokens (~30 messages)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Automatic CI/CD (Git Integration)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Functions (Serverless, Edge)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Starter Database (KV, Postgres)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Web Analytics
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Community Support
+                    </li>
+                </ul>
+                <button class="mt-6 bg-gray-200 text-black rounded py-2 px-4 flex items-center justify-center w-full">
+                    Start deploying <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="bg-white rounded-lg shadow p-6 md:scale-105 relative">
+                <div class="absolute top-0 transform translate-y-[-50%] bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold" style="left: 50%; transform: translate(-50%, -50%);">
+                    Most Popular
+                </div>
+                <h3 class="text-lg font-semibold">Pro</h3>
+                <p class="text-4xl font-bold">$20 <span class="text-lg">per user / month</span></p>
+                <p class="text-gray-600">Everything in Hobby, plus higher limits and team features</p>
+                <ul class="mt-6 space-y-4">
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Unlimited Environments
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> More Functions (Serverless, Edge)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> More Databases (KV, Postgres)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> More Web Analytics Events
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> More Experimentation (Edge Config, Middleware)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-plus-circle text-gray-400 mr-2"></i> Preview/Comment/Edit Deployments
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-plus-circle text-gray-400 mr-2"></i> Basic DDoS Mitigation
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-plus-circle text-gray-400 mr-2"></i> Email Support
+                    </li>
+                </ul>
+                <button class="mt-6 bg-blue-600 text-white rounded py-2 px-4 flex items-center justify-center w-full">
+                    Upgrade now <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold">Enterprise</h3>
+                <p class="text-4xl font-bold">Custom</p>
+                <p class="text-gray-600">For teams with more security, support, and performance needs.</p>
+                <ul class="mt-6 space-y-4">
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> 99.99% SLA
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> IP Allow & Block Rules
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Isolated Builds & Deployments
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Additional Role & Access Controls
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> High-Performance Edge Network
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> SAML Single-Sign-On (SSO)
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Advanced DDoS Mitigation
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i> Secure VPC and VPN Connectivity
+                    </li>
+                </ul>
+                <div class="flex mt-6 space-x-4">
+                    <button class="bg-gray-200 text-black rounded py-2 px-4 flex items-center justify-center w-full">
+                        Contact Sales <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                    <button class="bg-blue-600 text-white rounded py-2 px-4 flex items-center justify-center w-full">
+                        Request Trial <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
