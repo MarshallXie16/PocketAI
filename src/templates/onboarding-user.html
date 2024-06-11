@@ -1,0 +1,311 @@
+{% extends 'index.html' %}
+
+{% block body %}
+<div class="flex flex-col items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
+        <div dir="ltr" data-orientation="horizontal" class="w-full">
+            
+            <!--  user settings -->
+            <form action="/onboarding/user" method="POST" id="user-settings-form" data-state="active"
+                data-tab-content="user" data-orientation="horizontal" role="tabpanel"
+                aria-labelledby="radix-:r2u:-trigger-user" id="radix-:r2u:-content-user" tabindex="0"
+                class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6"
+                style="animation-duration: 0s;">
+
+                <!-- heading -->
+                <div class="heading flex flex-col items-center mb-4">
+                    <h1 class="text-xl font-semibold">Customize Your Profile</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Help us get to know you a little!</p>
+                </div>
+
+                <!-- profile section; profile picture, name, email -->
+                <div class="flex flex-col items-center space-y-4">
+                    <div class="relative">
+                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image0.png' )}}"
+                            alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
+                            style="aspect-ratio: 96 / 96; object-fit: cover;" />
+                        <input type="file" id="profile-image-input" name="profile-image" class="hidden">
+                        <label for="profile-image-input"
+                            class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 w-10 absolute bottom-0 right-0 bg-white dark:bg-gray-800 p-1 rounded-full cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="h-5 w-5 text-gray-500 dark:text-gray-400">
+                                <path
+                                    d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z">
+                                </path>
+                                <circle cx="12" cy="13" r="3"></circle>
+                            </svg>
+                            <span class="sr-only">Edit Profile Picture</span>
+                        </label>
+                    </div>
+                    <div class="space-y-2 text-center">
+                        <input
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-xl font-semibold"
+                            id="username" name="username" value="{{ current_user.username or 'No Username Set' }}" />
+                        <p class="text-gray-500 dark:text-gray-400">{{ current_user.email or 'example@gmail.com (no
+                            email linked)' }}</p>
+                    </div>
+                </div>
+
+                <!-- divider -->
+                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
+
+                <!-- user settings container -->
+                <div class="space-y-4">
+
+                    <!-- upgrade plans and credits -->
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-2">
+                            <h3 class="text-lg font-semibold">Current Plan</h3>
+                            <p class="text-gray-500 dark:text-gray-400">Free Plan</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <p class="text-gray-500 dark:text-gray-400">Credits: {{ current_user.points }}</p>
+                            <button type="button" id="upgrade-button" onclick="window.location.href='/pricing'"
+                                class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                Upgrade
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- divider -->
+                    <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6">
+                    </div>
+
+                    <!-- google account -->
+                    <div class="space-y-2">
+                        <button type="button"
+                            class="hollow-button font-bold py-2 px-4 rounded flex items-center justify-center mb-4"
+                            onclick="location.href='/link/google'">
+                            <svg style="width: 20px; height: auto; margin-right: 10px;"
+                                enable-background="new 0 0 128 128" id="Social_Icons" version="1.1"
+                                viewBox="0 0 128 128" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"
+                                xmlns:xlink="http://www.w3.org/1999/xlink">
+                                <g id="_x31__stroke">
+                                    <g id="Google">
+                                        <rect clip-rule="evenodd" fill="none" fill-rule="evenodd" height="128"
+                                            width="128" />
+                                        <path clip-rule="evenodd"
+                                            d="M27.585,64c0-4.157,0.69-8.143,1.923-11.881L7.938,35.648    C3.734,44.183,1.366,53.801,1.366,64c0,10.191,2.366,19.802,6.563,28.332l21.558-16.503C28.266,72.108,27.585,68.137,27.585,64"
+                                            fill="#FBBC05" fill-rule="evenodd" />
+                                        <path clip-rule="evenodd"
+                                            d="M65.457,26.182c9.031,0,17.188,3.2,23.597,8.436L107.698,16    C96.337,6.109,81.771,0,65.457,0C40.129,0,18.361,14.484,7.938,35.648l21.569,16.471C34.477,37.033,48.644,26.182,65.457,26.182"
+                                            fill="#EA4335" fill-rule="evenodd" />
+                                        <path clip-rule="evenodd"
+                                            d="M65.457,101.818c-16.812,0-30.979-10.851-35.949-25.937    L7.938,92.349C18.361,113.516,40.129,128,65.457,128c15.632,0,30.557-5.551,41.758-15.951L86.741,96.221    C80.964,99.86,73.689,101.818,65.457,101.818"
+                                            fill="#34A853" fill-rule="evenodd" />
+                                        <path clip-rule="evenodd"
+                                            d="M126.634,64c0-3.782-0.583-7.855-1.457-11.636H65.457v24.727    h34.376c-1.719,8.431-6.397,14.912-13.092,19.13l20.474,15.828C118.981,101.129,126.634,84.861,126.634,64"
+                                            fill="#4285F4" fill-rule="evenodd" />
+                                    </g>
+                                </g>
+                            </svg> Link Your Google Account
+                        </button>
+                    </div>
+
+                    <!-- Timezone -->
+                    <div class="space-y-2 dropdown" id="timezone-dropdown">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="timezone">Timezone</label>
+                        <div class="flex">
+                            <div class="relative inline-block w-full max-w-xs">
+                                <!-- Button -->
+                                <button data-dropdown-button="timezone" type="button"
+                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                    UTC (default)
+                                    <!-- icon down -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <!-- Panel -->
+                                <div data-dropdown-panel="timezone"
+                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                    <div class="p-1">
+                                        <input type="hidden" name="timezone" value="UTC">
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            UTC</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            US/Pacific</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            America/New_York</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            America/Los_Angeles</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            America/Vancouver</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Europe/Berlin</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Asia/Kolkata</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Asia/Tokyo</a>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages per Page -->
+                    <div class="space-y-2">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="messages-per-page">Messages per Page</label>
+                        <div class="flex">
+                            <div class="relative inline-block w-full max-w-xs">
+                                <!-- Button -->
+                                <button data-dropdown-button="messages" type="button"
+                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                    10 (default)
+                                    <!-- icon down -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <input type="hidden" name="messages" value="10">
+                                <!-- Panel -->
+                                <div data-dropdown-panel="messages"
+                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                    <div class="p-1">
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            10 </a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            20 </a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            30 </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Display flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                    {% if messages %}
+                    <div>
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    class="mr-3 h-5 w-5 flex-shrink-0">
+                                    {% if category == 'info' %}
+                                    <path fill-rule="evenodd"
+                                        d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
+                                        clip-rule="evenodd" />
+                                    {% elif category == 'success' %}
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                        clip-rule="evenodd" />
+                                    {% elif category == 'warning' %}
+                                    <path fill-rule="evenodd"
+                                        d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                                        clip-rule="evenodd" />
+                                    {% elif category == 'error' %}
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                                        clip-rule="evenodd" />
+                                    {% endif %}
+                                </svg>
+                                <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
+                            </div>
+                            <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    class="h-5 w-5">
+                                    <path
+                                        d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                                </svg>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+
+                <!-- divider -->
+                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
+
+                <!-- save changes button -->
+                <div class="flex justify-end">
+                    <button
+                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mr-2"
+                        disabled>
+                        Cancel
+                    </button>
+                    <button id="save-changes-user"
+                        class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                        Next ->
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropdownButtons = document.querySelectorAll('[data-dropdown-button]');
+        const dropdownPanels = document.querySelectorAll('[data-dropdown-panel]');
+        const userSettingsForm = document.getElementById('user-settings-form');
+        const profileImageInput = document.getElementById('profile-image-input');
+        const profileImagePreview = document.getElementById('profile-image-preview');
+
+        dropdownButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const panel = document.querySelector(`[data-dropdown-panel="${button.getAttribute('data-dropdown-button')}"]`);
+                panel.classList.toggle('hidden');
+            });
+        });
+
+        dropdownPanels.forEach(panel => {
+            const options = panel.querySelectorAll('[data-dropdown-option]');
+            options.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const button = document.querySelector(`[data-dropdown-button="${panel.getAttribute('data-dropdown-panel')}"]`);
+                    button.textContent = option.textContent;
+                    document.querySelector(`[name="${panel.getAttribute('data-dropdown-panel')}"]`).value = option.textContent;
+                    panel.classList.add('hidden');
+                });
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('[data-dropdown-button]') && !e.target.closest('[data-dropdown-panel]')) {
+                dropdownPanels.forEach(panel => panel.classList.add('hidden'));
+            }
+        });
+
+        profileImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    profileImagePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+    });
+
+</script>
+
+{% endblock %}

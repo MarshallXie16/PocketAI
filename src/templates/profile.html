@@ -1,13 +1,527 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Profile</title>
-</head>
-<body>
-    <h1>User Profile</h1>
-    <p>Username: {{ username }}</p>
-    <p>Points: {{ points }}</p>
-    <a href="/chat">Go to Chat</a><br>
-    <a href="/logout">Logout</a>
-</body>
-</html>
+{% extends 'index.html' %}
+
+{% block body %}
+<div class="flex flex-col items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
+        <div dir="ltr" data-orientation="horizontal" class="w-full">
+            
+            <!-- toggle tab between user and ai settings -->
+            <div role="tablist" aria-orientation="horizontal"
+                class="tab-container h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 bg-gray-100"
+                tabindex="0" data-orientation="horizontal" style="outline: none;">
+                <button type="button" data-tab-button="user" role="tab" aria-selected="true"
+                    aria-controls="radix-:r2u:-content-user" data-state="active" id="radix-:r2u:-trigger-user"
+                    class="tab-button inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow"
+                    tabindex="-1" data-orientation="horizontal" data-radix-collection-item=""
+                    style="background-color: white;">
+                    User Settings
+                </button>
+                <button type="button" data-tab-button="ai" role="tab" aria-selected="false"
+                    aria-controls="radix-:r2u:-content-ai" data-state="inactive" id="radix-:r2u:-trigger-ai"
+                    class="tab-button inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow"
+                    tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">
+                    AI Settings
+                </button>
+            </div>
+
+            <!--  user settings -->
+            <form action="/profile" method="POST" id="user-settings-form" data-state="active" data-tab-content="user"
+                enctype="multipart/form-data" accept=".png, .jpg, .jpeg, .gif" data-orientation="horizontal"
+                role="tabpanel" aria-labelledby="radix-:r2u:-trigger-user" id="radix-:r2u:-content-user" tabindex="0"
+                class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6"
+                style="animation-duration: 0s;">
+
+                <!-- Display flash messages -->
+                {% with messages = get_flashed_messages(with_categories=True) %}
+                {% if messages %}
+                <div>
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-3 h-5 w-5 flex-shrink-0">
+                                {% if category == 'info' %}
+                                <path fill-rule="evenodd"
+                                    d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
+                                    clip-rule="evenodd" />
+                                {% elif category == 'success' %}
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                    clip-rule="evenodd" />
+                                {% elif category == 'warning' %}
+                                <path fill-rule="evenodd"
+                                    d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                                    clip-rule="evenodd" />
+                                {% elif category == 'error' %}
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                                    clip-rule="evenodd" />
+                                {% endif %}
+                            </svg>
+                            <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
+                        </div>
+                        <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="h-5 w-5">
+                                <path
+                                    d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <!-- profile section; profile picture, name, email -->
+                <div class="flex flex-col items-center space-y-4">
+                    <div class="relative">
+                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image' + current_user.id|string + '.png') }}"
+                            alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
+                            style="aspect-ratio: 96 / 96; object-fit: cover;" />
+                        <input type="file" id="profile-image-input" name="profile-image" class="hidden">
+                        <label for="profile-image-input"
+                            class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 w-10 absolute bottom-0 right-0 bg-white dark:bg-gray-800 p-1 rounded-full cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="h-5 w-5 text-gray-500 dark:text-gray-400">
+                                <path
+                                    d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z">
+                                </path>
+                                <circle cx="12" cy="13" r="3"></circle>
+                            </svg>
+                            <span class="sr-only">Edit Profile Picture</span>
+                        </label>
+                    </div>
+                    <div class="space-y-2 text-center">
+                        <input
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-xl font-semibold"
+                            id="username" name="username" value="{{ current_user.username or 'No Username Set' }}" />
+                        <p class="text-gray-500 dark:text-gray-400">{{ current_user.email or 'example@gmail.com' }}</p>
+                    </div>
+                </div>
+
+                <!-- divider -->
+                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
+
+                <!-- user settings container -->
+                <div class="space-y-4">
+
+                    <!-- upgrade plans and credits -->
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-2">
+                            <h3 class="text-lg font-semibold">Current Plan</h3>
+                            <p class="text-gray-500 dark:text-gray-400">{{ current_user.plan }} Plan</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <p class="text-gray-500 dark:text-gray-400">Credits: {{ current_user.paid_credits + current_user.free_credits }}</p>
+                            <button id="upgrade-button" type="button" onclick="window.location.href='/pricing'"
+                                class="default-button items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                Upgrade
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- divider -->
+                    <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6">
+                    </div>
+
+                    <!-- password reset -->
+                    <div class="space-y-2 w-full max-w-xs">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="password">
+                            Password
+                        </label>
+                        <div class="relative">
+                            <input
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                id="password" name="password" type="password" value="*****" />
+                            <button type="button" id="toggle-password"
+                                class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                                <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                    viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        d="M10 2C5.454 2 1.55 5.402.038 9.571c.225.532.56.99.98 1.408C4.55 14.758 7.21 16 10 16s5.45-1.242 8.981-4.021c.42-.418.755-.876.98-1.408C18.45 5.402 14.546 2 10 2zm0 12c-2.672 0-5.131-1.158-7.48-3.492a8.33 8.33 0 01-1.106-1.32 7.94 7.94 0 011.106-1.32C4.869 5.158 7.328 4 10 4s5.131 1.158 7.48 3.492a8.33 8.33 0 011.106 1.32 7.94 7.94 0 01-1.106 1.32C15.131 12.842 12.672 14 10 14z" />
+                                    <path d="M10 6a4 4 0 100 8 4 4 0 000-8zM10 8a2 2 0 100 4 2 2 0 000-4z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timezone -->
+                    <div class="space-y-2 dropdown" id="timezone-dropdown">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="timezone">Timezone</label>
+                        <div class="flex">
+                            <div class="relative inline-block w-full max-w-xs">
+                                <!-- Button -->
+                                <button data-dropdown-button="timezone" type="button"
+                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                    {{ user_settings.timezone }}
+                                    <!-- icon down -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <!-- Panel -->
+                                <div data-dropdown-panel="timezone"
+                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                    <div class="p-1">
+                                        <input type="hidden" name="timezone" value="{{ user_settings.timezone }}">
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            UTC</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            US/Pacific</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            America/New_York</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            America/Los_Angeles</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            America/Vancouver</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Europe/Berlin</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Asia/Kolkata</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Asia/Tokyo</a>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages per Page -->
+                    <div class="space-y-2">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="messages-per-page">Messages per Page</label>
+                        <div class="flex">
+                            <div class="relative inline-block w-full max-w-xs">
+                                <!-- Button -->
+                                <button data-dropdown-button="messages" type="button"
+                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                    {{ user_settings.messages_per_page}}
+                                    <!-- icon down -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <input type="hidden" name="messages" value="{{ user_settings.messages_per_page }}">
+                                <!-- Panel -->
+                                <div data-dropdown-panel="messages"
+                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                    <div class="p-1">
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            10 </a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            20 </a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            30 </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="add-credits-button" type="button" onclick="window.location.href='/add-credits?amount=10'"
+                                class="mt-6 default-button items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                Add 10 credits
+                </button>
+
+                <!-- divider -->
+                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
+
+                <!-- save changes button -->
+                <div class="flex justify-end">
+                    <button type="button"
+                        class="cancel-button items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mr-2">
+                        Cancel
+                    </button>
+                    <button id="save-changes-user" type="submit"
+                        class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+
+            <!-- ai settings -->
+            <div data-state="inactive" data-tab-content="ai" data-orientation="horizontal" role="tabpanel"
+                aria-labelledby="radix-:r2u:-trigger-ai" hidden="" id="radix-:r2u:-content-ai" tabindex="0"
+                class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6">
+
+                <!-- modal for delete confirmation -->
+                <div id="delete-confirmation" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">Delete AI Model?</h3>
+                        </div>
+                        <div class="mb-6">
+                            <p class="text-gray-600 dark:text-gray-400">
+                                Are you sure you want to permanently delete this AI model and all associated data? This
+                                action cannot be undone.
+                            </p>
+                        </div>
+                        <div class="flex justify-end space-x-2">
+                            <button id="cancel-delete"
+                                class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">
+                                Cancel
+                            </button>
+                            <button id="confirm-delete"
+                                class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors">
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {% for ai in available_ais %}
+                <div class="container mx-auto flex flex-col gap-8">
+                    <div class="card border bg-card text-card-foreground rounded-lg shadow-lg" data-v0-t="card"
+                        data-ai-id="{{ ai.id }}">
+                        <div class="flex items-start gap-4 p-6">
+                            <div class="relative items-center">
+                                <!-- Profile Picture -->
+                                <div class="relative">
+                                    <span
+                                        class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai.id|string + '.png') }}"
+                                            class="w-full h-full object-cover object-center">
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">{{ ai.name }}</h3>
+                                <p class="text-gray-500 dark:text-gray-400">{{ ai.model_name }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ ai.description }}
+                                </p>
+                            </div>
+
+                            <!-- Delete AI button -->
+                            <button type="button"
+                                class="delete-button absolute top-2 right-2 text-gray-500 hover:text-red-500"
+                                onclick="deleteAI('{{ ai.id }}')" data-ai-id="{{ ai.id }}">
+                                &times;
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Tab container */
+    .tab-container {
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Tab buttons */
+    .tab-button {
+        position: relative;
+        z-index: 1;
+        transition: color 0.3s;
+    }
+
+    /* Tab button background */
+    .tab-button-bg {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 50%;
+        background-color: white;
+        transition: transform 0.3s;
+        z-index: 0;
+    }
+
+    [data-state="active"] {
+        color: black;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropdownButtons = document.querySelectorAll('[data-dropdown-button]');
+        const dropdownPanels = document.querySelectorAll('[data-dropdown-panel]');
+        const userSettingsForm = document.getElementById('user-settings-form');
+        const profileImageInput = document.getElementById('profile-image-input');
+        const profileImagePreview = document.getElementById('profile-image-preview');
+        const tabButtons = document.querySelectorAll('[data-tab-button]');
+        const tabContents = document.querySelectorAll('[data-tab-content]');
+        const tabContainer = document.querySelector('.tab-container');
+        const tabButtonBg = document.createElement('div');
+        tabButtonBg.classList.add('tab-button-bg');
+        tabContainer.appendChild(tabButtonBg);
+
+        dropdownButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const panel = document.querySelector(`[data-dropdown-panel="${button.getAttribute('data-dropdown-button')}"]`);
+                panel.classList.toggle('hidden');
+            });
+        });
+
+        dropdownPanels.forEach(panel => {
+            const options = panel.querySelectorAll('[data-dropdown-option]');
+            options.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const button = document.querySelector(`[data-dropdown-button="${panel.getAttribute('data-dropdown-panel')}"]`);
+                    button.textContent = option.textContent;
+                    document.querySelector(`[name="${panel.getAttribute('data-dropdown-panel')}"]`).value = option.textContent;
+                    panel.classList.add('hidden');
+                });
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('[data-dropdown-button]') && !e.target.closest('[data-dropdown-panel]')) {
+                dropdownPanels.forEach(panel => panel.classList.add('hidden'));
+            }
+        });
+
+        profileImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    profileImagePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const target = button.getAttribute('data-tab-button');
+
+                tabButtons.forEach(btn => {
+                    btn.setAttribute('aria-selected', 'false');
+                    btn.setAttribute('data-state', 'inactive');
+                    btn.style.backgroundColor = '';
+                });
+
+                button.setAttribute('aria-selected', 'true');
+                button.setAttribute('data-state', 'active');
+                button.style.backgroundColor = 'white';
+
+                tabContents.forEach(content => {
+                    if (content.getAttribute('data-tab-content') === target) {
+                        content.removeAttribute('hidden');
+                        content.setAttribute('data-state', 'active');
+                    } else {
+                        content.setAttribute('hidden', 'hidden');
+                        content.setAttribute('data-state', 'inactive');
+                    }
+                });
+
+                const activeIndex = Array.from(tabButtons).indexOf(button);
+                tabButtonBg.style.transform = `translateX(${activeIndex * 100}%)`;
+
+            });
+        });
+
+        const passwordInput = document.getElementById('password');
+        const togglePasswordButton = document.getElementById('toggle-password');
+        const eyeIcon = document.getElementById('eye-icon');
+
+        togglePasswordButton.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Toggle eye icon
+            if (type === 'password') {
+                eyeIcon.setAttribute('fill', 'currentColor');
+            } else {
+                eyeIcon.setAttribute('fill', 'none');
+                eyeIcon.setAttribute('stroke', 'currentColor');
+            }
+        });
+
+        // Select an AI for editing in ai-settings
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', () => {
+                const aiId = card.getAttribute('data-ai-id');
+                window.location.href = `/ai-settings/${aiId}`;
+            });
+        });
+
+        document.querySelectorAll('.cancel-button').forEach(cancelButton => {
+            cancelButton.addEventListener('click', () => {
+                window.location.href = "{{ url_for('chat') }}";
+            });
+        });
+
+        let aiToDelete = null;
+
+        document.querySelectorAll('.delete-button').forEach(button => {
+            button.addEventListener('click', event => {
+                event.stopPropagation();
+                event.preventDefault();
+
+                aiToDelete = event.target.getAttribute('data-ai-id');
+                document.getElementById('delete-confirmation').classList.remove('hidden');
+            });
+        });
+
+        document.getElementById('cancel-delete').addEventListener('click', () => {
+            document.getElementById('delete-confirmation').classList.add('hidden');
+            aiToDelete = null;
+        });
+
+        document.getElementById('confirm-delete').addEventListener('click', () => {
+            if (aiToDelete) {
+                fetch(`/profile/delete-ai/${aiToDelete}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.querySelector(`[data-ai-id="${aiToDelete}"]`).remove();
+                            alert('AI deleted successfully.');
+                        } else {
+                            alert(`Failed to delete AI: ${data.error}`);
+                        }
+                        aiToDelete = null;
+                        document.getElementById('delete-confirmation').classList.add('hidden');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the AI.');
+                        aiToDelete = null;
+                        document.getElementById('delete-confirmation').classList.add('hidden');
+                    });
+            }
+        });
+    });
+
+</script>
+
+{% endblock %}

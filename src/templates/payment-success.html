@@ -1,0 +1,65 @@
+{% extends 'index.html' %}
+
+{% block title %}
+<title>PocketAI - Payment Success</title>
+{% endblock %}
+
+{% block body %}
+<div class="flex flex-col items-center justify-center min-h-[100dvh] px-4 md:px-6">
+  <div class="max-w-md w-full bg-white dark:bg-gray-900 rounded-xl shadow-lg p-8 space-y-6">
+    
+    <!-- Icon -->
+    <div class="flex flex-col items-center space-y-4">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="text-green-500 h-16 w-16"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="m9 12 2 2 4-4"></path>
+      </svg>
+      <h1 class="text-3xl font-bold">Payment Successful</h1>
+      <p class="text-gray-500 dark:text-gray-400">Thank you for subscribing to our AI Assistant SaaS.</p>
+    </div>
+
+    <!-- Message -->
+    <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Subscription</p>
+          <p class="text-base font-medium">PocketAI+</p>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Price</p>
+          <p class="text-base font-medium">$19.00/month</p>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Renewal Date</p>
+          <p class="text-base font-medium">07/08/2024</p>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Method</p>
+          <p class="text-base font-medium">Visa **** 1234</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Button -->
+    <div class="flex justify-center">
+      <a class="inline-flex h-10 items-center justify-center rounded-md bg-gray-900 px-8 text-sm font-medium text-gray-50 shadow transition-colors hover:bg-gray-900/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-50/90 dark:focus-visible:ring-gray-300"
+        href="/chat"
+        rel="ugc">
+        Start Chatting
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

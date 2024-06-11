@@ -1,24 +1,25 @@
 {% extends 'index.html' %}
 
 {% block title %}
-<title>Sign in to Humanly</title>
+<title>Sign up for PocketAI</title>
 {% endblock %}
 
 {% block body %}
 <div class="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full">
 
-    <!-- Login header -->
+    <!-- Sign up header -->
     <div class="text-center mb-6">
-        <h1 class="text-2xl font-semibold mb-2">Sign in</h1>
-        <p class="text-gray-600">to continue to Humanly</p>
+        <h1 class="text-2xl font-semibold mb-2">Sign up</h1>
+        <p class="text-gray-600">to start your journey with Humanly</p>
     </div>
 
-    <!-- Login form -->
+    <!-- Sign up form -->
     <div class="mb-6">
 
-        <!-- Google sign in -->
-        <button class="hollow-button font-bold py-2 px-4 rounded w-full flex items-center justify-center mb-4"
-            onclick="location.href='/login/google';">
+        <!-- Google sign up -->
+        <button
+            class="hollow-button google-sign-in font-bold py-2 px-4 rounded w-full flex items-center justify-center mb-4"
+            onclick="location.href='/signup/google';">
             <svg style="width: 20px; height: auto; margin-right: 10px;" enable-background="new 0 0 128 128"
                 id="Social_Icons" version="1.1" viewBox="0 0 128 128" xml:space="preserve"
                 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -39,7 +40,8 @@
                             fill="#4285F4" fill-rule="evenodd" />
                     </g>
                 </g>
-            </svg> Continue with Google
+            </svg>
+            Continue with Google
         </button>
 
         <!-- Divider -->
@@ -50,10 +52,19 @@
             <span class="bg-gray-300 h-px flex-grow t-2 relative top-2"></span>
         </div>
 
-        <!-- Regular login form -->
-        <form action="/login" method="post">
-            <input type="text" placeholder="Username" name="username" class="border rounded px-4 py-2 w-full mb-4">
-            <input type="password" placeholder="********" name="password" class="border rounded px-4 py-2 w-full mb-4">
+        <!-- Regular sign up form -->
+        <form action="/signup" method="post">
+            <label for="username">Username</label>
+            <input type="text" placeholder="Username" name="username" class="border rounded px-4 py-2 w-full mb-4"
+                required>
+
+            <label for="email">Email</label>
+            <input type="email" placeholder="example@gmail.com" name="email"
+                class="border rounded px-4 py-2 w-full mb-4" required>
+
+            <label for="password">Password</label>
+            <input type="password" placeholder="********" name="password" class="border rounded px-4 py-2 w-full mb-4"
+                required>
 
             <!-- Display flash messages -->
             {% with messages = get_flashed_messages(with_categories=True) %}
@@ -96,14 +107,20 @@
             {% endif %}
             {% endwith %}
 
-            <button type="submit" class="default-button text-white font-bold py-2 px-4 rounded w-full">Login</button>
+            <label for="confirm-password">Confirm Password</label>
+            <input type="password" placeholder="********" name="confirm-password"
+                class="border rounded px-4 py-2 w-full mb-4" required>
+
+            <button type="submit" class="default-button text-white font-bold py-2 px-4 rounded w-full">Sign up</button>
         </form>
     </div>
 
-    <!-- No account, sign up -->
+    <!-- Sign up footer -->
     <div class="text-center">
-        <p class="text-sm">No account? <a href="/signup" class="text-blue-600 hover:underline">Sign up</a></p>
+        <p class="text-sm">Already have an account? <a href="/login" class="text-blue-600 hover:underline">Log in</a>
+        </p>
     </div>
-    
+
 </div>
+
 {% endblock %}

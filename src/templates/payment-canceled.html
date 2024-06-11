@@ -1,0 +1,49 @@
+{% extends 'index.html' %}
+
+{% block title %}
+<title>PocketAI - Payment Canceled</title>
+{% endblock %}
+
+{% block body %}
+<div class="flex min-h-screen items-center justify-center bg-white dark:bg-gray-950">
+  <div class="max-w-md space-y-4 rounded-lg bg-white p-6 shadow dark:bg-gray-800 sm:p-8 shadow-lg">
+
+    <!-- Icon -->
+    <div class="flex items-center justify-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="h-12 w-12 text-red-500"
+      >
+        <path d="M18 6 6 18"></path>
+        <path d="m6 6 12 12"></path>
+      </svg>
+    </div>
+
+    <!-- Message -->
+    <div class="space-y-2">
+      <h2 class="text-center text-3xl font-bold">Payment Canceled</h2>
+      <p class="text-center text-gray-500 dark:text-gray-400">
+        Your payment has been canceled and your card was not charged.
+        If you have any questions, please reach out to info@pocketai.com.
+      </p>
+    </div>
+
+    <!-- Button -->
+    <div class="flex justify-center">
+      <a class="inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200 dark:focus-visible:ring-gray-800 dark:focus-visible:ring-offset-gray-950"
+        href="/pricing">
+        Go Back
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

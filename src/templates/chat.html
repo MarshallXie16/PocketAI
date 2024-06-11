@@ -5,13 +5,50 @@
 {% endblock %}
 
 {% block body %}
-<div class="chat-layer flex justify-center items-center p-4">
+<script type="module" src=""></script>
+<div class="chat-layer flex justify-center items-center p-4 w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
     <div class="chat-container flex flex-col bg-white rounded-xl shadow-lg overflow-x-hidden">
 
         <!-- Top bar -->
-        <div class="bg-gray-200 px-6 py-4">
-            <h1 class="text-lg font-bold">Chat with {{ ai_name }}</h1>
-        </div>
+        <header
+            class="bg-white/20 p-4 flex items-center justify-between backdrop-filter backdrop-blur-lg bg-opacity-20 bg-gradient-to-r from-[#7367F0] to-[#9E95F5]">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}"
+                        width="40" height="40" alt="Avatar" class="rounded-full"
+                        style="aspect-ratio: 40 / 40; object-fit: cover;" />
+                    <div
+                        class="chatbot-status absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
+                        <div class="rounded-full bg-white p-[2px]"></div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-white font-semibold">{{ ai_model.name }}</h2>
+                    <p class="text-white/80 text-sm">Online</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button
+                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="h-5 w-5">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.3-4.3"></path>
+                    </svg>
+                </button>
+                <button
+                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="h-5 w-5">
+                        <polyline points="8 18 12 22 16 18"></polyline>
+                        <polyline points="8 6 12 2 16 6"></polyline>
+                        <line x1="12" x2="12" y1="2" y2="22"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
 
         <!-- Message area -->
         <div class="message-area overflow-y-auto overflow-x-hidden flex-grow p-6">
@@ -20,36 +57,49 @@
 
             {% if message.sender == 'assistant' %}
             <!-- Bot message -->
-            <div class="message-container bot-message flex flex-col">
-                <div class="message-wrapper flex flex-row items-center items-end">
-                    <div class="chat-profile-container">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + user_id + '.png') }}"
-                             class="rounded-full">
+            <div class="message-container bot-message">
+                <div class="message-wrapper flex items-end gap-2 justify-start">
+                    <div
+                        class="avatar relative relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}"
+                            width="40" height="40" alt="Avatar" class="rounded-full"
+                            style="aspect-ratio: 40 / 40; object-fit: cover;" />
+                        <div
+                            class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
+                            <div class="rounded-full bg-white p-[2px]"></div>
+                        </div>
                     </div>
-                    <div class="text-sm bg-blue-100 text-blue-800 rounded-full rounded-bl-none px-4 py-2">
-                        {{ message.message }}
+                    <div class="message-bubble backdrop-blur-sm rounded-t-2xl rounded-br-2xl p-3 max-w-[70%]"
+                        style="background-color: #525252;">
+                        <p class="text-white" id="message-{{ loop.index }}">{{ message.message }}</p>
                     </div>
                 </div>
                 <div class="timestamp text-xs text-gray-500 mt-1 l" data-timestamp="{{ message.timestamp }}">
-                    {{ message.timestamp }}
+                    {{ message.timestamp}}
                 </div>
             </div>
             {% else %}
             <!-- User message -->
-            <div class="message-container user-message flex flex-col">
-                <div class="message-wrapper flex flex-row items-center justify-end">
-                    <div class="text-sm bg-blue-100 text-blue-800 rounded-full rounded-br-none px-4 py-2">
-                        {{ message.message }}
+            <div class="message-container user-message">
+                <div class="message-wrapper flex items-end gap-2 justify-end">
+                    <div class="message-bubble backdrop-blur-sm rounded-t-2xl rounded-bl-2xl p-3 max-w-[70%]"
+                        style="background-color:#7367F0;">
+                        <p class="text-white">{{ message.message }}</p>
                     </div>
-                    <div class="chat-profile-container">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image' + user_id + '.png') }}"
-                             class="rounded-full">
+                    <div
+                        class="avatar relative relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image' + current_user.id|string + '.png') }}"
+                            width="40" height="40" alt="Avatar" class="rounded-full"
+                            style="aspect-ratio: 40 / 40; object-fit: cover;" />
+                        <div
+                            class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
+                            <div class="rounded-full bg-white p-[2px]"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="timestamp-wrapper flex justify-end">
-                    <div class="timestamp text-xs text-gray-500 mt-1 l" data-timestamp="{{ message.timestamp }}">
-
-                    </div>
+                <div class="timestamp text-xs text-gray-500 mt-1 l flex justify-end"
+                    data-timestamp="{{ message.timestamp }}">
+                    {{ message.timestamp }}
                 </div>
             </div>
             {% endif %}
@@ -65,9 +115,9 @@
                     <i class="fas fa-microphone" style="font-size: 24px;"></i>
                 </button>
                 <textarea class="message-input flex-grow rounded-lg border overflow-hidden resize-none"
-                          placeholder="Type your message here..." oninput="autoGrow(this)"></textarea>
+                    placeholder="Type your message here..." oninput="autoGrow(this)"></textarea>
                 <button class="send-button text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
-                    <i class="bi bi-send" style="font-size: 24px; margin: auto;" onclick="sendMessage()"></i>
+                    <i class="bi bi-send" style="font-size: 24px;" onclick="sendChatMessage()"></i>
                 </button>
             </div>
         </div>
@@ -75,33 +125,38 @@
     </div>
 </div>
 <style>
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
+    @keyframes bounce {
 
-.loading-dots > div {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin: 0 2px;
-  background-color: #333;
-  border-radius: 50%;
-  animation: bounce 0.6s infinite alternate;
-}
+        0%,
+        100% {
+            transform: translateY(0);
+        }
 
-.loading-dots > div:nth-child(2) {
-  animation-delay: 0.2s;
-}
+        50% {
+            transform: translateY(-10px);
+        }
+    }
 
-.loading-dots > div:nth-child(3) {
-  animation-delay: 0.4s;
-}
+    .loading-dots>div {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin: 0 2px;
+        background-color: #ffffff;
+        border-radius: 50%;
+        animation: bounce 0.6s infinite alternate;
+    }
 
+    .loading-dots>div:nth-child(2) {
+        animation-delay: 0.2s;
+    }
 
+    .loading-dots>div:nth-child(3) {
+        animation-delay: 0.4s;
+    }
 </style>
-
+<script>
+    var AI_PROFILE_IMAGE = "{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}";
+    var USER_PROFILE_IMAGE = "{{ url_for('static', filename='images/profile_pictures/user_profile_image' + current_user.id|string + '.png') }}";
+</script>
 {% endblock %}
-
-
-

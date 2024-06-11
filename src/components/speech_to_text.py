@@ -1,7 +1,6 @@
 import speech_recognition as sr
 from AudioRecorder import AudioRecorder
 import keyboard
-
 from src.utils.openai_client import client
 from src.utils.audio_record import start_recording_listener
 

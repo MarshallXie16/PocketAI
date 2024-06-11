@@ -1,45 +1,50 @@
-from openai import OpenAI
 import json
 
-from .memory import long_term_memory
-from .calendar_service import user_calendar
-from .email_service import user_email
+from src.utils.openai_client import client
+from src.components.memory import long_term_memory
+from src.components.calendar_service import user_calendar
+from src.components.email_service import user_email
 
 ''' Analyzes the context of conversations and determines the best course of action.
 
-Currently supports
-- long-term memory (vectordb)
-- google calendar
-- gmail
+Available Methods
+- analyze_context: Analyzes the context of the conversation and determines whether to retrieve additional context.
+- parse_func: Executes the relevant function based on the provided function call.
+- call_utility: Further determines which utility function to call.
+- classify_calendar: Further classifies calendar operations: reading events, creating events, or editing events.
+- classify_email: Further classifies email operations: reading emails, writing emails, replying to emails, etc.
+- emotion_classifier: Classifies the emotion of the speaker based on the provided text.
 
 Future updates
-- ...
+- Implement classifier for notes
+- Add functions for editing events in calendar classifer
+- Add function for replying to emails in email classifier
+
+# Improvements to EmailClassifier
+    # read_email
+    # - search by subject
+    # - search by keyword
+    # write_email
+    # - search recipient from contacts
+    # - draft emails using AI
+    # reply_email -- coming soon!
 '''
 
-
-client = OpenAI()
-
-# Analyzes context of user's message and decides whether to retrieve additional context
 class ContextAnalyzer:
-    context_model = "gpt-3.5-turbo-0613"
+    # TODO: move configurations to config.py
+    context_model = "gpt-3.5-turbo"
     classification_model = "gpt-3.5-turbo"
 
     def __init__(self):
         pass
 
-    # for main conversation
-    # conversation_history (list of dict) --> function_call OR false
-    # analyzes user intention and triggers functions to retrieve additional context
+    # Purpose: Analyzes context of conversation and determines whether to:
+        # 1. Retrieve additional context from memory
+        # 2. Use utilities
+        # 3. Continue the conversation naturally
+    # Input: conversation_history (list of dict) --> context (function call) OR false
+    # Output: analyzes user intention and triggers functions to retrieve additional context
     def analyze_context(self, conversation_history):
-        # user_id will eventually become collection_id as each user can have multiple ai models
-        '''
-        Given the current conversation and the user's latest message, decide whether to:
-            1. retrieve additional context from memory
-            2. use utilities
-            3. continue the conversation naturally
-        '''
-
-        print(f'conversation history: {conversation_history}')
 
         system_message = [{"role": "system",
                            "content": "Analyze the following conversation history, only if they are relevant. If no functions are called, always respond with 'false'. Do NOT write anything else."}, ]
@@ -67,7 +72,7 @@ class ContextAnalyzer:
                 },
             },
             {
-                # when other features are used
+                # other features
                 "name": "utilities",
                 "description": '''Use this function when the user's most recent message:
                         1. Expresses a desire to fetch or search for information (e.g. find out, search, look up)
@@ -96,48 +101,53 @@ class ContextAnalyzer:
             function_call="auto",
         )
 
-        print(f'Tokens used (context): {response.usage.total_tokens}')
+        print(f'Tokens used (analyze context): {response.usage.total_tokens}')
 
         # if a function call is triggered
         if response.choices[0].finish_reason == 'function_call':
             func_info = response.choices[0].message.function_call
-            print(f'function call activated: {func_info}')
+            print(f'function call activated: {func_info.name}')
+            print(f'Arguments: {func_info.arguments}')
             return func_info
         else:
             return False
 
-    # execute the relevant function based on provided function call
+    # Purpose: execute the relevant function based on provided function call
+    # Input: func_info (dict), user_message (str), user_id (int)
+    # Output: context (str)
     def parse_func(self, func_info, user_message, user_id):
         # user id --> collection_id (???))
         func_name = func_info.name
         func_args = func_info.arguments
         context = ''
+        
         # retrieve memory from vectordb
         if func_name == 'remember':
             arg_data = json.loads(func_args)
             try:
                 # just in case LLM hallucinates; we use explicit arguments
                 query = arg_data.get('question')
+                context = long_term_memory.search_memory(user_id, query)
             except:
                 print(f'Could not extract one or more function arguments. Args: {func_args}')
-                return context
-            context = long_term_memory.search_memory(user_id, query)
             return context
         # call utilities
         elif func_name == 'utilities':
-            context = self.call_utility(user_id, func_info, user_message)
+            context = self.classify_utility(user_id, func_info, user_message)
         # function does not exist
         else:
             print(f'Function call {func_name} does not exist.')
 
         return context
 
-    # further determine which utility function to call
-    def call_utility(self, user_id, func_info, user_message):
+    # Purpose: further determine which utility function to call
+    # Input: user_id (int), func_info (dict), user_message (str)
+    # Output: context (str)
+    def classify_utility(self, user_id, func_info, user_message):
         func_args = json.loads(func_info.arguments)
         function_name = func_args.get("operation")
         context = ''
-
+        
         if function_name == 'email':
             context = context_analyzer.classify_email(user_id, user_message)
         elif function_name == 'calendar':
@@ -151,10 +161,11 @@ class ContextAnalyzer:
 
         return context
 
-    # further classifies calendar operation: reading events, creating events, or editing events
+    # Purpose: further classifies calendar operation: reading events, creating events, or editing events
+    # Input: user_id (int), user_message (str)
+    # Output: context (str)
     def classify_calendar(self, user_id, user_message):
-        # ???
-        messages = [{"role": "system", "content": "You are Mira-Chan, a cute anime girl."},
+        messages = [{"role": "system", "content": "You are Mira"},
                     user_message]
         functions = [
             {
@@ -228,9 +239,9 @@ class ContextAnalyzer:
             model="gpt-3.5-turbo",
             messages=messages,
             functions=functions,
-            function_call="auto",  # auto is default, but we'll be explicit
+            function_call="auto",
         )
-        print(response)
+        print(f'Total Tokens (calendar_classifier): {response.usage.total_tokens}')
 
         # parsing function call
         if response.choices[0].finish_reason == 'function_call':
@@ -245,10 +256,11 @@ class ContextAnalyzer:
 
             return context
 
-    # further classifies email operations: reading emails, writing emails, replying to emails, etc.
+    # Purpose: further classifies email operations: reading emails, writing emails, replying to emails, etc.
+    # Input: user_id (int), user_message (str)
+    # Output: context (str)
     def classify_email(self, user_id, user_message):
-        # test whether changing this system message matters (???)
-        messages = [{"role": "system", "content": "You are Mira-Chan, a cute anime girl."},
+        messages = [{"role": "system", "content": "You are Mira"},
                     user_message]
         functions = [
             {
@@ -314,9 +326,9 @@ class ContextAnalyzer:
             model="gpt-3.5-turbo",
             messages=messages,
             functions=functions,
-            function_call="auto",  # auto is default, but we'll be explicit
+            function_call="auto",
         )
-        print(response)
+        print(f'Total Tokens (email_classifier): {response.usage.total_tokens}')
 
         # parsing function call
         context = ''
@@ -326,12 +338,16 @@ class ContextAnalyzer:
             if func_name == 'read_email':
                 print("read email ***")
                 context = user_email.read_email(user_id, func_info.arguments)
+                print("")
             elif func_name == 'write_email':
                 context = user_email.write_email(user_id, func_info.arguments)
 
         return context
 
-    def emotion_classifier(self, text):
+    # Purpose: classifies the emotion of the speaker based on the provided text
+    # Input: text (str)
+    # Output: emotion (str)
+    def classify_emotion(self, text):
         prompt = f'''You are an expert on emotion classification. Analyze the provided text. Which of the following emotions is exhibited by the speaker (CHOOSE ONE): neutral, angry, cheerful, excited, friendly, hopeful, sad, shouting, terrified, unfriendly, whispering.
 
         Examples
@@ -360,15 +376,5 @@ class ContextAnalyzer:
 
         return message
 
-
+    
 context_analyzer = ContextAnalyzer()
-
-
-# Improvements to EmailClassifier
-# read_email
-# - search by subject
-# - search by keyword
-# write_email
-# - search recipient from contacts
-# - draft emails using AI
-# reply_email -- coming soon!
