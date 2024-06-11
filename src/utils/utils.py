@@ -1,36 +1,36 @@
-from openai import OpenAI
 import datetime
 import pytz
 import re
 
+from src.utils.openai_client import client
 
 # contains useful functions
 class Utilities:
 
     def __init__(self):
         self.utilities_model = "gpt-3.5-turbo"
-        self.client = OpenAI()
+        self.client = client
 
+    # TODO: update and provide documentation
     # summarize a snippet of conversation history for memory storage
     def summarize(self, messages, AI_name, username):
-        prompt = f'''You are {AI_name} having a chat with {username}. Based on the following conversation snippet, 
+        prompt_template = f'''You are {AI_name} having a chat with {username}. Based on the following conversation snippet, 
         determine whether there's important information to be remembered.
         Examples of important information:
         - mention of a person, place, event, or thing
         - new information about {username} and their preferences/interests
         If there is, summarize key information in 50 words or less, from first person perspective, as {AI_name}. 
-        If there's no important information, write 'false' and stop.
+        If there's no important information, write 'false' and stop.'''
 
-            Conversation snippet: {messages}.
 
-            Summary (if important): '''
 
-        system_prompt = [{"role": "system", "content": prompt}]
+        prompt = [{"role": "system", "content": prompt_template}, 
+                  {"role": "user", "content": f"Conversation snippet: {messages}. Summary (if important): "}]
 
         # make openAI API call
         response = self.client.chat.completions.create(
             model=self.utilities_model,
-            messages=system_prompt,
+            messages=prompt,
         )
 
         # parse response
@@ -43,85 +43,111 @@ class Utilities:
 
         return message
 
-    # parses ambiguous dates and return as a datetime object
-    def parse_date(self, user_input):
-        # parses user input
-        query = user_input.lower().strip()
+    # Purpose: parses date and returns a datetime object
+    # Input: date (string), timezone (string)
+    # Output: start_date, end_date (datetime objects)
+    def parse_date(self, input_date, timezone='America/Vancouver'):
 
-        # localize time: convert date to PST
-        utc_now = datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
-        pst_now = utc_now.astimezone(pytz.timezone('America/Vancouver'))
-        now = datetime.datetime(year=pst_now.year, month=pst_now.month, day=pst_now.day)
+        input_date = input_date.lower().strip()
 
-        if query == 'today':
+        # localize to timezone
+        local_tz = pytz.timezone(timezone)
+        now = datetime.datetime.now(tz=local_tz).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        start_date = None
+        end_date = None
+        
+        if input_date == 'today':
             start_date = now
-            # exactly 24 hours from now (!!!)
             end_date = start_date + datetime.timedelta(days=1)
-        elif query == 'tomorrow':
+        elif input_date == 'tomorrow':
             start_date = now + datetime.timedelta(days=1)
             end_date = start_date + datetime.timedelta(days=1)
-        elif query == 'yesterday':
-            start_date = now - datetime.timedelta(days=1)
-            end_date = now
-        elif query == 'this week':
-            start_date = now
-            days_until_sun = 6 - now.weekday()
-            end_date = now + datetime.timedelta(days=days_until_sun)
-        elif query == 'next week':
-            days_until_mon = 7 - now.weekday()
-            start_date = now + datetime.timedelta(days=days_until_mon)
+        elif input_date == 'this week':
+            start_date = now - datetime.timedelta(days=now.weekday())
             end_date = start_date + datetime.timedelta(days=7)
-        elif query == 'last week':
-            days_since_last_mon = now.weekday()
-            start_date = now - datetime.timedelta(days=days_since_last_mon + 7)
-            end_date = start_date + datetime.timedelta(days=6)
-        # matches days of the week (this week), e.g. This Tuesday
-        elif query[:2] == 'c:':
-            start = self.get_date_this_week(query, now)
-            start_date = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = start_date + datetime.timedelta(days=1)
-        # matches days of the week (next week), e.g. Next Tuesday
-        elif query[:2] == 'f:':
-            start = self.get_date_this_week(query, now) + datetime.timedelta(days=7)
-            start_date = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = start_date + datetime.timedelta(days=1)
-        # matches a specific date
-        elif query[:2] == 'e:':
-            months = {"jan": 1,
-                      "feb": 2,
-                      "mar": 3,
-                      "apr": 4,
-                      "may": 5,
-                      "jun": 6,
-                      "jul": 7,
-                      "aug": 8,
-                      "sep": 9,
-                      "oct": 10,
-                      "nov": 11,
-                      "dec": 12}
-            month = months.get(query[2:5])
-            s = query[5:7]
-            day = int(''.join([char for char in s if char.isdigit()]))
-            year = datetime.datetime.now().year
-            start_date = datetime.datetime(year, month, day)
+        elif input_date == 'next week':
+            start_date = now + datetime.timedelta(days=7-now.weekday())
+            end_date = start_date + datetime.timedelta(days=7)
+        elif input_date.startswith('c:'):
+            day_of_week = input_date[2:]
+            start_date, end_date = self.get_date_for_day(now, day_of_week)
+        elif input_date.startswith('f:'):
+            day_of_week = input_date[2:]
+            start_date, end_date = self.get_date_for_day(now, day_of_week, next_week=True)
+        elif input_date.startswith('s:'):
+            # S:Sep 10 -> ["S", "Sep 10"]
+            _, date_part = input_date.split(':')  
+            # Sep 10 -> ["Sep", "10"]
+            month_abbr, day = date_part.split()  
+            day = int(day)
+
+            # map month to number
+            months = {
+                "jan": 1, "feb": 2, "mar": 3, "apr": 4,
+                "may": 5, "jun": 6, "jul": 7, "aug": 8,
+                "sep": 9, "oct": 10, "nov": 11, "dec": 12
+            }
+            month = months.get(month_abbr)
+
+            # check if valid month 
+            if month is None:
+                raise ValueError("Invalid month abbreviation")
+
+            year = now.year # TODO: handle different years
+            start_date = datetime.datetime(year, month, day, tzinfo=local_tz)
             end_date = start_date + datetime.timedelta(days=1)
         else:
-            return None, None
+            raise ValueError("Invalid date format")
+        
+        # set to naive timezone
+        if start_date.tzinfo is not None:
+            start_date = start_date.replace(tzinfo=None)
+        if end_date.tzinfo is not None:
+            end_date = end_date.replace(tzinfo=None)
+        
+        return start_date, end_date
+
+    # Purpose: get a datetime object for a specific day of the week
+    # Input: current_date (datetime object), day_of_week (string), next_week (boolean)
+    # Output: start_date, end_date (datetime objects)
+    def get_date_for_day(self, current_date, day_of_week, next_week=False):
+        day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        # Monday is 0, Sunday is 6
+        current_day_index = current_date.weekday()  
+        target_day_index = day_names.index(day_of_week)
+
+        # calculate the difference in days to target day
+        days_difference = target_day_index - current_day_index
+
+        # e.g. today is sunday, target day is monday: 0 - 6 = -6 --> move back 6 days
+        # e.g. today is tuesday, target day is friday: 4 - 1 = 3 --> move forward 3 days
+        start_date = current_date + datetime.timedelta(days=days_difference)
+
+        # if looking for next week, add 7 days
+        if next_week:
+            start_date += datetime.timedelta(days=7)
+
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = start_date + datetime.timedelta(days=1) # for 1 whole day
 
         return start_date, end_date
 
-    # day_of_the_week (e.g. Monday), today's date --> datetime object
-    def get_date_this_week(self, query, now):
-        target_day = query[2:5]
-        days_of_the_week = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
-        days_until_target_day = days_of_the_week.get(target_day) - now.weekday()
-        if days_until_target_day < 0:
-            days_until_target_day = 7 + days_until_target_day
-        start = now + datetime.timedelta(days=days_until_target_day)
-        return start
-
-    # '2:00pm - 3:00pm' --> datetime object (OR '2:00pm' --> datetime object)
+    # Purpose: parses time or time range and returns a timedelta object
+    # Input: time_range (string)
+    # Output: start_timedelta, end_timedelta (timedelta objects)
     def parse_time(self, time_range):
+
+        '''     
+
+        Examples:
+        - 2pm -> 14:00
+        - 2:30pm -> 14:30
+        - 2-3pm -> 14:00-15:00
+        - 2:00pm - 3:00pm -> 14:00-15:00
+
+        '''
+
         # Regex to extract time from string
         time_pattern = r'(\d+:\d+|\d+)(am|pm|AM|PM)'
 
@@ -149,11 +175,9 @@ class Utilities:
 
             # Calculate the timedelta for the end_time from midnight
             end_timedelta = datetime.timedelta(hours=end_time.hour, minutes=end_time.minute)
+
         print(start_timedelta, end_timedelta)
         return start_timedelta, end_timedelta
 
 
 utilities = Utilities()
-
-
-# add yesterday to parse dates

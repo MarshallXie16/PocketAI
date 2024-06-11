@@ -88,7 +88,7 @@ class MicrosoftTTS:
         self.client = msvoice.SpeechSynthesizer(speech_config=self.speech_config)
 
     def speak(self, text):
-        emotion = context_analyzer.emotion_classifier(text)
+        emotion = context_analyzer.classify_emotion(text)
         print(f'Emotion: {emotion}')
         if emotion.lower() not in self.EMOTIONS:
             emotion = 'default'

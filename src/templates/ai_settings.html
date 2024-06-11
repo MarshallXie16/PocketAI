@@ -1,0 +1,300 @@
+{% extends 'index.html' %}
+
+{% block body %}
+<div class="flex flex-col items-center justify-center" style="width: 50vw;">
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[800px]">
+        <div dir="ltr" data-orientation="horizontal" class="w-full">
+
+            <!--  user settings -->
+            <form action="/ai-settings/{{ ai_model.id }}" method="POST" id="ai-settings-form" data-state="active"
+                enctype="multipart/form-data" accept=".png, .jpg, .jpeg, .gif" data-tab-content="user" data-orientation="horizontal" role="tabpanel"
+                aria-labelledby="radix-:r2u:-trigger-user" id="radix-:r2u:-content-user" tabindex="0"
+                class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6"
+                style="animation-duration: 0s;">
+
+                <!-- Display flash messages -->
+                {% with messages = get_flashed_messages(with_categories=True) %}
+                {% if messages %}
+                <div>
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-3 h-5 w-5 flex-shrink-0">
+                                {% if category == 'info' %}
+                                <path fill-rule="evenodd"
+                                    d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
+                                    clip-rule="evenodd" />
+                                {% elif category == 'success' %}
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                    clip-rule="evenodd" />
+                                {% elif category == 'warning' %}
+                                <path fill-rule="evenodd"
+                                    d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                                    clip-rule="evenodd" />
+                                {% elif category == 'error' %}
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                                    clip-rule="evenodd" />
+                                {% endif %}
+                            </svg>
+                            <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
+                        </div>
+                        <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="h-5 w-5">
+                                <path
+                                    d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <!-- profile section; profile picture, name, email -->
+                <div class="flex flex-col items-center space-y-4">
+                    <div class="relative">
+                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}"
+                            alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
+                            style="aspect-ratio: 96 / 96; object-fit: cover;" />
+                        <input type="file" id="profile-image-input" name="profile-image" class="hidden">
+                        <label for="profile-image-input"
+                            class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 w-10 absolute bottom-0 right-0 bg-white dark:bg-gray-800 p-1 rounded-full cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="h-5 w-5 text-gray-500 dark:text-gray-400">
+                                <path
+                                    d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z">
+                                </path>
+                                <circle cx="12" cy="13" r="3"></circle>
+                            </svg>
+                            <span class="sr-only">Edit Profile Picture</span>
+                        </label>
+                    </div>
+                    <div class="space-y-2 text-center flex justify-center">
+                        <input
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-xl font-semibold"
+                            id="ai-name" name="ai-name" value="{{ ai_model.name }}" />
+                    </div>
+                </div>
+
+                <!-- divider -->
+                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
+
+                <!-- ai settings container -->
+                <div class="space-y-4">
+
+                    <!-- AI Model -->
+                    <div class="space-y-2 dropdown" id="ai-model-dropdown">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="ai-model">Model</label>
+                        <div class="flex">
+                            <div class="relative inline-block w-full max-w-xs">
+                                <!-- Button -->
+                                <button data-dropdown-button="ai-model" type="button"
+                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                    {{ ai_model.model_name }}
+                                    <!-- icon down -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <!-- Panel -->
+                                <div data-dropdown-panel="ai-model"
+                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                    <div class="p-1">
+                                        <input type="hidden" name="ai-model" value="{{ ai_model.model_name }}">
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            gpt-3.5-turbo</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            gpt-4o</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Gemini-1.5-Flash</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Gemini-1.5-Pro</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            Open source</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prompt Text Field -->
+                    <div class="flex flex-col gap-4 text-field" id="prompt-field">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="ai-prompt">
+                            Prompt
+                        </label>
+                        <textarea
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            name="ai-prompt" id="ai-prompt" placeholder="Enter AI prompt"
+                            rows="4">{{ ai_model.prompt or 'Describe your AI\'s personality!' }}</textarea>
+                    </div>
+
+                    <!-- Description Text Field -->
+                    <div class="flex flex-col gap-4 text-field" id="description-field">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="ai-description">
+                            Description
+                        </label>
+                        <textarea
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            name="ai-description" id="ai-description" placeholder="Enter AI description"
+                            rows="3">{{ ai_model.description or 'Describe what your AI does!'}}</textarea>
+                    </div>
+
+
+                    <!-- Memory Chunk Size -->
+                    <div class="space-y-2 dropdown" id="ai-model-dropdown">
+                        <label
+                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            for="memory-chunk-size">Memory Chunk Size</label>
+                        <div class="flex">
+                            <div class="relative inline-block w-full max-w-xs">
+                                <!-- Button -->
+                                <button data-dropdown-button="memory-chunk-size" type="button"
+                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                    {{ ai_settings.memory_chunk_size }}
+                                    <!-- icon down -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <!-- Panel -->
+                                <div data-dropdown-panel="memory-chunk-size"
+                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                    <div class="p-1">
+                                        <input type="hidden" name="memory-chunk-size"
+                                            value="{{ ai_settings.memory_chunk_size }}">
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            4</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            6</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            10</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            16</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            24</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- divider -->
+                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
+
+                <!-- save changes button -->
+                <div class="flex justify-end">
+                    <button type="button" id="go-back"
+                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mr-2">
+                        Back
+                    </button>
+                    <button type="submit" id="save-changes-ai-settings"
+                        class="save-changes inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .save-changes,
+    #upgrade-button {
+        background-color: #7367F0;
+        color: rgb(255, 255, 255);
+        transition: background-color 1s;
+
+    }
+
+    .save-changes:hover,
+    #upgrade-button:hover {
+        background-color: #5f53eb;
+        /* transform: scale(1.03); */
+    }
+
+    [data-state="active"] {
+        color: black;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropdownButtons = document.querySelectorAll('[data-dropdown-button]');
+        const dropdownPanels = document.querySelectorAll('[data-dropdown-panel]');
+        const aiSettingsForm = document.getElementById('ai-settings-form');
+        const profileImageInput = document.getElementById('profile-image-input');
+        const profileImagePreview = document.getElementById('profile-image-preview');
+
+        dropdownButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const panel = document.querySelector(`[data-dropdown-panel="${button.getAttribute('data-dropdown-button')}"]`);
+                panel.classList.toggle('hidden');
+            });
+        });
+
+        dropdownPanels.forEach(panel => {
+            const options = panel.querySelectorAll('[data-dropdown-option]');
+            options.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const button = document.querySelector(`[data-dropdown-button="${panel.getAttribute('data-dropdown-panel')}"]`);
+                    button.textContent = option.textContent;
+                    document.querySelector(`[name="${panel.getAttribute('data-dropdown-panel')}"]`).value = option.textContent;
+                    panel.classList.add('hidden');
+                });
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('[data-dropdown-button]') && !e.target.closest('[data-dropdown-panel]')) {
+                dropdownPanels.forEach(panel => panel.classList.add('hidden'));
+            }
+        });
+
+        profileImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    profileImagePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('go-back').addEventListener('click', () => {
+            window.location.href = "{{ url_for('profile') }}";
+        });
+    });
+
+</script>
+
+{% endblock %}

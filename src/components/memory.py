@@ -1,67 +1,113 @@
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma, Pinecone
+import os
+from uuid import uuid4
+from pinecone import Pinecone
 import chromadb
 from chromadb.config import Settings
-import pinecone
-import os
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
 
-# Mimics long-term memory using vectordb
-# Can store, augment, and retrieve long-term memory
-os.environ["PINECONE_API_KEY"] = "5c37abab-6352-4786-8b57-377a06b3c51d"
-os.environ["PINECONE_ENV"] = "gcp-starter"
+from src.utils.openai_client import client
+
+'''
+    Represents the long-term memory of the AI
+    
+    LongTermMemory: wrapper class for memory
+
+    Available Memory Types
+    - PineconeMemory: cloud-based
+    - ChromaMemory: self-hosted
+    - OpenAI: vectorstore
+
+    Current Features
+    - setup_memory: initializes at start of program
+    - search_memory: searches memory for context
+    - save_memory: saves memory to vectordb
+    - save_database_txt: writes current database to db.txt (for viewing)
+
+'''
 
 
+# wrapper class for memory
+class LongTermMemory:
+    def __init__(self) -> None:
+        self.memory = PineconeMemory() # swap out for other memory models if needed
+
+    def setup_memory(self):
+        return self.memory.setup_memory()
+    
+    def search_memory(self, collection_id, query):
+        return self.memory.search_memory(collection_id, query)
+    
+    def save_memory(self, collection_id, memory):
+        return self.memory.save_memory(collection_id, memory)
+    
+    def save_database_txt(self):
+        return self.memory.save_database_txt()
+    
 # pinecone vector database: easy-to-use, scalable, expensive
 class PineconeMemory:
 
     def __init__(self):
+        self.embedding_model = "text-embedding-3-small"
+        self.index_name = "user-pool"
         self.db = self.setup_memory()
-        self.retriever = self.db.as_retriever(search_kwargs={"k": 3})
 
-    # set up a persistent pinecone vectordb
+    # Purpose: initializes Pinecone client w/ user index
+    # Input: None
+    # Output: index (pinecone index object)
     def setup_memory(self):
-        # initialize database
-        pinecone.init(api_key=os.getenv("PINECONE_API_KEY"),
-                      environment=os.getenv("PINECONE_ENV")
-                      )
+        
+        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
-        index_name = "user-pool"
-        if index_name not in pinecone.list_indexes():
-            pinecone.create_index(name=index_name, metric="cosine", dimension=1536)
-        index = pinecone.Index(index_name=index_name)
+        # if index_name not in pinecone.list_indexes():
+        #     pinecone.create_index(name=index_name, metric="cosine", dimension=1536)
 
-        embedding_function = OpenAIEmbeddings()
+        index = pc.Index(self.index_name)
 
-        vectordb = Pinecone(index, embedding_function.embed_query, "text")
+        return index
 
-        return vectordb
+    # Purpose: return embeddings of the given text
+    # Input: text (str)
+    # Output: response (dict)
+    def get_embedding(self, text):
+        response = client.embeddings.create(input=text, model=self.embedding_model)
+        print(f"Total Tokens (embeddings): {response.usage.total_tokens}")
+        return response.data[0].embedding
 
-    # signature: query (string) --> context (string)
-    # searches a given collection's memory for context
-    def search_memory(self, collection_id, query):
-        results = self.db.max_marginal_relevance_search(query=query, k=3, namespace=str(collection_id))
-        context = [document.page_content for document in results]
+    # Purpose: searches vectordb for similar text to the query and returns it
+    # Input: collection_id (str), query (str)
+    # Output: context (list of string)
+    def search_memory(self, namespace, query):
+        # vectorize the query
+        query_vector = self.get_embedding(query)
+        with open("save.txt", "w") as f:
+            f.write(str(query_vector))
+
+        # query vectordb
+        results = self.db.query(
+            namespace=str(namespace),
+            vector=query_vector,
+            top_k=3,
+            include_values=False,
+            include_metadata=True,
+        )
+        
+        context = [match['metadata']['text'] for match in results['matches']]
+
         return context
 
-    # signature: memory (tuple) --> status (Boolean)
-    # save memory to vectordb
-    def save_memory(self, collection_id, memory):
+    # Purpose: saves memory to vectordb
+    # Input: namespace (int), memory (string)
+    # Output: status (boolean)
+    def save_memory(self, namespace, memory):
         try:
-            self.db.add_texts(memory, namespace=str(collection_id))
+            vectors = [{"id": str(uuid4()), "values": self.get_embedding(memory), "metadata": {"text": memory}}]
+            self.db.upsert(vectors=vectors, 
+                           namespace=str(namespace))
             return True
         except Exception as e:
             print(f'MemoryError: {e}')
             return False
-
-    # writes current database to db.txt (for viewing)
-    # for debugging
-    def save_database_txt(self):
-        data = self.db.get()
-        with open('../db.txt', 'w', encoding="utf-8") as file:
-            for index, chunk in enumerate(data['documents']):
-                file.write(f'\nchunk #{index + 1}\n')
-                file.write(chunk)
-
 
 # persistent db: self-hosted, more complexity, cheaper
 class ChromaMemory:
@@ -116,5 +162,9 @@ class ChromaMemory:
                 file.write(f'\nchunk #{index + 1}\n')
                 file.write(chunk)
 
+# TODO: implement OpenAI memory
+class OpenAIMemory:
+    pass
 
-long_term_memory = PineconeMemory()
+
+long_term_memory = LongTermMemory()
