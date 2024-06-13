@@ -3,8 +3,8 @@ from uuid import uuid4
 from pinecone import Pinecone
 import chromadb
 from chromadb.config import Settings
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
+# from langchain.embeddings.openai import OpenAIEmbeddings
+# from langchain.vectorstores import Chroma
 
 from src.utils.openai_client import client
 
@@ -109,58 +109,58 @@ class PineconeMemory:
             print(f'MemoryError: {e}')
             return False
 
-# persistent db: self-hosted, more complexity, cheaper
-class ChromaMemory:
+# # persistent db: self-hosted, more complexity, cheaper
+# class ChromaMemory:
 
-    def __init__(self):
-        self.db = self.setup_memory()
-        self.retriever = self.db.as_retriever(search_kwargs={"k": 3})
+#     def __init__(self):
+#         self.db = self.setup_memory()
+#         self.retriever = self.db.as_retriever(search_kwargs={"k": 3})
 
-    # set up a persistent chroma vectordb
-    def setup_memory(self):
-        # initialize database
-        path = '../db'
-        settings = Settings(
-            persist_directory=path,
-            anonymized_telemetry=False
-        )
-        client = chromadb.PersistentClient(settings=settings, path=path)
-        collection = client.get_or_create_collection("User1")
+#     # set up a persistent chroma vectordb
+#     def setup_memory(self):
+#         # initialize database
+#         path = '../db'
+#         settings = Settings(
+#             persist_directory=path,
+#             anonymized_telemetry=False
+#         )
+#         client = chromadb.PersistentClient(settings=settings, path=path)
+#         collection = client.get_or_create_collection("User1")
 
-        # load the vector database
-        embedding_function = OpenAIEmbeddings()
-        vectordb = Chroma(
-            client=client,
-            collection_name="User1",
-            embedding_function=embedding_function,
-        )
+#         # load the vector database
+#         embedding_function = OpenAIEmbeddings()
+#         vectordb = Chroma(
+#             client=client,
+#             collection_name="User1",
+#             embedding_function=embedding_function,
+#         )
 
-        return vectordb
+#         return vectordb
 
-    # signature: query (string) --> context (string)
-    # searches memory for context
-    def search_memory(self, query):
-        results = self.db.max_marginal_relevance_search(query=query, k=3)
-        context = [document.page_content for document in results]
-        return context
+#     # signature: query (string) --> context (string)
+#     # searches memory for context
+#     def search_memory(self, query):
+#         results = self.db.max_marginal_relevance_search(query=query, k=3)
+#         context = [document.page_content for document in results]
+#         return context
 
-    # signature: memory (tuple) --> status (Boolean)
-    # save memory to vectordb
-    def save_memory(self, memory):
-        try:
-            self.db.add_texts(memory)
-            return True
-        except Exception as e:
-            print(f'MemoryError: {e}')
-            return False
+#     # signature: memory (tuple) --> status (Boolean)
+#     # save memory to vectordb
+#     def save_memory(self, memory):
+#         try:
+#             self.db.add_texts(memory)
+#             return True
+#         except Exception as e:
+#             print(f'MemoryError: {e}')
+#             return False
 
-    # writes current database to db.txt (for viewing)
-    def save_database_txt(self):
-        data = self.db.get()
-        with open('../db.txt', 'w', encoding="utf-8") as file:
-            for index, chunk in enumerate(data['documents']):
-                file.write(f'\nchunk #{index + 1}\n')
-                file.write(chunk)
+#     # writes current database to db.txt (for viewing)
+#     def save_database_txt(self):
+#         data = self.db.get()
+#         with open('../db.txt', 'w', encoding="utf-8") as file:
+#             for index, chunk in enumerate(data['documents']):
+#                 file.write(f'\nchunk #{index + 1}\n')
+#                 file.write(chunk)
 
 # TODO: implement OpenAI memory
 class OpenAIMemory:
