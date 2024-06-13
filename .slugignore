@@ -1,0 +1,10 @@
+*.pyc
+__pycache__/
+*.log
+*.gz
+*.zip
+node_modules/
+venv/
+.env
+tests/
+docs/
