@@ -28,6 +28,3 @@ SQLAlchemy
 stripe
 Werkzeug
 gunicorn
-tensorflow
-tensorflow-estimator
-tensorflow-intel
