@@ -18,7 +18,6 @@ openai
 pinecone
 protobuf
 PyAudio
-pynput
 python-dotenv
 pytz
 sounddevice
