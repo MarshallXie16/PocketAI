@@ -7,7 +7,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 
 from src.components.context_analyzer import context_analyzer
 from src.components.memory import long_term_memory
-from src.components.speech_to_text import speech_to_text
+# from src.components.speech_to_text import speech_to_text
 from src.components.ai_models import AI_model
 
 from src.models.users import User, AIModel, UserSettings, AISettings
