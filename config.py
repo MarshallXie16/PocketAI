@@ -12,12 +12,12 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('DB_SECRET_KEY', 'your_default_secret_key')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    PERMANENT_SESSION_LIFETIME = 604800  # 7 days in seconds
+    PERMANENT_SESSION_LIFETIME = 604800
     TEMPLATE_FOLDER = 'src/templates'
     STATIC_FOLDER = 'src/static'
     LOGIN_URL = '/login'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'src', 'instance', 'users.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
     GOOGLE_DISCOVERY_URL = 'https://accounts.google.com/.well-known/openid-configuration'

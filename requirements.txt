@@ -27,3 +27,4 @@ SQLAlchemy
 stripe
 Werkzeug
 gunicorn
+psycopg2-binary
