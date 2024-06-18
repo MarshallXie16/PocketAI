@@ -2,6 +2,7 @@
 .idea
 prototypes
 venv
+src/prototypes
 __pycache__
 # Elastic Beanstalk Files
 .ebextensions
