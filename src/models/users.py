@@ -19,7 +19,7 @@ class User(UserMixin, db.Model):
     free_credits = db.Column(db.Integer, default=1500)
     paid_credits = db.Column(db.Integer, default=0)
     auth_type = db.Column(db.String(128))
-    google_id = db.Column(db.String(128), nullable=True)
+    google_id = db.Column(db.String(128), nullable=True, unique=True)
     settings = db.relationship('UserSettings', backref='user', uselist=False, cascade='all, delete-orphan')
     ai_models = db.relationship('AIModel', secondary=user_ai, back_populates='users')
     messages = db.relationship('Message', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')

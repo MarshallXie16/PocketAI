@@ -1,8 +1,8 @@
-"""Initial Migration
+"""empty message
 
-Revision ID: d255a6e53c8e
+Revision ID: 976d78d78207
 Revises: 
-Create Date: 2024-05-25 21:33:32.833853
+Create Date: 2024-06-17 20:40:48.430550
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd255a6e53c8e'
+revision = '976d78d78207'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,11 +29,16 @@ def upgrade():
     op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=64), nullable=True),
+    sa.Column('email', sa.String(length=128), nullable=True),
     sa.Column('password_hash', sa.String(length=128), nullable=True),
-    sa.Column('points', sa.Integer(), nullable=True),
+    sa.Column('active', sa.Boolean(), nullable=True),
+    sa.Column('plan', sa.String(length=64), nullable=True),
+    sa.Column('free_credits', sa.Integer(), nullable=True),
+    sa.Column('paid_credits', sa.Integer(), nullable=True),
     sa.Column('auth_type', sa.String(length=128), nullable=True),
     sa.Column('google_id', sa.String(length=128), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('google_id')
     )
     with op.batch_alter_table('user', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_user_username'), ['username'], unique=True)
@@ -58,9 +63,9 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('ai_id', sa.Integer(), nullable=False),
+    sa.Column('sender', sa.String(length=50), nullable=False),
     sa.Column('message', sa.Text(), nullable=True),
     sa.Column('timestamp', sa.DateTime(), nullable=True),
-    sa.Column('sender', sa.String(length=64), nullable=True),
     sa.ForeignKeyConstraint(['ai_id'], ['ai_model.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
