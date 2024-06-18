@@ -1,9 +1,11 @@
 import os
+import re
 import datetime
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, current_app, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+import stripe
 
 from src.components.context_analyzer import context_analyzer
 from src.components.memory import long_term_memory
@@ -14,12 +16,12 @@ from src.models.users import User, AIModel, UserSettings, AISettings
 from src.models.google_user import GoogleUser
 from src.models.message import Message
 
-from config import DevelopmentConfig
+from config import DevelopmentConfig, ProductionConfig, TestingConfig
 from src.utils.extensions import db, migrate
 from src.utils.utils import utilities
 from src.utils.auth import oauth, google, init_oauth
 
-import stripe
+
 
 
 ''' Tech Stack
@@ -34,7 +36,7 @@ import stripe
 SAVE_EVERY_X = 2
 DEFAULT_WELCOME_MSG = "Hello, how can I help you today?"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-YOUR_DOMAIN = 'http://127.0.0.1:5000'
+YOUR_DOMAIN = os.environ.get('YOUR_DOMAIN')
 MESSAGE_COST = 1
 stripe.api_key = os.environ.get('STRIPE_API_KEY')
 
@@ -42,10 +44,12 @@ load_dotenv()
 login_manager = LoginManager()
 
 # Instantiates and configures app
-def create_app(config_class=DevelopmentConfig):
+def create_app(config_class=ProductionConfig):
+    # create app and configure app variables
     app = Flask(__name__, template_folder=config_class.TEMPLATE_FOLDER, static_folder=config_class.STATIC_FOLDER)
-    app.config.from_object(config_class) # configure application variables
+    app.config.from_object(config_class)
 
+    # intitialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -721,6 +725,7 @@ def add_credits():
     return jsonify({'success': True}), 200
 
 
+# testing implementation
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'your_admin_password')
 
 from flask import abort
@@ -1067,7 +1072,7 @@ def create_user_model(username, auth_type, password=None, email=None, google_id=
 
     return user
 
-import re
+
 def preprocess_message(message):
     # Convert newlines to <br>
     formatted_message = message.replace('\n', '<br>')
