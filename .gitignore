@@ -1,8 +1,12 @@
 .env
+.idea
 prototypes
 venv
 __pycache__
 # Elastic Beanstalk Files
+.ebextensions
+.ebignore
+.slugignore
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
