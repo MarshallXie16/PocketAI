@@ -6,7 +6,7 @@ from chromadb.config import Settings
 # from langchain.embeddings.openai import OpenAIEmbeddings
 # from langchain.vectorstores import Chroma
 
-from src.utils.openai_client import client
+from src.utils.AI_model_client import openai_client
 
 '''
     Represents the long-term memory of the AI
@@ -70,7 +70,7 @@ class PineconeMemory:
     # Input: text (str)
     # Output: response (dict)
     def get_embedding(self, text):
-        response = client.embeddings.create(input=text, model=self.embedding_model)
+        response = openai_client.embeddings.create(input=text, model=self.embedding_model)
         print(f"Total Tokens (embeddings): {response.usage.total_tokens}")
         return response.data[0].embedding
 

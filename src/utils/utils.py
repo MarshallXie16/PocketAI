@@ -2,14 +2,14 @@ import datetime
 import pytz
 import re
 
-from src.utils.openai_client import client
+from src.utils.AI_model_client import openai_client
 
 # contains useful functions
 class Utilities:
 
     def __init__(self):
         self.utilities_model = "gpt-3.5-turbo"
-        self.client = client
+        self.client = openai_client
 
     # TODO: update and provide documentation
     # summarize a snippet of conversation history for memory storage

@@ -1,6 +1,6 @@
 import json
 
-from src.utils.openai_client import client
+from src.utils.AI_model_client import openai_client
 from src.components.memory import long_term_memory
 from src.components.calendar_service import user_calendar
 from src.components.email_service import user_email
@@ -94,7 +94,7 @@ class ContextAnalyzer:
             }
         ]
         # create and call openai api w/ function calling
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model=self.context_model,
             messages=messages,
             functions=functions,
@@ -235,7 +235,7 @@ class ContextAnalyzer:
             },
         ]
         # create and call function calling
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
             functions=functions,
@@ -322,7 +322,7 @@ class ContextAnalyzer:
             },
         ]
         # create and call function calling
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
             functions=functions,
@@ -365,7 +365,7 @@ class ContextAnalyzer:
         messages = system_prompt
 
         # make openAI API call
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model=self.classification_model,
             messages=messages,
         )

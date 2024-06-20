@@ -16,7 +16,6 @@ class Config:
     TEMPLATE_FOLDER = 'src/templates'
     STATIC_FOLDER = 'src/static'
     LOGIN_URL = '/login'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'src', 'instance', 'users.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
@@ -24,6 +23,7 @@ class Config:
     GOOGLE_APPLICATION_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
 class DevelopmentConfig(Config):
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'src', 'instance', 'users.db')
     DEBUG = True
 
 class TestingConfig(Config):

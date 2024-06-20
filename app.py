@@ -44,7 +44,7 @@ load_dotenv()
 login_manager = LoginManager()
 
 # Instantiates and configures app
-def create_app(config_class=ProductionConfig):
+def create_app(config_class=DevelopmentConfig):
     # create app and configure app variables
     app = Flask(__name__, template_folder=config_class.TEMPLATE_FOLDER, static_folder=config_class.STATIC_FOLDER)
     app.config.from_object(config_class)
