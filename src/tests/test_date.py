@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+import datetime
 import pytz
 
 test_dates = [
@@ -33,79 +33,6 @@ test_dates = [
     "S:Nov 11",
     "S:Dec 25"
 ]
-
-# def parse_date(date):
-#     # parses user input date
-#     query = date.lower().strip()
-
-#     # localize time: convert date to PST
-#     utc_now = datetime.utcnow().replace(tzinfo=pytz.utc)
-#     pst_now = utc_now.astimezone(pytz.timezone('America/Vancouver'))
-#     now = datetime(year=pst_now.year, month=pst_now.month, day=pst_now.day)
-
-#     if query == 'today':
-#         start_date = now
-#         # exactly 24 hours from now (!!!)
-#         end_date = start_date + timedelta(days=1)
-#     elif query == 'tomorrow':
-#         start_date = now + timedelta(days=1)
-#         end_date = start_date + timedelta(days=1)
-#     elif query == 'yesterday':
-#         start_date = now - timedelta(days=1)
-#         end_date = now
-#     elif query == 'this week':
-#         start_date = now
-#         days_until_sun = 6 - now.weekday()
-#         end_date = now + timedelta(days=days_until_sun)
-#     elif query == 'next week':
-#         days_until_mon = 7 - now.weekday()
-#         start_date = now + timedelta(days=days_until_mon)
-#         end_date = start_date + timedelta(days=7)
-#     elif query == 'last week':
-#         days_since_last_mon = now.weekday()
-#         start_date = now - timedelta(days=days_since_last_mon + 7)
-#         end_date = start_date + timedelta(days=6)
-#     # matches days of the week (this week), e.g. This Tuesday
-#     elif query[:2] == 'c:':
-#         start = get_date_this_week(query, now)
-#         start_date = start.replace(hour=0, minute=0, second=0, microsecond=0)
-#         end_date = start_date + timedelta(days=1)
-#     # matches days of the week (next week), e.g. Next Tuesday
-#     elif query[:2] == 'f:':
-#         start = get_date_this_week(query, now) + timedelta(days=7)
-#         start_date = start.replace(hour=0, minute=0, second=0, microsecond=0)
-#         end_date = start_date + timedelta(days=1)
-#     # matches a specific date
-#     elif query[:2] == 's:':
-#         months = {"jan": 1,
-#                     "feb": 2,
-#                     "mar": 3,
-#                     "apr": 4,
-#                     "may": 5,
-#                     "jun": 6,
-#                     "jul": 7,
-#                     "aug": 8,
-#                     "sep": 9,
-#                     "oct": 10,
-#                     "nov": 11,
-#                     "dec": 12}
-#         month = months.get(query[2:5])
-#         s = query[5:7]
-#         day = int(''.join([char for char in s if char.isdigit()]))
-#         year = datetime.now().year
-#         start_date = datetime(year, month, day)
-#         end_date = start_date + timedelta(days=1)
-#     else:
-#         return None, None
-
-#     return start_date, end_date
-
-import datetime
-import pytz
-
-import datetime
-import pytz
-
 
 # Purpose: parses date and returns a datetime object
 # Input: date (string), timezone (string)
@@ -162,7 +89,6 @@ def parse_date(input_date, timezone='America/Vancouver'):
         raise ValueError("Invalid date format")
     
     return start_date, end_date
-
 
 # Purpose: get a datetime object for a specific day of the week
 # Input: current_date (datetime object), day_of_week (string), next_week (boolean)

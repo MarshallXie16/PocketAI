@@ -1,18 +1,70 @@
+/* Default styles */
+
+:root {
+    /* colors */
+    --primary-color: #7367F0;
+    --secondary-color: #9E95F5;
+    --accent-color: #FFCD38;
+    --text-color: #525252;
+    --background-color: #FFFFFF;
+    --test-dark-purple: #8800ff;
+    --error-color: #DC2626;
+
+    --primary-color-dark: #7367F0;
+    --secondary-color-dark: #9E95F5;
+    --accent-color-dark: #FFCD38;
+    --text-color-dark: #FFFFFF;
+    --background-color-dark: #202020;
+
+    /* fonts */
+    --font-family: 'Inter', sans-serif;
+    --font-size-title: 60px;
+    --font-size-h1: 48px;
+    --font-size-h2: 32px;
+    --font-size-h3: 24px;
+    --font-size-lg: 20px;
+    --font-size-base: 16px;
+    --font-size-sm: 12px;
+
+    /* spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* others */
+    --border-radius: 1rem;
+    --transition-speed: 0.5s;
+
+    --default-button-hover-color: #5f53eb;
+}
+
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
     height: calc(100vh - 64px);
 
     /* variables */
-    --primary-color: #7367F0;
-    --shade-color: #9E95F5;
     --profile-size: 3rem;
     --chat-button-size: 2.5rem;
 }
 
-ol,
-ul {
+h1 { font-size: var(--font-size-h1) }
+h2 { font-size: var(--font-size-h2) }
+h3 { font-size: var(--font-size-h3) }
+
+.chat-message-user {
+    background-color: var(--primary-color);
     color: white;
 }
+
+.chat-message-ai {
+    background-color: var(--text-color);
+    color: white;
+}
+
+/* header styling */
 
 header {
     background-color: #fff;
@@ -20,11 +72,11 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 20px 5%;
-    /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 
-/* nav bar styling */
+/* nav bar */
 
 nav a {
     position: relative;
@@ -55,109 +107,6 @@ nav a:hover::before {
     width: 100%;
 }
 
-
-/* chat styling */
-
-.chat-layer {
-    width: 70vw;
-    height: calc(100vh - 64px);
-}
-
-.chat-container {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    overflow-x: hidden;
-}
-
-.message-container {
-    margin: 1rem 0.5rem;
-}
-
-.chat-profile-container {
-    width: var(--profile-size);
-    height: 100%;
-}
-
-.bot-message .chat-profile-container {
-    margin-right: 0.5rem;
-}
-
-.bot-message>.timestamp {
-    position: relative;
-    margin: 0;
-    left: calc(var(--profile-size) + 0.4rem);
-    top: 2px;
-}
-
-.user-message .chat-profile-container {
-    margin-left: 0.5rem;
-}
-
-.user-message>.timestamp {
-    position: relative;
-    margin: 0;
-    right: calc(var(--profile-size) + 0.4rem);
-    top: 2px;
-}
-
-/* bottom panel */
-
-.bottom-panel {
-    padding: 1rem;
-    /* box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1); */
-    height: auto;
-}
-
-.message-bar {
-    width: 60%;
-    height: auto;
-}
-
-.message-input {
-    margin: 0;
-    width: 100%;
-    height: 3.5rem;
-    padding: 1rem calc(1rem + var(--chat-button-size));
-}
-
-.message-input:focus {
-    outline: 2px solid #d3d3d3;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.mic-button,
-.send-button {
-    position: relative;
-    width: var(--chat-button-size);
-    height: var(--chat-button-size);
-}
-
-.mic-button {
-    left: calc(0.5rem + var(--chat-button-size));
-}
-
-.send-button {
-    background-color: white;
-    right: calc(1rem + var(--chat-button-size));
-    transition: background-color 0.3s;
-    border: 2px solid var(--primary-color);
-}
-
-.send-button>i {
-    color: var(--primary-color);
-    transition: color 0.3s;
-}
-
-.send-button:hover {
-    background-color: var(--primary-color);
-}
-
-.send-button:hover>i {
-    color: white;
-}
-
 /* clickable cards */
 
 .card {
@@ -171,7 +120,19 @@ nav a:hover::before {
 }
 
 
-/* button styling */
+/* buttons */
+/* NOTE: Current buttons relies on tailwind for additional styling */
+
+.default-button {
+    cursor: pointer;
+    background-color: var(--primary-color);
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.default-button:hover {
+    background-color: var(--default-button-hover-color);
+}
 
 .hollow-button {
     background-color: transparent;
@@ -185,38 +146,8 @@ nav a:hover::before {
     color: white;
 }
 
-.default-button {
-    cursor: pointer;
-    background-color: var(--primary-color);
-    color: white;
-    transition: background-color 0.3s ease;
-}
-
-.default-button:hover {
-    background-color: #5f53eb;
-}
-
 /* scrollbar */
-
-body::-webkit-scrollbar {
-    width: 12px;
-}
-
-body::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 6px;
-}
-
-body::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, var(--primary-color), var(--shade-color));
-    border-radius: 6px;
-    border: 3px solid rgba(0, 0, 0, 0.1);
-    transition: all 3s;
-}
-
-body::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(45deg, var(--shade-color), var(--primary-color));
-}
+/* NOTE: idk wtf this is */
 
 /* Customize scrollbar for all elements */
 
@@ -298,21 +229,21 @@ body::-webkit-scrollbar-thumb:hover {
 .profile-dropdown {
     display: none;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity var(--transition-speed) ease;
 }
 
 .profile-dropdown.show {
     display: block;
-    animation: fadeIn 0.5s forwards;
+    animation: fadeIn var(--transition-speed) forwards;
 }
 
 .profile-dropdown.hide {
-    animation: fadeOut 0.5s forwards;
+    animation: fadeOut var(--transition-speed) forwards;
 }
 
 .dropdown-item {
     opacity: 0;
-    animation: fadeIn 0.5s forwards;
+    animation: fadeIn var(--transition-speed) forwards;
 }
 
 @keyframes fadeIn {
@@ -338,10 +269,72 @@ body::-webkit-scrollbar-thumb:hover {
 /* credit display */
 
 .glowing-border {
-    border: 2px solid #7367F0;
-    box-shadow: 0 0 5px #7367F0;
+    border: 2px solid var(--secondary-color);
+    box-shadow: 0 0 5px var(--secondary-color);
 }
 
+
+/* Additional Styles */
+
+.default-text {
+    color: var(--text-color);
+}
+
+.invert-text {
+    color: var(--text-color-dark);
+}
+
+
+
+
+/* to figure out */
+
 .text-glow {
-    color: #7367F0;
+    color: var(--text-color);
+}
+
+.primary-color-text {
+    color: var(--primary-color);
+}
+
+.aspect-square {
+    aspect-ratio: 1 / 1;
+}
+
+.cancel-button-red {
+    padding: 0.625rem 1.25rem;
+    margin: 1rem;
+    font-size: 0.9rem;
+    background-color: white;
+    color: var(--error-color);
+    border: 2px solid var(--error-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: ease-in-out 0.3s;
+}
+
+.cancel-button-red:hover {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.cancel-button-red:focus {
+    outline: none;
+}
+
+.bg-primary-color {
+    background-color: var(--primary-color);
+}
+
+.bg-secondary-color {
+    background-color: var(--secondary-color);
+}
+
+.primary-button-color {
+    color: var(--primary-color);
+}
+
+.main-container {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
 }

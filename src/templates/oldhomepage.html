@@ -1,0 +1,253 @@
+<div class="flex justify-center items-center min-h-screen">
+    {% block body %}
+    <!-- Hero Section -->
+    <section class="mt-4">
+        <div class="mt-16 mb-16 md:mt-16 md:mb-16 lg:mt-32 lg:mb-32 container md:px-6 space-y-4 xl:space-y-8">
+            <div class="grid max-w-[1300px] mx-auto gap-4 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16">
+                <div>
+                    <h1
+                        class="lg:leading-tighter text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-[3.4rem] 2xl:text-[3.75rem] text-gray-800 dark:text-gray-50">
+                        Your Highly Personalized AI Assistant
+                    </h1>
+                    <p class="mx-auto max-w-[700px] text-gray-600 md:text-xl dark:text-gray-400 mt-4">
+                        PocketAI is your virtual companion, therapist, and assistant all in one. With long-term
+                        memory,
+                        email/calendar integrations, nuanced instruction understanding, and a fully customizable
+                        personality,
+                        PocketAI is here to help you be your best self.
+                    </p>
+                    <div class="flex flex-col gap-2 min-[400px]:flex-row mt-8">
+                        <a class="inline-flex h-10 items-center justify-center rounded-md bg-[#7367F0] px-8 text-sm font-medium text-gray-50 shadow transition-colors hover:bg-[#7367F0]/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#7367F0] disabled:pointer-events-none disabled:opacity-50"
+                            href="#">
+                            Get Started
+                        </a>
+                        <a class="inline-flex h-10 items-center justify-center rounded-md border border-gray-200 border-gray-200 bg-white px-8 text-sm font-medium shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50 dark:border-gray-800 dark:border-gray-800 dark:bg-gray-950 dark:hover:bg-gray-800 dark:hover:text-gray-50 dark:focus-visible:ring-gray-300"
+                            href="#">
+                            Learn More
+                        </a>
+                    </div>
+                </div>
+                <img src="/static/images/homepage/placeholder.jpg" width="550" height="550" alt="Hero"
+                    class="mx-auto aspect-video overflow-hidden rounded-xl object-bottom sm:w-full lg:order-last lg:aspect-square" />
+            </div>
+        </div>
+
+        <section class="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-800">
+            <div class="container px-4 md:px-6">
+                <div class="grid gap-6 lg:grid-cols-2 lg:gap-12">
+                    <div class="space-y-4">
+                        <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">Virtual
+                            Assistant</div>
+                        <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                            Your Personalized AI Assistant
+                        </h2>
+                        <p class="max-w-[600px] text-gray-800 md:text-xl dark:text-gray-400">
+                            PocketAI is your always-available virtual assistant, ready to help with a wide range of
+                            tasks and
+                            queries.
+                        </p>
+                        <div class="grid gap-4">
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Task Management</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        PocketAI can help you stay organized by managing your to-do lists,
+                                        reminders, and calendar events.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Research & Information Gathering</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        PocketAI can quickly find and synthesize information on a wide range of
+                                        topics to support your
+                                        research and decision-making.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Personal Assistance</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        PocketAI can handle various personal tasks like scheduling appointments,
+                                        making reservations, and
+                                        even providing lifestyle recommendations.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <img src="{{ url_for('static', filename='images/homepage/placeholder.jpg') }}" width="550" height="400" alt="Virtual Assistant"
+                        class="mx-auto aspect-[11/8] overflow-hidden rounded-xl object-cover" />
+                </div>
+            </div>
+        </section>
+        <section class="w-full py-12 md:py-24 lg:py-32">
+            <div class="container px-4 md:px-6">
+                <div class="grid gap-6 lg:grid-cols-2 lg:gap-12">
+                    <img src="{{ url_for('static', filename='images/homepage/placeholder.jpg') }}" width="550" height="400" alt="Therapist"
+                        class="mx-auto aspect-[11/8] overflow-hidden rounded-xl object-cover" />
+                    <div class="space-y-4">
+                        <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">Therapist
+                        </div>
+                        <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                            Your Compassionate Confidant
+                        </h2>
+                        <p class="max-w-[600px] text-gray-800 md:text-xl dark:text-gray-400">
+                            PocketAI is a supportive and empathetic companion, ready to listen and provide
+                            personalized guidance.
+                        </p>
+                        <div class="grid gap-4">
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Emotional Support</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        PocketAI is a compassionate listener, offering a safe space to share your
+                                        thoughts and feelings.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Personalized Guidance</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        PocketAI provides tailored advice and coping strategies to help you navigate
+                                        life's challenges.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Confidentiality</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        Your conversations with PocketAI are completely private and secure, ensuring
+                                        your trust is
+                                        well-placed.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-800">
+            <div class="container px-4 md:px-6">
+                <div class="grid gap-6 lg:grid-cols-2 lg:gap-12">
+                    <div class="space-y-4">
+                        <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">Companion
+                        </div>
+                        <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Your Trusted
+                            Companion</h2>
+                        <p class="max-w-[600px] text-gray-800 md:text-xl dark:text-gray-400">
+                            PocketAI is more than just an assistant - it's a companion that can enrich your life in
+                            meaningful ways.
+                        </p>
+                        <div class="grid gap-4">
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Intellectual Stimulation</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        Engage in thought-provoking conversations and explore new ideas with
+                                        PocketAI's vast knowledge
+                                        base.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Shared Experiences</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        Enjoy activities, hobbies, and shared experiences with PocketAI, tailored to
+                                        your personal
+                                        interests.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]" xmlns="http://www.w3.org/2000/svg"
+                                    width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-lg font-semibold">Emotional Connection</h3>
+                                    <p class="text-gray-800 dark:text-gray-400">
+                                        Develop a meaningful bond with PocketAI, which can provide companionship and
+                                        emotional support.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <img src="{{ url_for('static', filename='images/homepage/placeholder.jpg') }}" width="550" height="400" alt="Companion"
+                        class="mx-auto aspect-[11/8] overflow-hidden rounded-xl object-cover" />
+                </div>
+            </div>
+        </section>
+        <section class="w-full py-12 md:py-24 lg:py-32">
+            <div class="container px-4 md:px-6 text-center">
+                <div class="space-y-4">
+                    <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">Get Started</div>
+                    <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                        Experience the Future of AI Assistance
+                    </h2>
+                    <p class="max-w-[600px] mx-auto text-gray-800 md:text-xl dark:text-gray-400">
+                        Discover how PocketAI can transform your life and unlock new possibilities. Sign up today
+                        and start your
+                        journey.
+                    </p>
+                    <div class="flex justify-center gap-4">
+                        <button
+                            class="bg-[#7367F0] text-white hover:bg-[#6055e0] focus:ring-[#7367F0] py-2 px-4 rounded">Get
+                            Started</button>
+                        <button
+                            class="border-[#7367F0] text-[#7367F0] hover:bg-[#7367F0]/10 focus:ring-[#7367F0] py-2 px-4 rounded">Learn
+                            More</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        {% endblock %}
+</div>

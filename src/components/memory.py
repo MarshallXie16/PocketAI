@@ -35,11 +35,11 @@ class LongTermMemory:
     def setup_memory(self):
         return self.memory.setup_memory()
     
-    def search_memory(self, collection_id, query):
-        return self.memory.search_memory(collection_id, query)
+    def search_memory(self, user_id, ai_id, query):
+        return self.memory.search_memory(user_id, ai_id, query)
     
-    def save_memory(self, collection_id, memory):
-        return self.memory.save_memory(collection_id, memory)
+    def save_memory(self, user_id, ai_id, memory):
+        return self.memory.save_memory(user_id, ai_id, memory)
     
     def save_database_txt(self):
         return self.memory.save_database_txt()
@@ -77,7 +77,10 @@ class PineconeMemory:
     # Purpose: searches vectordb for similar text to the query and returns it
     # Input: collection_id (str), query (str)
     # Output: context (list of string)
-    def search_memory(self, namespace, query):
+    def search_memory(self, user_id, ai_id, query):
+        # namespace for user and ai
+        namespace = f'{user_id}-{ai_id}'
+
         # vectorize the query
         query_vector = self.get_embedding(query)
         with open("save.txt", "w") as f:
@@ -99,8 +102,9 @@ class PineconeMemory:
     # Purpose: saves memory to vectordb
     # Input: namespace (int), memory (string)
     # Output: status (boolean)
-    def save_memory(self, namespace, memory):
+    def save_memory(self, user_id, ai_id, memory):
         try:
+            namespace = f'{user_id}-{ai_id}'
             vectors = [{"id": str(uuid4()), "values": self.get_embedding(memory), "metadata": {"text": memory}}]
             self.db.upsert(vectors=vectors, 
                            namespace=str(namespace))
@@ -108,6 +112,17 @@ class PineconeMemory:
         except Exception as e:
             print(f'MemoryError: {e}')
             return False
+        
+    def format_memories(memories):
+        if not memories:
+            return "No relevant memories found."
+
+        formatted_string = "Top 3 most relevant memories:\n\n"
+        for i, memory in enumerate(memories[:3], 1):
+            formatted_string += f"{i}. {memory}\n\n"
+
+        return formatted_string.strip()
+
 
 # # persistent db: self-hosted, more complexity, cheaper
 # class ChromaMemory:

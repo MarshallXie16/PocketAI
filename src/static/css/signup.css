@@ -1,0 +1,13 @@
+.signup-form input {
+    outline: none;
+    transition: ease-in-out 0.3s;
+}
+
+.signup-form input:focus {
+    box-shadow: 0px 0px 5px 1px var(--secondary-color);
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-webkit-textfield-decoration-container {
+    display: none;
+}

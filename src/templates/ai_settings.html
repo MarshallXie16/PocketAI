@@ -1,14 +1,15 @@
 {% extends 'index.html' %}
 
 {% block body %}
-<div class="flex flex-col items-center justify-center" style="width: 50vw;">
+<div class="flex flex-col items-center justify-center main-container" style="width: 50vw;">
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[800px]">
         <div dir="ltr" data-orientation="horizontal" class="w-full">
 
             <!--  user settings -->
             <form action="/ai-settings/{{ ai_model.id }}" method="POST" id="ai-settings-form" data-state="active"
-                enctype="multipart/form-data" accept=".png, .jpg, .jpeg, .gif" data-tab-content="user" data-orientation="horizontal" role="tabpanel"
-                aria-labelledby="radix-:r2u:-trigger-user" id="radix-:r2u:-content-user" tabindex="0"
+                enctype="multipart/form-data" accept=".png, .jpg, .jpeg, .gif" data-tab-content="user"
+                data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r2u:-trigger-user"
+                id="radix-:r2u:-content-user" tabindex="0"
                 class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6"
                 style="animation-duration: 0s;">
 
@@ -57,7 +58,7 @@
                 <!-- profile section; profile picture, name, email -->
                 <div class="flex flex-col items-center space-y-4">
                     <div class="relative">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}"
+                        <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
                             alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
                             style="aspect-ratio: 96 / 96; object-fit: cover;" />
                         <input type="file" id="profile-image-input" name="profile-image" class="hidden">
@@ -89,9 +90,26 @@
 
                     <!-- AI Model -->
                     <div class="space-y-2 dropdown" id="ai-model-dropdown">
-                        <label
-                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            for="ai-model">Model</label>
+
+                        <!-- Field Heading -->
+                        <div class="ai-setting-heading flex items-center">
+                            <label
+                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                for="ai-model">Model
+                            </label>
+                            <div
+                                x-data="{ tooltip: 'The underlying AI model that powers the assistant. Each AI model has its own quirks. See documentation for more info!' }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
+
+
+                        <!-- Field Content -->
                         <div class="flex">
                             <div class="relative inline-block w-full max-w-xs">
                                 <!-- Button -->
@@ -113,7 +131,7 @@
                                         <input type="hidden" name="ai-model" value="{{ ai_model.model_name }}">
                                         <a href="#" data-dropdown-option
                                             class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            gpt-3.5-turbo</a>
+                                            gpt-4o-mini</a>
                                         <a href="#" data-dropdown-option
                                             class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
                                             gpt-4o</a>
@@ -130,28 +148,56 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Prompt Text Field -->
                     <div class="flex flex-col gap-4 text-field" id="prompt-field">
-                        <label
-                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            for="ai-prompt">
-                            Prompt
-                        </label>
+
+                        <!-- Field Heading -->
+                        <div class="ai-setting-heading flex items-center">
+                            <label
+                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                for="ai-prompt">
+                                Personality
+                            </label>
+                            <div
+                                x-data="{ tooltip: 'Dictates the personality and behavior of the assitant. Try to be as descriptive as possible!' }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Field Content -->
                         <textarea
                             class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            name="ai-prompt" id="ai-prompt" placeholder="Enter AI prompt"
-                            rows="4">{{ ai_model.prompt or 'Describe your AI\'s personality!' }}</textarea>
+                            name="ai-prompt" id="ai-prompt" placeholder="Enter AI prompt" rows="4">{{ ai_model.prompt or 'Describe your AI\'s personality!' }}
+                        </textarea>
+
                     </div>
 
                     <!-- Description Text Field -->
                     <div class="flex flex-col gap-4 text-field" id="description-field">
-                        <label
-                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            for="ai-description">
-                            Description
-                        </label>
+                        <div class="ai-setting-heading flex items-center">
+                            <label
+                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                for="ai-description">
+                                Description
+                            </label>
+                            <div
+                                x-data="{ tooltip: 'A description of what the assistant does. Currently for your own notes and does not affect AI behavior.' }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
                         <textarea
                             class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             name="ai-description" id="ai-description" placeholder="Enter AI description"
@@ -161,9 +207,26 @@
 
                     <!-- Memory Chunk Size -->
                     <div class="space-y-2 dropdown" id="ai-model-dropdown">
-                        <label
-                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            for="memory-chunk-size">Memory Chunk Size</label>
+
+                        <!-- Heading -->
+                        <div class="ai-setting-heading flex items-center">
+                            <label
+                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                for="memory-chunk-size">
+                                Memory Chunk Size
+                            </label>
+                            <div
+                                x-data="{ tooltip: 'Number of messages in each long-term memory chunk. Recommended: 6 messages/chunk.' }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Content -->
                         <div class="flex">
                             <div class="relative inline-block w-full max-w-xs">
                                 <!-- Button -->
@@ -203,7 +266,55 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
+
+                    <!-- Conversation Modes (new) -->
+                    <div class="space-y-2 dropdown" id="fconversation-mode-wrapper">
+                        <div class="ai-setting-heading flex items-center">
+                            <label class="mr-2" style="font-size: 14px;">Conversation Modes <span
+                                    class="primary-color-text font-semibold">(Beta)</span></label>
+                            <div
+                                x-data="{ tooltip: 'Affects the assistant\'s conversation style. Conversation: balanced in length, mimics a regular conversation. Texting: shorter and more concise, uses texting conventions and emojis. Roleplay: narrative style with longer, more descriptive responses.' }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="relative flex flex-wrap rounded-md bg-gray-50 p-1 w-[340px] text-sm h-[46px]">
+                            <label class="flex-1 text-center">
+                                <input type="radio" name="conversation-mode" value="conversation"
+                                    class="hidden radio-input" {% if ai_model.settings.conversation_mode=='conversation'
+                                    %}checked{% endif %}>
+                                <span
+                                    class="radio-label flex items-center justify-center rounded-md cursor-pointer p-2 text-slate-700 transition-all">
+                                    Conversation
+                                </span>
+                            </label>
+                            <label class="flex-1 text-center">
+                                <input type="radio" name="conversation-mode" value="texting" class="hidden radio-input"
+                                    {% if ai_model.settings.conversation_mode=='texting' %}checked{% endif %}>
+                                <span
+                                    class="radio-label flex items-center justify-center rounded-md cursor-pointer p-2 text-slate-700 transition-all">
+                                    Texting
+                                </span>
+                            </label>
+                            <label class="flex-1 text-center">
+                                <input type="radio" name="conversation-mode" value="roleplay" class="hidden radio-input"
+                                    {% if ai_model.settings.conversation_mode=='roleplay' %}checked{% endif %}>
+                                <span
+                                    class="radio-label flex items-center justify-center rounded-md cursor-pointer p-2 text-slate-700 transition-all">
+                                    Roleplay
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+
+
 
                 </div>
 
@@ -244,6 +355,13 @@
     [data-state="active"] {
         color: black;
     }
+
+    .radio-input:checked+.radio-label {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+    }
+</style>
 </style>
 <script>
     document.addEventListener('DOMContentLoaded', () => {

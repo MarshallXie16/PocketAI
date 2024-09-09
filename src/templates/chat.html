@@ -1,30 +1,85 @@
 {% extends 'index.html' %}
 
 {% block title %}
-<title>Chat with {{ ai_name }}</title>
+<title>Chat with {{ ai_model.name }}</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 {% endblock %}
 
 {% block body %}
-<script type="module" src=""></script>
+<!-- Error Message -->
+<!-- Add this HTML at the top of your body tag -->
+<div id="error-alert" class="hidden fixed top-0 left-0 right-0 z-50 p-4">
+    <div class="max-w-md mx-auto bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-md">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p id="error-message" class="text-sm font-medium"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chat Container -->
 <div class="chat-layer flex justify-center items-center p-4 w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
     <div class="chat-container flex flex-col bg-white rounded-xl shadow-lg overflow-x-hidden">
 
         <!-- Top bar -->
         <header
             class="bg-white/20 p-4 flex items-center justify-between backdrop-filter backdrop-blur-lg bg-opacity-20 bg-gradient-to-r from-[#7367F0] to-[#9E95F5]">
-            <div class="flex items-center gap-3">
-                <div class="relative">
-                    <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}"
-                        width="40" height="40" alt="Avatar" class="rounded-full"
-                        style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                    <div
-                        class="chatbot-status absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                        <div class="rounded-full bg-white p-[2px]"></div>
+            <div class="relative">
+                <div class="flex items-center gap-3 cursor-pointer" id="ai-selector"
+                    data-selected-model="{{ ai_model.id }}">
+                    <div class="relative">
+                        <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
+                            width="40" height="40" alt="Avatar" class="rounded-full"
+                            style="aspect-ratio: 40 / 40; object-fit: cover;" />
+                        <div
+                            class="chatbot-status absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
+                            <div class="rounded-full bg-white p-[2px]"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div>
+                            <div class="flex ite">
+                                <h2 class="text-white font-semibold">{{ ai_model.name }}</h2>
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    class="h-5 w-5 text-white ml-2 transition-transform duration-300 ease-in-out"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            <p class="text-white/80 text-sm">{{ ai_model.model_name }}</p>
+                        </div>
+
                     </div>
                 </div>
-                <div>
-                    <h2 class="text-white font-semibold">{{ ai_model.name }}</h2>
-                    <p class="text-white/80 text-sm">Online</p>
+
+                <div id="ai-options"
+                    class="absolute top-full left-0 mt-2 w-full bg-gray-800 rounded-md shadow-lg overflow-hidden z-10 hidden">
+                    {% for ai in current_user.ai_models %}
+                    <div class="ai-option flex items-center gap-3 p-2 hover:bg-gray-700 transition-all duration-300 cursor-pointer"
+                        data-id="{{ ai.id }}" data-name="{{ ai.name }}" data-model-name="{{ ai.model_name }}"
+                        data-image-url="{{ ai.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}">
+                        <img src="{{ ai.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
+                            width="30" height="30" alt="Avatar" class="rounded-full"
+                            style="aspect-ratio: 30 / 30; object-fit: cover;" />
+                        <div>
+                            <h3 class="text-white font-semibold">{{ ai.name }}</h3>
+                            <p class="text-white/80 text-xs">{{ ai.model_name }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
             <div class="flex items-center gap-3">
@@ -53,15 +108,17 @@
         <!-- Message area -->
         <div class="message-area overflow-y-auto overflow-x-hidden flex-grow p-6">
 
+
             {% for message in messages %}
 
             {% if message.sender == 'assistant' %}
+
             <!-- Bot message -->
-            <div class="message-container bot-message">
+            <div class="message-container bot-message" data-message-id="{{ message.id }}">
                 <div class="message-wrapper flex items-end gap-2 justify-start">
                     <div
                         class="avatar relative relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}"
+                        <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
                             width="40" height="40" alt="Avatar" class="rounded-full"
                             style="aspect-ratio: 40 / 40; object-fit: cover;" />
                         <div
@@ -71,24 +128,26 @@
                     </div>
                     <div class="message-bubble backdrop-blur-sm rounded-t-2xl rounded-br-2xl p-3 max-w-[70%]"
                         style="background-color: #525252;">
-                        <p class="text-white" id="message-{{ loop.index }}">{{ message.message }}</p>
+                        <p class="invert-text markdown-content" id="message-{{ loop.index }}">{{ message.message }}</p>
                     </div>
                 </div>
-                <div class="timestamp text-xs text-gray-500 mt-1 l" data-timestamp="{{ message.timestamp }}">
+                <div class="timestamp text-xs text-gray-500 mt-1 l mr-2" data-timestamp="{{ message.timestamp }}">
                     {{ message.timestamp}}
                 </div>
             </div>
+
             {% else %}
+
             <!-- User message -->
             <div class="message-container user-message">
                 <div class="message-wrapper flex items-end gap-2 justify-end">
                     <div class="message-bubble backdrop-blur-sm rounded-t-2xl rounded-bl-2xl p-3 max-w-[70%]"
                         style="background-color:#7367F0;">
-                        <p class="text-white">{{ message.message }}</p>
+                        <p class="invert-text markdown-content">{{ message.message }}</p>
                     </div>
                     <div
                         class="avatar relative relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image' + current_user.id|string + '.png') }}"
+                        <img src="{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_user.png') }}"
                             width="40" height="40" alt="Avatar" class="rounded-full"
                             style="aspect-ratio: 40 / 40; object-fit: cover;" />
                         <div
@@ -102,61 +161,38 @@
                     {{ message.timestamp }}
                 </div>
             </div>
+
             {% endif %}
 
             {% endfor %}
+
 
         </div>
 
         <!-- Bottom panel -->
         <div class="bottom-panel px-4 py-3 flex justify-center items-center">
-            <div class="message-bar flex items-center">
-                <button class="mic-button text-gray-500">
-                    <i class="fas fa-microphone" style="font-size: 24px;"></i>
+            <div class="message-bar flex items-center w-full sm:w-3/5">
+                <button
+                    class="mic-button text-gray-500 relative left-12 w-10 h-10 transition-colors duration-300 hover:text-primary">
+                    <i class="fas fa-microphone text-2xl"></i>
                 </button>
-                <textarea class="message-input flex-grow rounded-lg border overflow-hidden resize-none"
-                    placeholder="Type your message here..." oninput="autoGrow(this)"></textarea>
-                <button class="send-button text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
-                    <i class="bi bi-send" style="font-size: 24px;" onclick="sendChatMessage()"></i>
+                <textarea class="message-input flex-grow rounded-lg border overflow-hidden resize-none h-14 px-16 py-4"
+                    placeholder="Type your message..." oninput="autoGrow(this)"></textarea>
+                <button
+                    class="send-button font-bold py-2 px-4 rounded-lg flex items-center justify-center relative right-12 w-10 h-10 border-2 border-primary transition-colors duration-300 hover:bg-primary group">
+                    <i class="bi bi-send text-2xl text-primary" onclick="sendChatMessage()"></i>
                 </button>
             </div>
         </div>
-
     </div>
 </div>
-<style>
-    @keyframes bounce {
 
-        0%,
-        100% {
-            transform: translateY(0);
-        }
-
-        50% {
-            transform: translateY(-10px);
-        }
-    }
-
-    .loading-dots>div {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        margin: 0 2px;
-        background-color: #ffffff;
-        border-radius: 50%;
-        animation: bounce 0.6s infinite alternate;
-    }
-
-    .loading-dots>div:nth-child(2) {
-        animation-delay: 0.2s;
-    }
-
-    .loading-dots>div:nth-child(3) {
-        animation-delay: 0.4s;
-    }
-</style>
 <script>
-    var AI_PROFILE_IMAGE = "{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai_model.id|string + '.png') }}";
-    var USER_PROFILE_IMAGE = "{{ url_for('static', filename='images/profile_pictures/user_profile_image' + current_user.id|string + '.png') }}";
+    var AI_PROFILE_IMAGE = "{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}";
+    var USER_PROFILE_IMAGE = "{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_user.png') }}";
 </script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js')}}"></script>
 {% endblock %}

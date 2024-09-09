@@ -21,7 +21,7 @@
                 <!-- profile section; profile picture, name, email -->
                 <div class="flex flex-col items-center space-y-4">
                     <div class="relative">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image0.png' )}}"
+                        <img src="{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile.png') }}"
                             alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
                             style="aspect-ratio: 96 / 96; object-fit: cover;" />
                         <input type="file" id="profile-image-input" name="profile-image" class="hidden">

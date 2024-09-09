@@ -28,3 +28,4 @@ stripe
 Werkzeug
 gunicorn
 psycopg2
+boto3

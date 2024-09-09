@@ -1,8 +1,11 @@
 .env
 .idea
-prototypes
 venv
+migrations
 src/prototypes
+src/static/images/profile_pictures/*
+src/instance
+src/db
 __pycache__
 # Elastic Beanstalk Files
 .ebextensions
