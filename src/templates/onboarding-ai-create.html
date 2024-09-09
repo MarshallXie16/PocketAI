@@ -15,7 +15,7 @@
                 <!-- profile section -->
                 <div class="flex flex-col items-center space-y-4">
                     <div class="relative">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image0.png') }}"
+                        <img src="{{ url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
                             alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
                             style="aspect-ratio: 96 / 96; object-fit: cover;" />
                         <input type="file" id="profile-image-input" name="profile-image" class="hidden">
@@ -50,10 +50,6 @@
                             <label
                                 class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                 for="ai-model">Model</label>
-                            <script
-                                src="https://unpkg.com/@ryangjchandler/alpine-tooltip@1.2.0/dist/cdn.min.js"></script>
-                            <script defer src="https://unpkg.com/alpinejs@3.10.5/dist/cdn.min.js"></script>
-                            <link rel="stylesheet" href="https://unpkg.com/tippy.js@6.3.7/dist/tippy.css" />
                             <div class="flex items-center justify-center space-x-5">
                                 <div x-data="{ tooltip: 'The underlying model that will be used' }">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"

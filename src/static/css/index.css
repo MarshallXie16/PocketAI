@@ -1,0 +1,152 @@
+/* AI Personalities Section */
+
+.ai-personality-tile {
+    width: 100%;
+    background-image: linear-gradient(163deg, #7367F0 0%, #A8A2F6 100%);
+    border-radius: 20px;
+    animation: glow 2s infinite;
+    transition: all .3s;
+
+}
+
+.ai-personality-tile2 {
+    width: 100%;
+    height: 100%;
+    background-color: #353535;
+    border-radius: 20px;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-personality-tile2:hover {
+    transform: scale(0.98);
+    border-radius: 20px;
+}
+
+.ai-personality-tile:hover {
+    box-shadow: 0px 0px 30px 1px rgba(115, 103, 240, 0.30);
+}
+
+.glow-text {
+    text-shadow: 0 0 10px rgba(115, 103, 240, 0.5);
+}
+
+@media (max-width: 640px) {
+
+    .ai-personality-tile,
+    .ai-personality-tile2 {
+        max-width: 300px;
+        margin: 0 auto;
+    }
+}
+
+@keyframes glow {
+    0% {
+        box-shadow: 0 0 10px rgba(158, 149, 245, 0.5);
+    }
+
+    25% {
+        box-shadow: 0 0 12px rgba(115, 103, 240, 0.5);
+    }
+
+
+    50% {
+        box-shadow: 0 0 15px rgba(115, 103, 240, 0.5);
+    }
+
+    75% {
+        box-shadow: 0 0 12px rgba(115, 103, 240, 0.5);
+    }
+
+    100% {
+        box-shadow: 0 0 10px rgba(158, 149, 245, 0.5);
+    }
+}
+
+/* Community Section */
+
+.join-waitlist {
+    width: 10rem;
+    padding: 0.5rem;
+    font-size: 1rem;
+    color: var(--primary-color);
+    border: 3px solid var(--primary-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0px 0px 50px 10px rgba(115, 103, 240, 0.30);
+    transition: 0.5s ease-in-out;
+}
+
+.join-waitlist:hover {
+    color: white;
+    box-shadow: 0px 0px 5px 2px rgba(115, 103, 240, 0.30);
+    background-color: var(--primary-color);
+    border: 3px solid var(--primary-color);
+}
+
+/* Upcoming Features Section */
+
+.feature-card {
+    transition: 0.5s ease-out;
+}
+
+.feature-card:hover {
+    border-color: #7367F0;
+    box-shadow: 0 4px 18px 0 rgba(0, 0, 0, 0.25);
+}
+
+.features-list {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+
+/* Special Buttons and Components */
+
+/* Fill Button */
+
+.fill-button {
+    cursor: pointer;
+    position: relative;
+    padding: 10px 24px;
+    font-size: 16px;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 2rem;
+    background-color: transparent;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+    overflow: hidden;
+}
+
+.fill-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 50px;
+    height: 50px;
+    border-radius: inherit;
+    scale: 0;
+    z-index: -1;
+    background-color: var(--primary-color);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.fill-button:hover::before {
+    scale: 3;
+}
+
+.fill-button:hover {
+    color: white;
+    scale: 1.03;
+    box-shadow: 0 0px 20px var(--shade-color);
+}
+
+.fill-button:active {
+    scale: 1;
+}
+
+
+

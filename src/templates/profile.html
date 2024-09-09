@@ -1,10 +1,47 @@
 {% extends 'index.html' %}
 
+{% block title %}
+<title>Profile for {{ current_user.username }}</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+<style>
+    /* Tab container */
+    .tab-container {
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Tab buttons */
+    .tab-button {
+        position: relative;
+        z-index: 1;
+        transition: color 0.3s;
+    }
+
+    /* Tab button background */
+    .tab-button-bg {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 50%;
+        background-color: white;
+        transition: transform 0.3s;
+        z-index: 0;
+    }
+
+    [data-state="active"] {
+        color: black;
+    }
+</style>
+{% endblock %}
+
 {% block body %}
-<div class="flex flex-col items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+<div class="items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
         <div dir="ltr" data-orientation="horizontal" class="w-full">
-            
+
             <!-- toggle tab between user and ai settings -->
             <div role="tablist" aria-orientation="horizontal"
                 class="tab-container h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 bg-gray-100"
@@ -76,7 +113,7 @@
                 <!-- profile section; profile picture, name, email -->
                 <div class="flex flex-col items-center space-y-4">
                     <div class="relative">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/user_profile_image' + current_user.id|string + '.png') }}"
+                        <img src="{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_user.png') }}"
                             alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
                             style="aspect-ratio: 96 / 96; object-fit: cover;" />
                         <input type="file" id="profile-image-input" name="profile-image" class="hidden">
@@ -114,7 +151,8 @@
                             <p class="text-gray-500 dark:text-gray-400">{{ current_user.plan }} Plan</p>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <p class="text-gray-500 dark:text-gray-400">Credits: {{ current_user.paid_credits + current_user.free_credits }}</p>
+                            <p class="text-gray-500 dark:text-gray-400">Credits: {{ current_user.paid_credits +
+                                current_user.free_credits }}</p>
                             <button id="upgrade-button" type="button" onclick="window.location.href='/pricing'"
                                 class="default-button items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                                 Upgrade
@@ -204,17 +242,17 @@
                         </div>
                     </div>
 
-                    <!-- Messages per Page -->
+                    <!-- Context Length -->
                     <div class="space-y-2">
                         <label
                             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            for="messages-per-page">Messages per Page</label>
+                            for="context-length">Context Length</label>
                         <div class="flex">
                             <div class="relative inline-block w-full max-w-xs">
                                 <!-- Button -->
-                                <button data-dropdown-button="messages" type="button"
+                                <button data-dropdown-button="context-length" type="button"
                                     class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
-                                    {{ user_settings.messages_per_page}}
+                                    {{ user_settings.context_length}}
                                     <!-- icon down -->
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
                                         viewBox="0 0 20 20" fill="currentColor">
@@ -223,9 +261,9 @@
                                             clip-rule="evenodd" />
                                     </svg>
                                 </button>
-                                <input type="hidden" name="messages" value="{{ user_settings.messages_per_page }}">
+                                <input type="hidden" name="context-length" value="{{ user_settings.context_length }}">
                                 <!-- Panel -->
-                                <div data-dropdown-panel="messages"
+                                <div data-dropdown-panel="context-length"
                                     class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
                                     <div class="p-1">
                                         <a href="#" data-dropdown-option
@@ -245,8 +283,8 @@
                 </div>
 
                 <button id="add-credits-button" type="button" onclick="window.location.href='/add-credits?amount=10'"
-                                class="mt-6 default-button items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-                                Add 10 credits
+                    class="mt-6 default-button items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                    Add 10 credits
                 </button>
 
                 <!-- divider -->
@@ -295,75 +333,51 @@
                     </div>
                 </div>
 
-                {% for ai in available_ais %}
-                <div class="container mx-auto flex flex-col gap-8">
+                {% for ai_model in available_ais %}
+                <div class="container mx-auto flex flex-col gap-8 mb-6">
                     <div class="card border bg-card text-card-foreground rounded-lg shadow-lg" data-v0-t="card"
-                        data-ai-id="{{ ai.id }}">
+                        data-ai-id="{{ ai_model.id }}">
                         <div class="flex items-start gap-4 p-6">
                             <div class="relative items-center">
                                 <!-- Profile Picture -->
                                 <div class="relative">
                                     <span
                                         class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                        <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image' + ai.id|string + '.png') }}"
+                                        <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
                                             class="w-full h-full object-cover object-center">
                                     </span>
                                 </div>
                             </div>
                             <div class="space-y-2">
-                                <h3 class="text-xl font-semibold">{{ ai.name }}</h3>
-                                <p class="text-gray-500 dark:text-gray-400">{{ ai.model_name }}</p>
+                                <h3 class="text-xl font-semibold">{{ ai_model.name }}</h3>
+                                <p class="text-gray-500 dark:text-gray-400">{{ ai_model.model_name }}</p>
                                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ ai.description }}
+                                    {{ ai_model.description }}
                                 </p>
                             </div>
 
                             <!-- Delete AI button -->
                             <button type="button"
                                 class="delete-button absolute top-2 right-2 text-gray-500 hover:text-red-500"
-                                onclick="deleteAI('{{ ai.id }}')" data-ai-id="{{ ai.id }}">
+                                onclick="deleteAI('{{ ai_model.id }}')" data-ai-id="{{ ai_model.id }}">
                                 &times;
                             </button>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-                
+                {% endfor %}
+
             </div>
 
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-    /* Tab container */
-    .tab-container {
-        position: relative;
-        overflow: hidden;
-    }
 
-    /* Tab buttons */
-    .tab-button {
-        position: relative;
-        z-index: 1;
-        transition: color 0.3s;
-    }
 
-    /* Tab button background */
-    .tab-button-bg {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 50%;
-        background-color: white;
-        transition: transform 0.3s;
-        z-index: 0;
-    }
-
-    [data-state="active"] {
-        color: black;
-    }
-</style>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/profile.js')}}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const dropdownButtons = document.querySelectorAll('[data-dropdown-button]');
@@ -523,5 +537,4 @@
     });
 
 </script>
-
 {% endblock %}

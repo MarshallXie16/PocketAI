@@ -46,21 +46,31 @@ class Calendar:
         self.my_calendar = GoogleCalendar()
 
     # Purpose: parse function info for read_calendar operation
-    # Input: user_id (int), func_args (json), user_timezone (string)
+    # Input: user_id (int), func_args (json)
     # Output: list of events (list of string)
     def read_calendar(self, user_id, func_args):
         # extract event information
         args_data = json.loads(func_args)
-        date = args_data.get('date')
-        time = args_data.get('time')
+        query_type = args_data.get('query_type')
+        date_reference = args_data.get('date_reference')
+        day_of_week = args_data.get('day_of_week', None)
+        specific_date = args_data.get('specific_date', None)
+        time_range = args_data.get('time_range', None)
+        event_name = args_data.get('event_name', None)
+
         # search for event(s) on calendar
         try:
-            list_of_events = self.my_calendar.read_calendar(user_id, date, time)
+            list_of_events = self.my_calendar.read_calendar(user_id, query_type, date_reference, day_of_week, specific_date, time_range, event_name)
         except Exception as e:
             print(f"Read Calendar Error: {e}")
-            return ["Could not fetch events. Please try again later or contact support."]
+            return [f"Inform the user that you could not fetch calendar events. Please try again later or contact support. Error: {e}"]
 
-        return ["Summarize and do not omit any events. User's calendar has returned the following events: "] + list_of_events
+        # have another model summarize the list of returned events
+        if not list_of_events:
+            summarized_context = "No upcoming events found."
+        else:
+            summarized_context = utilities.summarize_context(list_of_events)
+        return [f"Summarize and do not omit any events. User's calendar has returned the following events: {summarized_context}"]
 
     # Purpose: parse function info for write_calendar operation
     # Input: user_id (int), func_args (json), user_timezone (string), description (string)
@@ -68,16 +78,25 @@ class Calendar:
     def write_calendar(self, user_id, func_args, description='This is some placeholder description.'):
         # extracts event information
         args_data = json.loads(func_args)
-        event = args_data.get('event')
-        date = args_data.get('date')
-        time = args_data.get('time')
+        event_type = args_data.get('event_type')
+        event_name = args_data.get('event_name')
+        date_reference = args_data.get('date_reference')
+        day_of_week = args_data.get('day_of_week', None)
+        specific_date = args_data.get('specific_date', None)
+        time_range = args_data.get('time_range', None)
+        recurrence_frequency = args_data.get('recurrence_frequency', None)
+        
         # create google calendar event(s)
         try:
-            link = self.my_calendar.write_calendar(user_id, event, date, time, description)
+            link = self.my_calendar.write_calendar(
+                user_id, event_type, event_name, date_reference, 
+                day_of_week, specific_date, time_range, 
+                recurrence_frequency, description
+            )
         except Exception as e:
             print(f"Write Calendar Error: {e}")
-            return "Could not book event. Please try again later or contact support."
-        return "Calendar event successfully created! Link to Event:" + link
+            return f"Inform the user that you could not book the event. Error: {e}"
+        return f"Inform the user that calendar event successfully created! Link to Event: {link}"
 
 
 # represents a user's google calendar
@@ -129,10 +148,10 @@ class GoogleCalendar:
         # try to fetch events at start, end dates
         try:
             events_result = service.events().list(
-                calendarId='primary',
+                calendarId='primary',               # TODO: add other calendars
                 timeMin=start,
                 timeMax=end,
-                singleEvents=True,
+                singleEvents=True,                  # TODO: recurring events
                 orderBy='startTime',
             ).execute()
             events = events_result.get('items', [])
@@ -145,10 +164,121 @@ class GoogleCalendar:
             else:
                 raise e
 
-    # Purpose: Parses given date and time, calls API, and returns list of events
-    # Input: user_id (int), date (string), time (string)
+    # Purpose: return list of events in a specified time range
+    # Input: service (Object), start (isoformat), end (isoformat)
+    # Output: List of events (string)
+    def list_events(self, service, start, end):
+        # fetch events given start/end datetime
+        events, status = self.fetch_events(service, start, end)
+        
+        # Error handing
+        if isinstance(events, str):
+            return f"Error: {events}", status
+
+        # No events found
+        if not events:
+            return "No events found in the specified time range.", 200
+
+        # Format list of returned events
+        formatted_events = []
+        for event in events:
+            start_time = event['start'].get('dateTime', event['start'].get('date'))
+            end_time = event['end'].get('dateTime', event['end'].get('date'))
+            event_name = event['summary']
+            
+            formatted_event = f"Event: {event_name}\nStart: {start_time}\nEnd: {end_time}"
+            if 'description' in event:
+                formatted_event += f"\nDescription: {event['description']}"
+            formatted_events.append(formatted_event)
+
+        result = "Query returned the following events:\n\n" + "\n\n".join(formatted_events)
+        return result, 200
+
+    # Purpose: returns a list of available time slots in a specified time range
+    # Input: service (Object), start (isoformat), end (isoformat)
+    # Output: list of available time slots (string)
+    def check_availability(self, service, start, end):
+        # fetch list of events for specified time range 
+        events, status = self.fetch_events(service, start, end)
+        
+        # Error handling
+        if isinstance(events, str):
+            return f"Error: {events}", status
+
+        # No events found
+        if not events:
+            return f"User is available for the entire period from {start} to {end}.", 200
+
+        # Identify busy periods (when events are scheduled)
+        busy_periods = []
+        for event in events:
+            event_start = event['start'].get('dateTime', event['start'].get('date'))
+            event_end = event['end'].get('dateTime', event['end'].get('date'))
+            busy_periods.append((event_start, event_end))
+
+        # Sort busy periods and merge overlapping ones
+        busy_periods.sort(key=lambda x: x[0])
+        merged_busy_periods = []
+        for period in busy_periods:
+            if not merged_busy_periods or period[0] > merged_busy_periods[-1][1]:
+                merged_busy_periods.append(period)
+            else:
+                merged_busy_periods[-1] = (merged_busy_periods[-1][0], max(merged_busy_periods[-1][1], period[1]))
+
+        # Find free periods
+        free_periods = []
+        current_time = start
+        for busy_start, busy_end in merged_busy_periods:
+            if current_time < busy_start:
+                free_periods.append((current_time, busy_start))
+            current_time = max(current_time, busy_end)
+        
+        if current_time < end:
+            free_periods.append((current_time, end))
+
+        # No free periods found
+        if not free_periods:
+            return f"You are fully booked from {start} to {end}.", 200
+
+        result = f"Available time slots between {start} and {end}:\n\n"
+        for free_start, free_end in free_periods:
+            # Display free time slots
+            result += f"From {free_start} to {free_end}\n"
+
+        return result, 200
+
+    # Purpose: searches for event in specified time range and returns start and end time
+    # Input: service (Object), start (isoformat), end (isoformat), event_name (string)
+    # Output: event details (string)
+    def find_event(self, service, start, end, event_name):
+        # Fetch all events in the specified time range
+        events, status = self.fetch_events(service, start, end)
+        
+        # Error handling
+        if isinstance(events, str):
+            return f"Error: {events}", status
+
+        # Find events matching the specified event name
+        matching_events = []
+        for event in events:
+            if event_name.lower() in event['summary'].lower():
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                end = event['end'].get('dateTime', event['end'].get('date'))
+                matching_events.append(f"Event: {event['summary']}\nStart: {start}\nEnd: {end}\n")
+
+        # No matching events found
+        if not matching_events:
+            return f"No events matching '{event_name}' found in the specified time range.", 200
+
+        # Matching events found
+        result = f"Found the following events matching '{event_name}':\n\n" + "\n\n".join(matching_events)
+                
+        return result, 200
+
+    # Purpose: fetch events from google calendar given a date and optional time
+    # Input: user_id (int), query_type (string), date_reference (string), day_of_week (string), specific_date (string), time_range (string), event_name (string)
     # Output: list of events (list of string)
-    def read_calendar(self, user_id, date, time=''):
+    def read_calendar(self, user_id, query_type, date_reference, day_of_week=None, specific_date=None, time_range=None, event_name=None):
 
         '''
         # Supported date formats: today, tomorrow, this week, next week, this thursday, next tuesday, on aug 3rd
@@ -164,43 +294,36 @@ class GoogleCalendar:
         service = self.authenticate(user_id)
 
         # set timezone
-        user_timezone = session['user_timezone']
+        user_timezone = session.get('user_timezone')
         if not user_timezone:
             print("Error: User timezone not set.")
-            return ['Failed to fetch calendar events. Make sure you have set a appropriate timezone.']
+            raise Exception('Failed to fetch calendar events. Make sure you have set a appropriate timezone.')
         timezn = pytz.timezone(user_timezone)
 
         # parse the date
         try:
-            start_date, end_date = utilities.parse_date(date, user_timezone)
-            # if a time is specified, only start date should be used
-            if time:
-                end_date = start_date
+            start_date, end_date = utilities.parse_date(date_reference, day_of_week, specific_date, user_timezone)
         except ValueError as e:
-            print(f"DateError: Could not parse date {date}.")
-            raise e
+            raise Exception(f"Date Parsing Error: {str(e)}")
 
-        # parse the time (if applicable)
-        if time:
-            # convert time range to datetime object
-            start_time, end_time = utilities.parse_time(time)
-            if not start_time and not end_time:
-                print(f'Could not parse time range.')
-                start_time = end_time = datetime.timedelta(hours=0, minutes=0)
-        else:
-            # default time (00:00)
-            start_time = end_time = datetime.timedelta(hours=0, minutes=0)
+        # parse the time range (if applicable)
+        if time_range:
+            try:
+                start_time, end_time = utilities.parse_time_range(time_range)
+                start_date = datetime.datetime.combine(start_date, start_time)
+                end_date = datetime.datetime.combine(end_date, end_time)
+            except ValueError as e:
+                raise Exception(f"Time Parsing Error: {str(e)}")
 
-        # format date and time for API call
-        start = timezn.localize(start_date + start_time).isoformat()
-        end = timezn.localize(end_date + end_time).isoformat()
-        print(f'start: {start}')
-        print(f'end: {end}')
+        # Combine date and time
+        start = timezn.localize(start_date).isoformat()
+        end = timezn.localize(end_date).isoformat()
 
-        # fetch events
+        # Fetch events
         events, status = self.fetch_events(service, start, end)
 
-        # expired or invalid token
+        # TODO: work this into each of the 3 functions
+        # handle expired or invalid token
         if status in [401, 403]:
             # reauthenticate and rebuild service
             service = self.authenticate(user_id)
@@ -209,78 +332,75 @@ class GoogleCalendar:
                 events, status = self.fetch_events(service, start, end)
                 if status in [401, 403]:
                     print("Failed to refresh token")
-                    return ['Failed to fetch calendar events. Make sure you are logged into your google account.']
+                    raise Exception('Failed to fetch calendar events. Make sure you are logged into your google account.')
             else:
                 print("Failed to refresh token")
-                return ['Failed to fetch calendar events. Make sure you are logged into your google account.']
+                raise Exception('Failed to fetch calendar events. Make sure you are logged into your google account.')
             
-        data = []
-        # parse and print events
-        if not events:
-            print('No upcoming events found.')
-            return ['No upcoming events found.']
-        for event in events:
-            start = event['start'].get('dateTime', event['start'].get('date'))
-            print(start, event['summary'])
-            data.append({"start": start, "event": event['summary']})
+        # handle different query types
+        if query_type == 'list_events':
+            result, status = self.list_events(service, start, end)
+        elif query_type == 'check_availability':
+            result, status = self.check_availability(service, start, end)
+        elif query_type == 'find_event':
+            if not event_name:
+                raise ValueError("Event name is required for 'find_event' query type")
+            result, status = self.find_event(service, start, end, event_name)
+        else:
+            raise ValueError(f"Invalid query type: {query_type}")
 
-        return data
-
+        # handle exceptions
+        if status != 200:
+            raise Exception(result)
+        
+        return result
+        
     # Purpose: add event(s) to google calendar given a date and optional time
     # Input: user_id (int), event (string), date (string), time (string)
     # Output: link to calendar event (string)
-    def write_calendar(self, user_id, event, date, time='', description='This is some placeholder description.'):
+    def write_calendar(self, user_id, event_type, event_name, date_reference, day_of_week=None, specific_date=None, time_range=None, recurrence_frequency=None, description='This is some placeholder description.'):
 
-        # get service if cached, else authenticate
+        # Get service if cached, else authenticate
         service = self.authenticate(user_id)
 
-        # set timezone
-        user_timezone = session['user_timezone']
+        # Set timezone
+        user_timezone = session.get('user_timezone')
         if not user_timezone:
             print("Error: User timezone not set.")
-            return ['Failed to fetch calendar events. Make sure you have set a appropriate timezone.']
+            raise Exception('Failed to fetch calendar events. Make sure you have set a appropriate timezone.')
         timezn = pytz.timezone(user_timezone)
 
-        # parse the event
-        event = event.strip()
-
-        # parse the date
+        # Parse the date
         try:
-            start_date, end_date = utilities.parse_date(date, user_timezone)
-            if time:
-                end_date = start_date
-        except:
-            print(f"DateError: Could not parse date {date}.")
-            return ''
+            start_date, end_date = utilities.parse_date(date_reference, day_of_week, specific_date, user_timezone)
+        except ValueError as e:
+            raise Exception(f"Date Parsing Error: {str(e)}")
 
-        # for testing purposes
-        print(f'Event: {event}')
-        print(f'Date: {start_date}, {end_date}')
-        print(f'Time: {time}')
-
-        # parse the time (if applicable)
-        if time:
-            # convert time range to datetime object
-            start_time, end_time = utilities.parse_time(time)
-            if not start_time and not end_time:
-                print(f'Could not parse time range.')
-                start_time = end_time = datetime.timedelta(hours=0, minutes=0)
+        # Parse the time range (if applicable)
+        if time_range:
+            try:
+                start_time, end_time = utilities.parse_time_range(time_range)
+                start_datetime = datetime.datetime.combine(start_date, start_time)
+                end_datetime = datetime.datetime.combine(start_date, end_time)
+            except ValueError as e:
+                raise Exception(f"Time Parsing Error: {str(e)}")
         else:
-            # create a manual datetime object
-            start_time = end_time = datetime.timedelta(hours=0, minutes=0)
+            # If no time range is specified, use only the date
+            start_datetime = start_date
+            end_datetime = end_date
 
-        # format time in date string
-        start = timezn.localize(start_date + start_time).isoformat()
-        end = timezn.localize(end_date + end_time).isoformat()
+        # format time as date string
+        start = timezn.localize(start_datetime).isoformat()
+        end = timezn.localize(end_datetime).isoformat()
 
-        # Create a google calendar event object
-        my_event = {
-            'summary': event,
-            'location': 'My Place',         # custom locations coming soon!
-            'description': description,     # custom descriptions coming soon!
+        # create a Google Calendar event object
+        event = {
+            'summary': event_name,
+            'location': 'My Place',         # TODO: custom locations
+            'description': description,
             'start': {
                 'dateTime': start,
-                'timeZone': user_timezone,  # PST time zone by default!
+                'timeZone': user_timezone,
             },
             'end': {
                 'dateTime': end,
@@ -288,13 +408,40 @@ class GoogleCalendar:
             },
         }
 
-        # Add the event to google calendar
-        calendar_id = 'primary'             # primary calendar by default (can be configured)
-        event = service.events().insert(calendarId=calendar_id, body=my_event).execute()
-        link = event.get("htmlLink")
-        print(f'Event created: {link}')
+        # If it's an all-day event, use 'date' instead of 'dateTime'
+        if isinstance(start_datetime, datetime.date) and not isinstance(start_datetime, datetime.datetime):
+            event['start'] = {'date': start_datetime.isoformat()}
+            event['end'] = {'date': end_datetime.isoformat()}
 
-        return link
+        # Handle recurring events
+        if event_type == 'recurring_event' and recurrence_frequency:
+            if recurrence_frequency.strip().lower() == 'weekly':
+                event['recurrence'] = ['RRULE:FREQ=WEEKLY']
+            elif recurrence_frequency.strip().lower() == 'monthly':
+                event['recurrence'] = ['RRULE:FREQ=MONTHLY']
+            else:
+                raise ValueError(f"Invalid recurrence frequency: {recurrence_frequency}")
+
+        # Add the event to Google Calendar
+        try:
+            calendar_id = 'primary'                     # TODO: add other calendars
+            created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
+            link = created_event.get("htmlLink")
+            
+            # Prepare a formatted response
+            response = f"Event successfully created!\n\n"
+            response += f"Event: {event_name}\n"
+            response += f"Start: {start}\n"
+            response += f"End: {end}\n"
+            if event_type == 'recurring_event':
+                response += f"Recurrence: {recurrence_frequency}\n"
+            response += f"Link: {link}"
+            return response
+        
+        except HttpError as e:
+            error_message = f"Failed to create event. Error: {str(e)}"
+            print(error_message)
+            raise Exception(error_message)
 
 
 user_calendar = Calendar()

@@ -24,7 +24,7 @@
                         <!-- Profile Picture -->
                         <div class="relative">
                             <span class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image1.png') }}" class="w-full h-full object-cover object-center">
+                                <img src="{{ custom_url or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}" class="w-full h-full object-cover object-center">
                             </span>
                         </div>    
 
@@ -39,7 +39,7 @@
                     </div>
                 </div>
 
-                <!-- Existing Model 2: Alexa -->
+                <!-- Existing Model 2: Bocchi -->
                 <div id="card-alexa" class="card mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
                     data-v0-t="card" data-ai-id="2">
                     <div class="flex items-center gap-4 p-6">
@@ -47,15 +47,14 @@
                         <!-- Profile Picture -->
                         <div class="relative">
                             <span class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                <img src="{{ url_for('static', filename='images/profile_pictures/ai_profile_image1.png') }}" class="w-full h-full object-cover object-center">
+                                <img src="{{ custom_url or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}" class="w-full h-full object-cover object-center">
                             </span>
                         </div>                    
-
                         <div class="space-y-2">
-                            <h3 class="text-xl font-semibold">Alexa</h3>
-                            <p class="text-gray-500 dark:text-gray-400">Transformer Language Model</p>
+                            <h3 class="text-xl font-semibold">Gotou Hitori</h3>
+                            <p class="text-gray-500 dark:text-gray-400">gemini-1.5-pro (default)</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">
-                                A versatile AI assistant capable of understanding and responding to natural language.
+                                A shy and socially anxious high school girl who dreams of performing on stage with a band
                             </p>
                         </div>
                     </div>
