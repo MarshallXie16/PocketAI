@@ -1,23 +1,23 @@
 # Checkpoint
 
-**Timestamp:** 2026-07-01T22:05 (local)
-**Ticket:** bootstrap sprint / overhaul kickoff
+**Timestamp:** 2026-07-01T23:10 (local)
+**Ticket:** overhaul tasks #1–#8 (see TaskList)
 **Phase:** implementation
-**Progress:** Phase 0 (purge) complete; Phase 1 starting.
+**Progress:** Phases 0–1 COMPLETE + merged to master. design.md delivered. Phase 2 starting.
 
 ## Current Position
-Overhaul plan approved by maintainer (roadmap: `docs/designs/overhaul-roadmap.md`; quick-orient: `CLAUDE.local.md`). Phase 0 executed: backup at `~/pocketai-secure-backup-2026-07-01/`, git-filter-repo purged DBs + scrubbed Azure/ElevenLabs/Stripe-whsec keys + __pycache__, force-pushed (`df1cad0`). Task list #1–#8 tracks phases.
+Phase 1 merged (`5473873`): env-driven config, all BUG-1..12 + 5 unaudited bugs fixed, deps pinned (venv at `.venv/`), logging, lazy clients, .env.example. Details: `.context/sprints/bootstrap/phase-1-stabilize.md`. Backlog has pre-launch deferrals (LAUNCH-1..5).
 
 ## Last Decision
-Scrubbed literal key strings with --replace-text instead of dropping text_to_speech.py history (keeps file history; neutralizes secrets even if maintainer skips rotation). Found + scrubbed an unaudited Stripe webhook secret.
+Delegate Phase 2 (monolith carve) to an Opus subagent with a precise brief — keeps orchestrator context lean for phases 3–4; I review + merge.
 
 ## Blockers
-None. (UI implementation waits on Cloud Design returning the new design — backend-only until then.)
+None. UI work waits on Cloud Design (maintainer has design.md).
 
 ## What's Next
-1. Write `docs/designs/design.md` (branding + Cloud Design build prompt) — early deliverable so maintainer can send it off (task #2).
-2. Phase 1 (task #3): config.py rewrite + app factory + BUG-1..12 fixes + deps + logging; Alembic baseline LAST (after all model edits incl. Phase-4 tables — see roadmap risk #1).
-3. Then Phase 2 modularization.
+1. Phase 2 (task #4): blueprints + services split on branch `phase-2-modularize`; tests (conftest + BUG-x regressions + fix stale date tests); docs/architecture.md + README; CI; delete dead code. Route PATHS must not change (frontend fetch URLs).
+2. Then Phase 3 (task #5): docs-first provider adapters (NO Fable in registry), hand-rolled tool loop, pgvector, ConversationState, ThreadPoolExecutor.
+3. Then Phase 4a/4b/4c (tasks #6–8) per roadmap.
 
 ## Uncommitted State
-Untracked: `docs/designs/overhaul-roadmap.md` (copied plan), `CLAUDE.local.md` (gitignored). Modified: `.context/sprints/bootstrap/sprint.md`, checkpoint. Commit context updates with next work commit.
+Clean tree on master. Both branches exist locally; push pending (gh account switch to MarshallXie16 required).
