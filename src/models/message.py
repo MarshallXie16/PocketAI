@@ -1,5 +1,6 @@
 import datetime
-from src.utils.extensions import db, migrate
+
+from src.utils.extensions import db
 
 
 class Message(db.Model):
@@ -8,7 +9,8 @@ class Message(db.Model):
     ai_id = db.Column(db.Integer, db.ForeignKey('ai_model.id', ondelete='CASCADE'), nullable=False)
     sender = db.Column(db.String(50), nullable=False)
     message = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.datetime.now(datetime.UTC))
+    # NOTE: default must be a callable — a bare now() would be evaluated once at import.
+    timestamp = db.Column(db.DateTime, index=True, default=lambda: datetime.datetime.now(datetime.UTC))
     voice_url = db.Column(db.String(2048), nullable=True)
     user = db.relationship('User', back_populates='messages')
     ai_model = db.relationship('AIModel', back_populates='messages')
