@@ -1,19 +1,40 @@
+# Secrets & local env
 .env
-.idea
-venv
-migrations
-src/prototypes
+.env.*
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Databases & vector stores — never commit data
+*.db
+*.sqlite3
+*.bin
+src/instance/
+src/db/
+
+# Debug artifacts
+save.txt
+
+# Python
+__pycache__/
+venv/
+.venv/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+.tmp*
+
+# User uploads (served from S3 in prod)
 src/static/images/profile_pictures/*
-src/instance
-src/db
-__pycache__
-# Elastic Beanstalk Files
+
+# Legacy deploy artifacts (removal pending)
 .ebextensions
 .ebignore
 .slugignore
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
-
-.tmp*
-__pycache__/
