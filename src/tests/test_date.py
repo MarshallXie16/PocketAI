@@ -1,5 +1,6 @@
 import datetime
 import pytz
+from freezegun import freeze_time
 
 test_dates = [
     "today",
@@ -114,6 +115,57 @@ def get_date_for_day(current_date, day_of_week, next_week=False):
     end_date = start_date + datetime.timedelta(days=1) # for 1 whole day
 
     return start_date, end_date
+
+# --- Deterministic tests -----------------------------------------------------
+# Freeze at midday UTC so the frozen instant is still 2023-07-10 (a Monday) in
+# America/Vancouver (UTC-7); a bare-midnight freeze would land on 2023-07-09
+# locally. parse_date() returns timezone-aware datetimes, so assertions compare
+# the (year, month, day) tuple rather than tz-aware equality.
+
+def _ymd(dt):
+    return (dt.year, dt.month, dt.day)
+
+
+@freeze_time("2023-07-10 12:00:00")  # Monday
+def test_parse_relative_dates():
+    start, end = parse_date('today')
+    assert _ymd(start) == (2023, 7, 10)
+    assert _ymd(end) == (2023, 7, 11)
+
+    start, end = parse_date('tomorrow')
+    assert _ymd(start) == (2023, 7, 11)
+    assert _ymd(end) == (2023, 7, 12)
+
+    start, end = parse_date('this week')
+    assert _ymd(start) == (2023, 7, 10)
+    assert _ymd(end) == (2023, 7, 17)
+
+    start, end = parse_date('next week')
+    assert _ymd(start) == (2023, 7, 17)
+    assert _ymd(end) == (2023, 7, 24)
+
+
+@freeze_time("2023-07-10 12:00:00")  # Monday
+def test_parse_day_of_week_and_specific():
+    # C: = current week's Wednesday
+    start, _ = parse_date('C:Wednesday')
+    assert _ymd(start) == (2023, 7, 12)
+
+    # F: = following week's Monday
+    start, _ = parse_date('F:Monday')
+    assert _ymd(start) == (2023, 7, 17)
+
+    # S: = explicit calendar date in the current year
+    start, end = parse_date('S:Aug 23')
+    assert _ymd(start) == (2023, 8, 23)
+    assert _ymd(end) == (2023, 8, 24)
+
+
+def test_parse_invalid_date_raises():
+    import pytest
+    with pytest.raises(ValueError):
+        parse_date('not a date')
+
 
 if __name__ == '__main__':
     for date in test_dates:

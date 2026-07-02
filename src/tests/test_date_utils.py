@@ -104,7 +104,10 @@ class CalendarUtilities:
         return date
 
 class TestCalendarUtilities(unittest.TestCase):
-    @freeze_time("2023-07-10")  # A Monday
+    # Freeze at midday UTC so the frozen instant is still 2023-07-10 in
+    # America/Vancouver (UTC-7). Freezing at bare midnight UTC lands on the
+    # previous local day, which is what made this test flaky/wrong.
+    @freeze_time("2023-07-10 12:00:00")  # A Monday
     def test_parse_date_reference(self):
         tz = 'America/Vancouver'
         
@@ -138,6 +141,7 @@ class TestCalendarUtilities(unittest.TestCase):
         self.assertEqual(start, datetime.datetime(2023, 7, 12))
         self.assertEqual(end, datetime.datetime(2023, 7, 13))
 
+    @freeze_time("2023-07-10 12:00:00")  # deterministic "current year" = 2023
     def test_parse_specific_date(self):
         tz = 'America/Vancouver'
         local_tz = pytz.timezone(tz)
@@ -148,7 +152,7 @@ class TestCalendarUtilities(unittest.TestCase):
         self.assertEqual(end, datetime.datetime(2023, 8, 16, tzinfo=local_tz))
 
         # Test next year
-        with freeze_time("2023-12-31"):
+        with freeze_time("2023-12-31 12:00:00"):
             start, end = CalendarUtilities.parse_specific_date('Jan 15', local_tz)
             self.assertEqual(start, datetime.datetime(2024, 1, 15, tzinfo=local_tz))
             self.assertEqual(end, datetime.datetime(2024, 1, 16, tzinfo=local_tz))

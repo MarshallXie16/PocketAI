@@ -1,7 +1,19 @@
+import os
 import unittest
 import json
 from src.components.context_analyzer import ContextAnalyzer
 from src.utils.AI_model_client import openai_client
+
+import pytest
+
+# These tests exercise the live OpenAI API; skip unless a real key is present.
+# (Slated for deletion in Phase 3.)
+pytestmark = pytest.mark.skipif(
+    not os.environ.get('OPENAI_API_KEY'),
+    reason='requires live API key',
+)
+
+
 class TestContextAnalyzerCalendar(unittest.TestCase):
 
     def setUp(self):
