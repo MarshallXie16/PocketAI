@@ -1,6 +1,6 @@
 import datetime
 
-from src.utils.extensions import db
+from src.extensions import db
 
 
 class MemoryEntry(db.Model):

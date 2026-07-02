@@ -15,8 +15,8 @@ import logging
 
 import numpy as np
 
+from src.extensions import db
 from src.models.memory_entry import MemoryEntry
-from src.utils.extensions import db
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,46 @@ def save_memory(user_id: int, ai_id: int, content: str, *, emotional_tone=None,
     db.session.add(entry)
     db.session.commit()
     return entry
+
+
+def consolidate_and_save(user_id: int, ai_id: int, queue_lines: list[str],
+                         ai_name: str, username: str) -> None:
+    """Summarize a batch of exchanges and persist it if it matters.
+
+    Runs on the background executor after a chat turn returns — the LLM
+    gate ("is this worth remembering?") + embedding + write are all off the
+    hot path. Ported from the legacy utilities.summarize prompt.
+    """
+    import datetime as _dt
+
+    from config import UTILITY_MODEL
+    from src.providers.registry import get_provider
+
+    prompt = f'''You are {ai_name} having a chat with {username}. Analyze this conversation snippet and determine if there's important information to remember.
+Examples of important information:
+1. New details about people, places, events, or things
+2. New information about {username}'s preferences, interests, or experiences
+3. Changes in {username}'s life or circumstances
+4. Emotional states or reactions that provide context for future conversations
+
+If important information is found:
+- summarize it in 50 words or less from the perspective of {ai_name}
+
+If no important information is found, respond with only the word 'false'.'''
+
+    result = get_provider(UTILITY_MODEL).generate(
+        model=UTILITY_MODEL,
+        system=prompt,
+        messages=[{'role': 'user', 'content': f'Conversation snippet: {queue_lines}. Summary (if important): '}],
+        max_tokens=200,
+    )
+    summary = (result.text or '').strip()
+    if not summary or summary.lower() == 'false':
+        logger.info('Memory gate: nothing worth saving (user=%s ai=%s)', user_id, ai_id)
+        return
+    stamped = _dt.datetime.now(_dt.UTC).strftime('%Y-%m-%d %H:%M:%S ') + summary
+    save_memory(user_id, ai_id, stamped)
+    logger.info('Memory saved (user=%s ai=%s)', user_id, ai_id)
 
 
 def search_memory(user_id: int, ai_id: int, query: str, top_k: int = 3) -> list[str]:
