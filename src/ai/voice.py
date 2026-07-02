@@ -78,13 +78,23 @@ class GeminiVoice:
                     ),
                 ),
             )
-            pcm = response.candidates[0].content.parts[0].inline_data.data
+            inline = response.candidates[0].content.parts[0].inline_data
+            pcm = inline.data
+
+            # prefer the SDK-reported rate (mime like 'audio/L16;rate=24000')
+            rate = PCM_SAMPLE_RATE
+            mime = getattr(inline, 'mime_type', '') or ''
+            if 'rate=' in mime:
+                try:
+                    rate = int(mime.split('rate=')[1].split(';')[0])
+                except (ValueError, IndexError):
+                    pass
 
             buffer = io.BytesIO()
             with wave.open(buffer, 'wb') as wav:
                 wav.setnchannels(1)
                 wav.setsampwidth(2)
-                wav.setframerate(PCM_SAMPLE_RATE)
+                wav.setframerate(rate)
                 wav.writeframes(pcm)
 
             return _upload(self.s3_client, buffer.getvalue(), 'wav', 'audio/wav')

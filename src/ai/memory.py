@@ -106,15 +106,19 @@ def consolidate_and_save(user_id: int, ai_id: int, queue_lines: list[str],
     except (json.JSONDecodeError, ValueError):
         logger.warning('Retrospective returned unparseable JSON (user=%s ai=%s): %.120s', user_id, ai_id, raw)
         data = {'important': False}
+    # the model can legally return any JSON type — only a dict is usable
+    if not isinstance(data, dict):
+        data = {'important': False}
 
-    if data.get('important') and data.get('situation'):
+    if data.get('important') and isinstance(data.get('situation'), str):
+        entity_tags = data.get('entity_tags')
         content = now_utc.strftime('%Y-%m-%d %H:%M ') + data['situation']
         save_memory(
             user_id, ai_id, content,
-            emotional_tone=data.get('emotional_tone'),
-            key_insight=data.get('key_insight'),
-            importance=min(max(float(data.get('importance') or 0.5), 0.0), 1.0),
-            entity_tags=data.get('entity_tags') or [],
+            emotional_tone=data.get('emotional_tone') if isinstance(data.get('emotional_tone'), str) else None,
+            key_insight=data.get('key_insight') if isinstance(data.get('key_insight'), str) else None,
+            importance=_coerce_importance(data.get('importance')),
+            entity_tags=[str(t) for t in entity_tags[:10]] if isinstance(entity_tags, list) else [],
         )
         logger.info('Episode saved (user=%s ai=%s importance=%s)', user_id, ai_id, data.get('importance'))
     else:
@@ -129,15 +133,28 @@ def consolidate_and_save(user_id: int, ai_id: int, queue_lines: list[str],
     _consume_queue_lines(user_id, ai_id, queue_lines)
 
 
-def _save_key_facts(user_id: int, ai_id: int, facts: list[dict]) -> None:
+def _coerce_importance(value, default=0.5) -> float:
+    """LLMs return 'high', '0.7', 0.7, None... — clamp to a float in [0, 1]."""
+    try:
+        return min(max(float(value), 0.0), 1.0)
+    except (TypeError, ValueError):
+        return {'low': 0.2, 'medium': 0.5, 'high': 0.8}.get(str(value).strip().lower(), default)
+
+
+def _save_key_facts(user_id: int, ai_id: int, facts) -> None:
     import datetime as _dt
 
     from src.models.relationship import KeyFact
 
+    if not isinstance(facts, list):
+        return
     valid_types = {'commitment', 'event', 'person', 'preference', 'goal'}
     for fact in facts[:5]:
-        content = (fact.get('content') or '').strip()
-        fact_type = (fact.get('fact_type') or '').strip()
+        if not isinstance(fact, dict):
+            continue
+        # newline-stripped + capped: this text lands in the system prompt later
+        content = ' '.join(str(fact.get('content') or '').split())[:300]
+        fact_type = str(fact.get('fact_type') or '').strip()
         if not content or fact_type not in valid_types:
             continue
         # dedupe on exact content for this pair
@@ -160,6 +177,7 @@ def _save_tone_note(user_id: int, ai_id: int, note) -> None:
 
     if not note or not isinstance(note, str):
         return
+    note = ' '.join(note.split())[:200]   # single line, capped — lands in the system prompt
     state = RelationshipState.get_or_create(user_id, ai_id)
     prefs = list(state.tone_prefs or [])
     if note not in prefs:

@@ -48,6 +48,10 @@ def consented(make_user, make_ai):
     return user, ai, settings
 
 
+def _future_iso(hours=3):
+    return (datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=hours)).isoformat()
+
+
 def _sched(user_id, ai_id, *, scheduled_for=None, trigger='commitment', status='pending'):
     row = ScheduledMessage(
         user_id=user_id, ai_id=ai_id,
@@ -114,9 +118,10 @@ def test_deliver_daily_cap_skips(db, consented, monkeypatch):
     user, ai, settings = consented
     settings.max_proactive_per_day = 2
     db.session.commit()
-    today = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
-    _sched(user.id, ai.id, scheduled_for=today, status='sent')
-    _sched(user.id, ai.id, scheduled_for=today, status='sent')
+    # cap accounting counts delivered initiated Messages, not sent rows
+    db.session.add(Message(user_id=user.id, ai_id=ai.id, sender='assistant', message='m1', initiated=True))
+    db.session.add(Message(user_id=user.id, ai_id=ai.id, sender='assistant', message='m2', initiated=True))
+    db.session.commit()
     row = _sched(user.id, ai.id)
     _patch_provider(monkeypatch, 'should not be used')
 
@@ -124,7 +129,7 @@ def test_deliver_daily_cap_skips(db, consented, monkeypatch):
 
     assert outcome == 'suppressed'
     assert ScheduledMessage.query.get(row.id).status == 'skipped'
-    assert Message.query.count() == 0
+    assert Message.query.count() == 2  # only the seeded ones — nothing new sent
 
 
 def test_deliver_model_skip_creates_no_message(db, consented, monkeypatch):
@@ -230,9 +235,9 @@ def test_planner_creates_rows_capped_at_two(db, consented, monkeypatch):
     user, ai, settings = consented
     now = datetime.datetime(2026, 7, 1, 2, 0, tzinfo=datetime.UTC)
     plan = ('{"messages": ['
-            '{"send_at": "2026-07-01T09:00:00+00:00", "reason": "interview"},'
-            '{"send_at": "2026-07-01T18:00:00+00:00", "reason": "follow up"},'
-            '{"send_at": "2026-07-01T20:00:00+00:00", "reason": "third — dropped"}]}')
+            f'{{"send_at": "{_future_iso(hours=3)}", "reason": "interview"}},'
+            f'{{"send_at": "{_future_iso(hours=6)}", "reason": "follow up"}},'
+            f'{{"send_at": "{_future_iso(hours=9)}", "reason": "third — dropped"}}]}}')
     _patch_provider(monkeypatch, plan)
 
     created = proactive_service._run_planner_if_due(settings, now)
@@ -258,7 +263,7 @@ def test_planner_empty_plan_records_skipped_row(db, consented, monkeypatch):
 def test_planner_runs_once_per_interval(db, consented, monkeypatch):
     user, ai, settings = consented
     now = datetime.datetime(2026, 7, 1, 2, 0, tzinfo=datetime.UTC)
-    provider = _patch_provider(monkeypatch, '{"messages": [{"send_at": "2026-07-01T09:00:00+00:00", "reason": "x"}]}')
+    provider = _patch_provider(monkeypatch, f'{{"messages": [{{"send_at": "{_future_iso(hours=3)}", "reason": "x"}}]}}')
 
     first = proactive_service._run_planner_if_due(settings, now)
     second = proactive_service._run_planner_if_due(settings, now)

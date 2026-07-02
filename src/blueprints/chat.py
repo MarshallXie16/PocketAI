@@ -38,8 +38,10 @@ def transcribe():
     audio = request.files.get('audio')
     if audio is None:
         return jsonify({'error': 'No audio file provided', 'code': 'BAD_REQUEST'}), 400
-    if request.content_length and request.content_length > transcription_service.MAX_AUDIO_BYTES:
-        return jsonify({'error': 'Audio file too large', 'code': 'PAYLOAD_TOO_LARGE'}), 413
+    # (the app-level MAX_CONTENT_LENGTH rejects oversized bodies before parsing)
+    ext = (audio.filename or '').rsplit('.', 1)[-1].lower()
+    if ext not in transcription_service.ALLOWED_AUDIO_EXTENSIONS:
+        return jsonify({'error': 'Unsupported audio format', 'code': 'BAD_REQUEST'}), 400
 
     try:
         text = transcription_service.transcribe(audio)
@@ -189,7 +191,7 @@ def regenerate_message():
         if user_message == 'None':
             ai_response = generate_welcome_message(ai_model, current_user)
         else:
-            ai_response = run_ai_response(ai_model_id, user_message)
+            ai_response = run_ai_response(ai_model_id, user_message, record_interaction=False)
 
         if not ai_response:
             raise Exception('Failed to generate AI response')

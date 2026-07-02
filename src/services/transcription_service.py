@@ -13,7 +13,7 @@ from src.providers.registry import get_openai_client
 logger = logging.getLogger(__name__)
 
 STT_MODEL = 'gpt-4o-transcribe'
-MAX_AUDIO_BYTES = 15 * 1024 * 1024   # generous cap; MediaRecorder clips are far smaller
+ALLOWED_AUDIO_EXTENSIONS = {'webm', 'wav', 'mp3', 'm4a', 'mp4', 'ogg', 'flac'}
 
 
 def transcribe(file_storage) -> str:
