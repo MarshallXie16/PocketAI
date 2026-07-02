@@ -49,4 +49,19 @@ parameters.
 **Tier:** 2. **Rationale:** guarantees byte-for-byte behavior in a move-only refactor; Phase 3
 rewrites the AI core anyway. **Reversibility:** parameterize later. **Scope:** src/services/*.
 
-## Status: IN PROGRESS
+## Verification (orchestrator, post-carve)
+- Route-path diff vs master: IDENTICAL (37 routes). Templates: no stale `url_for` endpoints. JS: hardcoded paths, unchanged.
+- Phase-1 fixes present: `get_owned_ai` gate, `StripeEvent` idempotency, `hmac.compare_digest`, `is_template` clone guard, `form_get`.
+- Suite: 34 passed / 21 skipped (live-API modules), zero env vars. Ruff clean. Smoke OK (/, send_message 302, webhook 400).
+- Tests (opus agent): 26 new tests + stale date tests root-caused (freezegun froze at UTC midnight = prior day in America/Vancouver) and fixed. Docs+CI (sonnet agent): README, architecture.md, INDEX, ci.yml, pyproject ruff cfg.
+
+## Reviews (constitution: 1 native + 1 external)
+- Native (opus): **SAFE TO MERGE.** Nit fixed: dead `LOGIN_URL` removed from config.py (factory sets `login_view='auth.login'`). Pre-existing dangling refs noted (css/profile.css, js/profile.js, /upload_audio) — left for the UI redesign.
+- External (codex gpt-5.5, high): findings below.
+
+## For Phase 3
+- `src/components/` is the legacy AI core — replaced by `src/providers/` + `src/ai/`; kill the components/* ruff ignores with it.
+- Chat tests patch `src.blueprints.chat.run_ai_response` — keep that seam or update tests.
+- `AI_model_client.py` still live (components import it) — dies in Phase 3.
+
+## Status: REVIEW — awaiting codex findings, then merge
