@@ -227,7 +227,7 @@ def chat():
         db.session.commit()
         messages = [message_obj]
         
-    print(session)  # debug
+    logger.debug(session)  # debug
 
     return render_template('chat.html', ai_model=ai_model, messages=messages)
 
@@ -386,9 +386,9 @@ def regenerate_message():
         user_message = data.get('user_message')
         ai_model_id = int(data.get('modelId'))
             
-        print(f"Regenerating message with ID: {message_id}")
-        print(f"User message: {user_message}")
-        print(f"AI model ID: {ai_model_id}")
+        logger.info(f"Regenerating message with ID: {message_id}")
+        logger.info(f"User message: {user_message}")
+        logger.info(f"AI model ID: {ai_model_id}")
         
         # Validation
         
@@ -450,7 +450,7 @@ def regenerate_message():
         
     except Exception as e:
         db.session.rollback()
-        print(f'Error in regenerating message: {str(e)}')
+        logger.error(f'Error in regenerating message: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 @app.route('/edit_message', methods=['PUT'])
@@ -488,7 +488,7 @@ def edit_message():
 
     except Exception as e:
         db.session.rollback()
-        print(f'Error editing message: {str(e)}')
+        logger.error(f'Error editing message: {str(e)}')
         return jsonify({'error': 'An unexpected error occurred', 'code': 'SERVER_ERROR'}), 500
 
 @app.route('/load-more-messages', methods=['POST'])
@@ -502,7 +502,7 @@ def load_more_messages():
     messages = Message.query.filter_by(user_id=current_user.id, ai_id=ai_id).order_by(Message.timestamp.desc()).offset(current_message_count).limit(10).all()[::-1]
     # Format messages to be sent back
     formatted_messages = [{'sender': msg.sender, 'message': msg.message, 'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')} for msg in messages]
-    print(formatted_messages)
+    logger.info(formatted_messages)
     return jsonify(formatted_messages)
 
 
@@ -571,10 +571,10 @@ def ai_settings(ai_id: int):
             db.session.add(ai_model)
             db.session.add(ai_settings)
             db.session.commit()
-            print('AI model and settings updated successfully.')
+            logger.info('AI model and settings updated successfully.')
         except Exception as e:
             db.session.rollback()
-            print(f'Error updating AI model: {e}')
+            logger.error(f'Error updating AI model: {e}')
             flash('Error updating AI model and settings.', 'error')
             return redirect(url_for('ai_settings', ai_id=ai_id))
 
@@ -637,13 +637,13 @@ def delete_ai(ai_id):
                 profile_url_parts = ai_model.profile_image_url.split('.amazonaws.com/')
                 if len(profile_url_parts) > 1:
                     profile_image_key = profile_url_parts[1].split('?')[0]
-                    print(f"Deleting profile image: {profile_image_key}")
+                    logger.info(f"Deleting profile image: {profile_image_key}")
                     get_s3().delete_object(
                         Bucket=app.config["S3_BUCKET_NAME"],
                         Key=profile_image_key
                     )
             except Exception as e:
-                print(f"Error deleting AI profile image from S3: {e}")
+                logger.error(f"Error deleting AI profile image from S3: {e}")
                 raise e
         
         # Get and delete all associated messages and their voice files
@@ -658,9 +658,9 @@ def delete_ai(ai_id):
                     if len(voice_url_parts) > 1:
                         voice_key = voice_url_parts[1].split('?')[0]
                         voice_files_to_delete.append({'Key': voice_key})
-                        print(f"Adding voice file to deletion queue: {voice_key}")
+                        logger.info(f"Adding voice file to deletion queue: {voice_key}")
                 except Exception as e:
-                    print(f"Error processing voice URL for message {message.id}: {e}")
+                    logger.error(f"Error processing voice URL for message {message.id}: {e}")
                     raise e
             
             # Delete the message from database
@@ -677,7 +677,7 @@ def delete_ai(ai_id):
                     }
                 )
             except Exception as e:
-                print(f"Error batch deleting voice files from S3: {e}")
+                logger.error(f"Error batch deleting voice files from S3: {e}")
                 raise e
 
         # Remove association with current user
@@ -706,7 +706,7 @@ def delete_ai(ai_id):
         
     except Exception as e:
         db.session.rollback()
-        print(f'Error deleting AI model: {e}')
+        logger.error(f'Error deleting AI model: {e}')
         return jsonify({'error': 'An unexpected error occurred'}), 500  \
             
 
@@ -771,9 +771,9 @@ def update_user_settings(user, user_timezone, context_length, last_active_ai_id=
         user.settings.context_length = context_length
         user.settings.last_active_ai_id = last_active_ai_id if last_active_ai_id else user.settings.last_active_ai_id
     db.session.commit()
-    print(f'User settings for user {user.id} has been updated.')
-    print(f'Timezone: {user.settings.timezone}')
-    print(f'Context length: {user.settings.context_length}')
+    logger.info(f'User settings for user {user.id} has been updated.')
+    logger.info(f'Timezone: {user.settings.timezone}')
+    logger.info(f'Context length: {user.settings.context_length}')
 
 
 # onboarding AI page
@@ -799,14 +799,14 @@ def save_profile_picture(profile_image, model, model_type):
         )
         # Generate a versioned URL to force browser to load the new image
         versioned_url = f'{app.config["S3_LOCATION"]}{filename}'
-        print(f'Profile image for {model.id} has been saved to S3! ImageURL: {versioned_url}')  # debug
+        logger.debug(f'Profile image for {model.id} has been saved to S3! ImageURL: {versioned_url}')  # debug
         model.profile_image_url = versioned_url
         
         db.session.commit()
         
     except Exception as e:
         db.session.rollback()
-        print(f'Error saving profile picture for {model_type} {model.id}: {e}')
+        logger.error(f'Error saving profile picture for {model_type} {model.id}: {e}')
         return False
     
     
@@ -820,7 +820,7 @@ def onboarding_ai_existing():
         
         ai_id = request.form.get('ai-id')
 
-        print(f'Onboarding/ai/existing: {ai_id}') # debug
+        logger.debug(f'Onboarding/ai/existing: {ai_id}') # debug
 
         # form validation
         if not ai_id:
@@ -900,7 +900,7 @@ def onboarding_ai_create():
             return redirect('/chat')
         except Exception as e:
             db.session.rollback()
-            print(f'Error creating new AI model: {e}')
+            logger.error(f'Error creating new AI model: {e}')
             flash('Error creating new AI model.', 'error')
             return redirect(url_for('onboarding_ai_create'))
     
@@ -930,7 +930,7 @@ def add_contacts():
         new_contact = create_user_contact(current_user.id, name, email, relationship, phone, notes)
         current_user.add_contact(new_contact)
         
-        print(new_contact)
+        logger.info(new_contact)
         
         # check status and return response
         if not new_contact:
@@ -1009,7 +1009,7 @@ def create_checkout_session():
         # redirect to stripe hosted checkout page
         return redirect(checkout_session.url, code=303)
     except Exception as e:
-        print(f'Subscription Purchase Error: {e}')
+        logger.error(f'Subscription Purchase Error: {e}')
         return redirect('/error?message=Error creating subscription session.')
 
 # webhook endpoint for stripe
@@ -1232,12 +1232,12 @@ def authorize():
             flash('Google account linked!', 'success')
             return redirect(url_for('onboarding_user'))
         else:
-            print('redirecting to chat')
+            logger.info('redirecting to chat')
             return redirect('/chat')
         
     except Exception as e:
         db.session.rollback()
-        print(f'Google Login Error: {e}')
+        logger.info(f'Google Login Error: {e}')
         flash('Failed to authenticate google account. :(', 'error')
         return redirect('/login')
     
@@ -1294,13 +1294,13 @@ def authorize_link():
             flash('Google account linked!', 'success')
         except Exception as e:
             db.session.rollback()
-            print(f"Error linking Google account: {e}")  # Basic logging
+            logger.error(f"Error linking Google account: {e}")  # Basic logging
             flash('Failed to link Google account. Please try again.', 'error')
 
         return redirect(url_for('onboarding_user'))
     
     except Exception as e:
-        print(f"Error in authorize_link: {e}")  # Basic logging
+        logger.error(f"Error in authorize_link: {e}")  # Basic logging
         flash('Failed to link Google account. Please try again.', 'error')
         return redirect(url_for('onboarding_user'))
 
@@ -1407,7 +1407,7 @@ def get_active_ai(user):
         # return the first one if no active ai model, if no models, return none
         return user.ai_models[0] if user.ai_models else None
     except Exception as e:
-        print(f'Error getting active AI model: {e}')
+        logger.error(f'Error getting active AI model: {e}')
         return None
 
 
@@ -1430,17 +1430,17 @@ def run_ai_response(ai_id, user_message):
     ai_name = session.get('ai_name', 'Assistant')
 
     # Settings for debugging
-    print(f'---- Settings ----')
-    print(f'Memory Queue Count: {memory_queue_count}')  # debug
-    print(f'Memory Queue:       {memory_queue}')        # debug
-    print(f'Context length:     {context_length}')      # debug
-    print(f'------------------')
+    logger.info(f'---- Settings ----')
+    logger.debug(f'Memory Queue Count: {memory_queue_count}')  # debug
+    logger.debug(f'Memory Queue:       {memory_queue}')        # debug
+    logger.debug(f'Context length:     {context_length}')      # debug
+    logger.info(f'------------------')
 
     # Instantiate AI model
     try: 
         ai = AI_model(ai_id, current_user.username)
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         raise Exception("Failed to instantiate AI model.") 
 
     # query and parse conversation history
@@ -1451,7 +1451,7 @@ def run_ai_response(ai_id, user_message):
             Message.timestamp.desc()).limit(context_length).all()[::-1]
         latest_messages = [{"role": msg.sender, "content": msg.message} for msg in conversation_history]
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         latest_messages = []
         
     # get system info
@@ -1465,9 +1465,9 @@ def run_ai_response(ai_id, user_message):
     if intention and is_function_call:
         # format system info
         context, function_log = context_analyzer.parse_func(intention, latest_messages, current_user.id, ai_id, system_info)
-        print(f'Context: {context}')  # debug
-        print(f'Function log: {function_log}')  # debug
-        print("---------------------------------")
+        logger.debug(f'Context: {context}')  # debug
+        logger.debug(f'Function log: {function_log}')  # debug
+        logger.info("---------------------------------")
     # clarification is needed but no functions were called
     elif intention:
         context = f'Seek clarification: {intention}'
@@ -1480,22 +1480,22 @@ def run_ai_response(ai_id, user_message):
     # run ai response with the provided context (if any) 
     response = ai.get_response(latest_messages, context=context, function_log=function_log, system_info=system_info)
 
-    print(f'AI response: {response}')  # debug
-    print(f'Message count: {memory_queue_count}/{memory_chunk_size}')  # debug
-    print("---------------------------------")
+    logger.debug(f'AI response: {response}')  # debug
+    logger.debug(f'Message count: {memory_queue_count}/{memory_chunk_size}')  # debug
+    logger.info("---------------------------------")
 
     # saves short-term memory to long-term memory every x message cycles
     if memory_queue_count >= memory_chunk_size:
-        print(f'Short-term memory: {memory_queue}') # debug
+        logger.debug(f'Short-term memory: {memory_queue}') # debug
         # determine if message is important
         memory = utilities.summarize(memory_queue, ai_name, current_user.username)
         if memory.lower().strip() == 'false':
-            print("message not saved (not important).")
+            logger.info("message not saved (not important).")
         elif memory:
             long_term_memory.save_memory(current_user.id, ai_id, memory)
-            print("message saved.")
+            logger.info("message saved.")
         else:
-            print("message not saved (error).")
+            logger.info("message not saved (error).")
         memory_queue_count = 0
         memory_queue.clear()
     else:
@@ -1528,7 +1528,7 @@ def get_system_info(user_timezone):
         
         return f"{date_str} {time_str}"
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         return None
 
 # Purpose: adds a single message to msg database
@@ -1542,9 +1542,9 @@ def update_conversation_history(user_id, ai_id, sender, message, voice_url=None)
 
 # Purpose: prints conversation history for debugging
 def print_conversation_history(conversation_history: list):
-    print("---- Conversation History ----")
+    logger.info("---- Conversation History ----")
     for msg in conversation_history:
-        print(f"{msg['role']}: {msg['content']}")
+        logger.info(f"{msg['role']}: {msg['content']}")
     print ("-------------------------------")
 
 # Purpose: checks if file is allowed to be uploaded
@@ -1619,7 +1619,7 @@ def create_user_contact(user_id, name, email, relationship="", phone="", notes="
         return new_contact
     except Exception as e:
         db.session.rollback()
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         return False    
 
 # Purpose: Generates a welcome message and saves it to db
@@ -1632,7 +1632,7 @@ def generate_welcome_message(ai_model, user):
         welcome_message = tmp_model.get_response(False, WELCOME_PROMPT)
         return welcome_message
     except Exception as e:
-        print(f'Error generating welcome message: {e}')
+        logger.error(f'Error generating welcome message: {e}')
         return False
     
 
