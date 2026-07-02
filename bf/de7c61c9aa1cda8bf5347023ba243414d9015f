@@ -1,0 +1,63 @@
+src/blueprints/contacts.py
+  s_4c467e2481b592::t_d13f16e815876e 1-85
+src/services/conversation_service.py
+  s_4c467e2481b592::t_243613fce740fa 1-159
+src/blueprints/pages.py
+  s_4c467e2481b592::t_15d4d2977689f6 1-32
+src/blueprints/chat.py
+  s_4c467e2481b592::t_b2c38392260741 1-255
+src/blueprints/ai.py
+  s_4c467e2481b592::t_5028efdf0d7094 1-294
+src/blueprints/admin.py
+  s_4c467e2481b592::t_78eb292c73b834 1-33
+src/services/session_service.py
+  s_4c467e2481b592::t_dc2952f18f4daf 1-44
+src/utils/forms.py
+  s_4c467e2481b592::t_32ff7fd3eb988b 1-14
+src/services/storage_service.py
+  s_4c467e2481b592::t_c58103ff4b6885 1-104
+src/templates/ai_settings.html
+  s_4c467e2481b592::t_81de7d42967c4c 495
+src/app_factory.py
+  s_4c467e2481b592::t_5bd67dd49c3dc5 1-107
+src/services/ai_model_service.py
+  s_4c467e2481b592::t_b077f23128b8dc 1-51
+src/services/contact_service.py
+  s_4c467e2481b592::t_521b116094e651 1-24
+src/blueprints/profile.py
+  s_4c467e2481b592::t_cf62fa1abcb9fd 1-119
+wsgi.py
+  s_4c467e2481b592::t_915d568b3de383 1-22
+src/services/auth_service.py
+  s_4c467e2481b592::t_60d5a73f25d69c 1-111
+src/templates/onboarding-ai-create.html
+  s_4c467e2481b592::t_81de7d42967c4c 500
+src/blueprints/billing.py
+  s_4c467e2481b592::t_718a91abdcaf75 1-124
+src/templates/profile.html
+  s_4c467e2481b592::t_81de7d42967c4c 532
+src/services/user_service.py
+  s_4c467e2481b592::t_cc20108d6922c2 1-23
+src/blueprints/auth.py
+  s_4c467e2481b592::t_d5a7814721eb93 207,209
+  s_4c467e2481b592::t_49fb6f59f89178 11
+  s_4c467e2481b592::t_ccb1ca540f558f 1-10,12-206,208,210-267
+src/services/billing_service.py
+  s_4c467e2481b592::t_b17e2ce0697fff 1-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "bfde7c61c9aa1cda8bf5347023ba243414d9015f",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
