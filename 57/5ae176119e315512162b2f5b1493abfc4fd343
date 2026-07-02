@@ -1,0 +1,24 @@
+src/components/calendar_service.py
+  s_4c467e2481b592::t_0c7c921e7be89b 111-112
+src/components/ai_models.py
+  s_4c467e2481b592::t_7090caf8f25975 147-152
+src/components/email_service.py
+  s_4c467e2481b592::t_f734f3bf3847b4 133-136
+  s_4c467e2481b592::t_aca1a1789e2465 227-229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "575ae176119e315512162b2f5b1493abfc4fd343",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
