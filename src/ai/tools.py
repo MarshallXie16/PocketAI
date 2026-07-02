@@ -116,6 +116,25 @@ TOOLS = [
         },
     },
     {
+        'name': 'schedule_checkin',
+        'description': (
+            'Schedule yourself to reach out to the user at a future moment. '
+            'Call this when the user makes a commitment ("I\'ll sleep by 11 '
+            'tonight!") or mentions something worth following up on (an '
+            'interview, an appointment, a hard day coming). Pick a thoughtful '
+            'time — e.g. the morning after a commitment, or an hour before a '
+            'big event. Mention to the user that you\'ll check in.'
+        ),
+        'input_schema': {
+            'type': 'object',
+            'properties': {
+                'when': {'type': 'string', 'description': 'When to reach out, RFC3339 with offset.'},
+                'reason': {'type': 'string', 'description': 'Why — this is your note to your future self about what to say.'},
+            },
+            'required': ['when', 'reason'],
+        },
+    },
+    {
         'name': 'confirm_action',
         'description': (
             'Execute the pending calendar_create or email_send draft AFTER '
@@ -254,6 +273,13 @@ def dispatch(name: str, args: dict, *, user_id: int, ai_id: int, user_timezone: 
                 return _gmail.search_inbox(service, start, end, args.get('sender_name'), args.get('subject'),
                                            user_id=user_id)
             return _gmail.list_emails(service, start, end)
+
+        if name == 'schedule_checkin':
+            from src.services import proactive_service
+
+            row = proactive_service.schedule_checkin(user_id, ai_id, args['when'], args['reason'])
+            return (f'Check-in scheduled for {row.scheduled_for.isoformat()} UTC. '
+                    'It will only be sent if the user has proactive messages enabled.')
 
         if name in CONSEQUENTIAL_TOOLS:
             return _store_draft(name, args, user_id=user_id, ai_id=ai_id)
