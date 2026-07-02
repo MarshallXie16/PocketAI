@@ -5,7 +5,7 @@
 
 PocketAI is a Flask web app being repositioned as **"a companion that actually acts"** — a persistent, personalized AI presence that maintains a relationship with you (persona, episodic memory, voice) AND takes real action in your life (Google Calendar, Gmail, proactive check-ins). Identity locked by the maintainer 2026-07-01. **Roadmap: `docs/designs/overhaul-roadmap.md`** (supersedes the original assessment in `overhaul-and-repositioning.md`).
 
-**Overhaul status (2026-07-01):** Phase 0 (secrets purged from git history, force-pushed) ✅ · Phase 1 (env-driven config, BUG-1..12 + 5 unaudited bugs fixed, deps pinned, logging) ✅ · Phase 2 (factory + blueprints + services, tests, docs, CI) ✅ · Phase 3 (AI-core modernization) next · Phase 4 (companion features) after. Pre-launch requirements live in `backlog.md` (LAUNCH-1..5: CSRF, hardening, deploy target, IP-roster/uncensored cleanup, Alembic baseline). **Not deployed; deployment deferred by maintainer.**
+**Overhaul status (2026-07-02): COMPLETE.** Phases 0–4 all merged to master (secrets purged → bugs fixed → modularized → AI core modernized → companion features built). 177 tests green with zero API keys. Remaining work lives in `backlog.md`: LAUNCH-1..6 (pre-launch: CSRF, hardening, deploy target, IP-roster/uncensored decision, Alembic baseline, live-key verification), UI-1..4 (frontend integration, waiting on Cloud Design), DEBT-5..7. Proactive features are dormant until the consent UI ships (UI-3). **Not deployed; deployment deferred by maintainer.**
 
 ---
 

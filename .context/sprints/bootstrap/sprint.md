@@ -1,7 +1,7 @@
 ---
-status: active
+status: completed
 started: 2026-07-01
-updated: 2026-07-01
+updated: 2026-07-02
 ---
 
 # Sprint: Bootstrap — Secure & Choose a Direction
@@ -94,7 +94,12 @@ Resurrect PocketAI safely and set the overhaul's direction. This sprint does the
 - Repo confirmed PUBLIC (`gh repo view`: visibility PUBLIC).
 - Extra secrets found beyond the audit: hardcoded Stripe webhook signing secret in old app.py history + tracked `__pycache__/*.pyc` containing it. Both scrubbed.
 - `.gitignore` had `migrations` ignored (wrong — migrations must be tracked); fixed in the hardened .gitignore.
-- gh CLI has two github.com accounts; repo owner is `MarshallXie16` (pushes need `gh auth switch`).
+- gh CLI has two github.com accounts; pushes go via the `github.com-personal` SSH alias (https+gh token lacks `workflow` scope for .github/workflows/).
+- **Reusable lessons** (full detail in retro.md; candidates for `.claude/rules/`):
+  1. Dual reviews (native + codex) caught disjoint, real bugs every phase — keep the practice.
+  2. Research agents without web access assert model-landscape claims confidently ("Sonnet 5 exists") — verify against environment truth before adopting.
+  3. sed-based bulk edits corrupted a docstring and drifted test strings twice; for >5 mechanical edits use a Python script with exact-match asserts.
+  4. LLM-JSON handling needs isinstance + coercion guards on EVERY field (importance='high' crashed float()) — now a house pattern in memory.py/proactive_service.py.
 
 ## Progress Log
 
@@ -102,6 +107,7 @@ Resurrect PocketAI safely and set the overhaul's direction. This sprint does the
 |------|-----------------|------------|
 | 2026-07-01 | Sprint scaffolded from the 2026-07-01 audit. Project context, backlog, and overhaul/repositioning design doc created. Sprint is `planned` pending kickoff. | Kick off: start BOOT-1 (credential rotation) and BOOT-3 (direction decision) in parallel; flip status to `active`. |
 | 2026-07-01 (2) | Plan approved by maintainer (roadmap: `docs/designs/overhaul-roadmap.md`). BOOT-2 DONE (backup + history purge + force-push; extra Stripe whsec found & scrubbed). BOOT-3 DONE ("companion that actually acts"). BOOT-1 amended: evidence given, rotation = maintainer's call. design.md delivered for Cloud Design. Phase 1 DONE + merged (config, BUG-1..12 + 5 unaudited fixes, deps, logging). Phase 2 code+tests+docs COMPLETE on `phase-2-modularize` (34 tests green, ruff clean, native review passed). | Await codex external review (background) → address findings → merge Phase 2 → Phase 3 (provider-API research brief also running in background at `.context/research/`). |
+| 2026-07-02 | **SPRINT COMPLETE — full overhaul shipped.** Phase 2 merged (codex minor fixed: OAuth re-registration). Phase 3 merged: provider adapters + hand-rolled tool loop + DB memory + confirm gate (reviews: 1 critical + 3 major fixed, incl. consequential-tool injection hole). Phase 4 merged: episodic memory, relationship model, agent-scheduled proactive outreach (claim-based delivery, quotas, SKIP gate), voice I/O backend (Gemini TTS + gpt-4o-transcribe). 177 tests green, all branches pushed. Retro written; backlog restructured (LAUNCH-1..6 / UI-1..4 / DEBT-5..7). | Maintainer: approve `launch-prep` sprint proposal (retro.md); send design.md to Cloud Design; provide .env for LAUNCH-6 live verification; decide LAUNCH-4 (IP roster / uncensored). |
 
 ## Deferred
 _(none yet)_
@@ -112,10 +118,10 @@ _(write on completion)_
 ---
 
 ## Completion Checklist
-- [ ] Acceptance criteria verified.
-- [ ] All tickets `done` or `deferred`.
-- [ ] Design decisions recorded (keep-vs-discard, direction).
-- [ ] Findings documented.
-- [ ] `stabilize` sprint proposed.
-- [ ] Retrospective complete.
-- [ ] Frontmatter `status: completed` + `updated` set.
+- [x] Acceptance criteria verified (BOOT-1 amended to maintainer's-call with evidence; BOOT-2/3 done; .gitignore verified; next sprint proposed).
+- [x] All tickets `done` or `deferred` (BOOT-1 → maintainer action, documented; BOOT-2 ✅; BOOT-3 ✅; phases 1–4 absorbed and completed here — notepads per phase).
+- [x] Design decisions recorded (keep-vs-discard, direction, + Tier-2 decisions in each phase notepad).
+- [x] Findings documented (above + retro.md).
+- [x] Next sprint proposed: `launch-prep` (see retro.md — Tier 3, awaiting maintainer sign-off).
+- [x] Retrospective complete (`retro.md`).
+- [x] Frontmatter `status: completed` + `updated` set.
