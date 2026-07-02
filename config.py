@@ -26,6 +26,41 @@ PREMIUM_CREDITS_GRANT = 10000
 MEMORY_CHUNK_SIZE_DEFAULT = 6
 
 
+# ---- Model registry (single source of truth for model IDs + pricing) ----
+# Pricing is $ per MTok (input, output) and feeds fail-soft cost logging only.
+# NOTE: maintainer decision — no claude-fable-5 anywhere (cost).
+MODEL_REGISTRY = {
+    'claude-opus-4-8': {
+        'provider': 'anthropic', 'input': 5.00, 'output': 25.00, 'label': 'Claude Opus 4.8', 'premium': True},
+    'claude-sonnet-4-6': {
+        'provider': 'anthropic', 'input': 3.00, 'output': 15.00, 'label': 'Claude Sonnet 4.6'},
+    'claude-haiku-4-5': {
+        'provider': 'anthropic', 'input': 1.00, 'output': 5.00, 'label': 'Claude Haiku 4.5'},
+    'gpt-5.2': {
+        'provider': 'openai', 'input': 1.75, 'output': 14.00, 'label': 'GPT-5.2', 'premium': True},
+    'gpt-5-mini': {  # rate unverified
+        'provider': 'openai', 'input': 0.25, 'output': 2.00, 'label': 'GPT-5 mini'},
+    'gemini-3-pro-preview': {  # rate unverified
+        'provider': 'gemini', 'input': 2.00, 'output': 12.00, 'label': 'Gemini 3 Pro', 'premium': True},
+    'gemini-3-flash-preview': {
+        'provider': 'gemini', 'input': 0.125, 'output': 0.75, 'label': 'Gemini 3 Flash'},
+}
+
+# Legacy model_name values stored in existing AIModel rows / old UI dropdowns.
+MODEL_ALIASES = {
+    'gpt-4o': 'gpt-5.2',
+    'gpt-4o-mini': 'gpt-5-mini',
+    'gemini-1.5-pro': 'gemini-3-pro-preview',
+    'gemini-1.5-flash': 'gemini-3-flash-preview',
+    'claude-3-5-sonnet': 'claude-sonnet-4-6',
+    'claude-3.5-sonnet': 'claude-sonnet-4-6',
+    'claude-3-haiku': 'claude-haiku-4-5',
+}
+
+DEFAULT_MODEL = 'claude-sonnet-4-6'   # persona default
+UTILITY_MODEL = 'claude-haiku-4-5'    # summaries, retrospectives, cheap internal calls
+
+
 class Config:
     SECRET_KEY = os.environ.get('DB_SECRET_KEY')
     PERMANENT_SESSION_LIFETIME = 604800

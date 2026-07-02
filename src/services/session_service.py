@@ -1,8 +1,8 @@
 """Per-session AI state.
 
-Which AI a user is currently talking to, and the session variables the chat
-turn reads (memory queue, chunk size, conversation mode). Short-term memory
-still lives in the Flask session cookie here — Phase 3 moves it into the DB.
+Which AI a user is currently talking to. Short-term conversation memory
+lives in the database (ConversationState) as of Phase 3 — the session keeps
+only lightweight UI state.
 """
 
 import logging
@@ -21,12 +21,12 @@ def initialize_ai_session(ai_model, updated=False):
     AI settings were just changed, via ``updated=True``).
     """
     if session.get('ai_id') != ai_model.id or updated:
+        # drop legacy cookie-based memory keys if present (pre-Phase-3 sessions)
+        for stale_key in ('memory_queue', 'memory_queue_count', 'memory_chunk_size', 'past_context'):
+            session.pop(stale_key, None)
         session.update({
             'ai_name': ai_model.name,
             'ai_id': ai_model.id,
-            'memory_chunk_size': ai_model.settings.memory_chunk_size or 6,
-            'memory_queue_count': 0,
-            'memory_queue': [],
             'conversation_mode': ai_model.settings.conversation_mode or 'conversation',
         })
 
