@@ -1,0 +1,26 @@
+src/blueprints/settings.py
+  s_4c467e2481b592::t_69793b7194c7f7 111-113,115
+  s_4c467e2481b592::t_0e686411c462e9 132,134
+src/blueprints/chat.py
+  s_4c467e2481b592::t_f472441d37bf9e 123
+  s_4c467e2481b592::t_920c6ae27c4524 148-151,157-158
+  s_4c467e2481b592::t_1b9973a0bba0cd 295-296,298-300,304-321
+src/blueprints/profile.py
+  s_4c467e2481b592::t_a73ea244b0f7c8 152-155,160-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "4f0702d48f67961f2f442bae3aa13682de51e5dd",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
