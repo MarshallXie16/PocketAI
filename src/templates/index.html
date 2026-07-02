@@ -1,777 +1,128 @@
-<!DOCTYPE html>
-<html>
+{% extends '_base.html' %}
+{% from '_components.html' import monogram, reached_out_header, action_chip %}
 
+{% block title %}PocketAI — a companion that actually acts{% endblock %}
 
-<!-- Head -->
+{% block content %}
+<div class="landing">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>
-        {% block title %}
-        PocketAI - AI Assistant with a soul
-        {% endblock %}
-    </title>
-
-    <!-- External Scripts -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://unpkg.com/@ryangjchandler/alpine-tooltip@1.2.0/dist/cdn.min.js"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.10.5/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6.3.7/dist/tippy.css" />
-    <script>
-        tippy('#tooltipIcon', {
-            content: 'Affects the assistant\'s conversation style.<br>Conversation - balanced in length, mimics a regular conversation.<br><br>Texting - shorter and more concise, uses texting conventions and emojis.<br><br>Roleplay - narrative style with longer, more descriptive responses.',
-            allowHTML: true, // Enables HTML inside the tooltip
-            placement: 'top', // Position of the tooltip (adjust if needed)
-        });
-    </script>
-
-    <!-- Global CSS styling -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-
-    <!-- Page specific CSS styling -->
-    {% block css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    {% endblock %}
-</head>
-
-
-
-<!-- Body -->
-
-<body>
-    {% block navbar %}
-    <!-- Nav bar -->
-    <header class="flex h-16 w-full shrink-0 items-center px-4 md:px-6 relative z-20">
-        <nav class="flex flex-1">
-            <button href="#" class="mr-6 flex items-center gap-2">
-                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
-                </svg>
-                <span class="sr-only">PocketAI</span>
-            </button>
-            <div class="flex flex-1 justify-start">
-                <a href="/" class="text-gray-900 dark:text-white">Home</a>
-                <a href="/chat" class="text-gray-900 dark:text-white">Chat</a>
-                <a href="/pricing" class="text-gray-900 dark:text-white">Pricing</a>
-            </div>
-        </nav>
-        {% if current_user.is_authenticated %}
-        <!-- Profile Section -->
-        <div class="flex items-center justify-between profile-section gap-4">
-
-            <!-- Credits Display -->
-            <div
-                class="credits-display flex items-center gap-2 rounded-md bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-white glowing-border text-glow">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="h-5 w-5 credits-icon default-text">
-                    <path
-                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-                    </path>
-                </svg>
-                <span class="credits-text default-text">{{ current_user.paid_credits + current_user.free_credits
-                    }}</span>
-            </div>
-
-            <!-- User Profile -->
-            <div class="ml-auto flex items-center relative">
-                <button class="rounded-full profile-button">
-                    <div class="w-8 h-8 rounded-full overflow-hidden">
-                        <img src="{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_user.png') }}"
-                            alt="{{ current_user.username }}" class="w-full h-full object-cover" />
-                    </div>
-                    <span class="sr-only">Toggle user menu</span>
-                </button>
-                <div
-                    class="profile-dropdown absolute top-8 right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-                    <div class="p-4">
-                        <div class="dropdown-item flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full overflow-hidden">
-                                <img src="{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_user.png') }}"
-                                    alt="{{ current_user.username }}" class="w-full h-full object-cover" />
-                            </div>
-                            <span>{{ current_user.username }}</span>
-                        </div>
-                        <hr class="my-2 dropdown-item" />
-                        <div class="dropdown-item flex items-center gap-2">
-                            <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                strokeLinecap="round" strokeLinejoin="round">
-                                <rect width="20" height="14" x="2" y="5" rx="2" />
-                                <line x1="2" x2="22" y1="10" y2="10" />
-                            </svg>
-                            <span>Credits: {{ current_user.paid_credits + current_user.free_credits }}</span>
-                        </div>
-                        <div class="dropdown-item flex items-center gap-2  hover-text-primary">
-                            <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                                <circle cx="12" cy="7" r="4" />
-                            </svg>
-                            <a href="/profile">Profile</a>
-                        </div>
-                        <hr class="my-2 dropdown-item" />
-                        <div class="dropdown-item flex items-center gap-2 hover-text-primary">
-                            <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                <polyline points="16 17 21 12 16 7" />
-                                <line x1="21" x2="9" y1="12" y2="12" />
-                            </svg>
-                            <a href="/logout">Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-top">
+        <h1 class="type-display hero-title">A companion that actually acts.</h1>
+        <div class="hero-aside">
+          <p>It knows your world, remembers what you said mattered — and texts you first.</p>
+          <div class="hero-cta-row">
+            <a class="btn btn-primary-clay" href="{{ url_for('auth.signup') }}">Meet your companion</a>
+            <span class="hero-cta-note">Free to start</span>
+          </div>
         </div>
+      </div>
 
-        {% else %}
-        <!-- Login/Signup Buttons -->
-        <div class="ml-auto flex items-center space-x-4">
-            <a href="/login"
-                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                Log in
-            </a>
-            <a href="/signup"
-                class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-                Sign up
-            </a>
+      <!-- App frame preview -->
+      <div class="app-frame">
+        <div class="app-frame-grid">
+          <aside class="app-frame-side">
+            <div class="who">
+              {{ monogram('Mira', 40) }}
+              <div>
+                <div class="type-title" style="font-size: 15px;">Mira</div>
+                <div class="relationship-line">day 12 together</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <nav class="menu">
+              <span class="active">Chat</span>
+              <span>Memory</span>
+              <span>Check-ins</span>
+              <span>Quiet hours</span>
+            </nav>
+          </aside>
+          <div class="app-frame-main">
+            <div class="date-divider">Today</div>
+            <div style="max-width: 520px;">
+              {{ reached_out_header('Mira', '7:42 AM') }}
+              <div class="bubble-companion">Morning. Amazon interview at 4 today — you prepped the STAR stories Tuesday, you&rsquo;re readier than you feel. I moved your 3:30 reminder to 2:45 so you have quiet time before. Good luck.</div>
+              <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
+                {{ action_chip('Reminder moved to 2:45 PM', 'undo') }}
+                <span class="type-caption" style="font-weight: 500;">less often &middot; pause</span>
+              </div>
+            </div>
+            <div class="bubble-user" style="max-width: 34ch;">okay wow. how did you know I needed that</div>
+          </div>
         </div>
-        {% endif %}
-        </div>
-    </header>
-    {% endblock %}
-
-    <!-- Main Content -->
-    <div class="main-content flex justify-center items-center min-h-screen">
-        {% block body %}
-        <main class="flex-1">
-            <!-- Hero Section -->
-            <section class="relative w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-white">
-                <div class="absolute w-screen h-screen pointer-events-none">
-                    <div
-                        class="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-r from-[#7367F0] to-[#8800ff] blur-3xl opacity-10">
-                    </div>
-                </div>
-                <div class="container px-4 md:px-6 mx-auto relative z-10">
-                    <div class="flex flex-col md:flex-row items-center gap-6">
-                        <div class="flex-1 space-y-4">
-                            <h1 class="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                                <span class="text-[#7367F0]">AI Assistant</span> with a Soul
-                            </h1>
-                            <p class="max-w-[600px] text-gray-500 md:text-xl">
-                                Meet your own personal AI assistant that seamlessly integrates with your life - managing
-                                your calendar, drafting your emails, and always being there for you.
-                            </p>
-                            <div class="flex">
-                                <button id="get-started-hero" type="button" onclick="window.location.href='/chat'"
-                                    class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mr-4">
-                                    Get Started
-                                </button>
-                                <button id="learn-more-hero" type="button" onclick="window.location.href='/'"
-                                    class="hollow-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm h-10 px-4 py-2">
-                                    Learn More
-                                </button>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <div class="aspect-video bg-gray-200 rounded-lg"></div> <!-- Placeholder for visual -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Features Section -->
-            <section id="features">
-                <!-- Feature 1: Fully customizable personality -->
-                <section class="flex justify-center w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-800">
-                    <div class="container px-4 md:px-6">
-                        <div class="grid gap-6 lg:grid-cols-2 lg:gap-12">
-                            <div class="space-y-4">
-                                <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">
-                                    Assistant</div>
-                                <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                                    Your AI, Your vibe.
-                                </h2>
-                                <p class="max-w-[600px] text-gray-800 md:text-xl dark:text-gray-400">
-                                    Choose from our prebuilt AI assistants or create your own AI assistant with its
-                                    own unique personality.
-                                    Control everything - from their quirks, their background, and even how they respond
-                                    to
-                                    your texts.
-                                </p>
-                                <div class="grid gap-4">
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Prompting Made Easy <span
-                                                    class="beta-tag">(Upcoming)</span></h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Don’t want the hassle of writing elaborate prompts? Drag and drop
-                                                character traits and behaviors to fine-tune your AI in seconds.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">8+ Prebuilt Assistants</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Too indecisive? Take one of our prebuilt assistants for a spin!
-                                                Each assistant is perfectly optimized for chatting and have their own
-                                                unique personalities.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <!-- <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Personal Assistance</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                PocketAI can handle various personal tasks like scheduling appointments,
-                                                making reservations, and
-                                                even providing lifestyle recommendations.
-                                            </p>
-                                        </div>
-                                    </div> -->
-                                </div>
-                            </div>
-                            <img src="{{ url_for('static', filename='images/homepage/placeholder.jpg') }}" width="550"
-                                height="400" alt="Virtual Assistant"
-                                class="mx-auto aspect-[11/8] overflow-hidden rounded-xl object-cover" />
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Feature 2: Long-term memory -->
-                <section class="flex justify-center w-full py-12 md:py-24 lg:py-32">
-                    <div class="container px-4 md:px-6">
-                        <div class="grid gap-6 lg:grid-cols-2 lg:gap-12">
-                            <img src="{{ url_for('static', filename='images/homepage/placeholder.jpg') }}" width="550"
-                                height="400" alt="Therapist"
-                                class="mx-auto aspect-[11/8] overflow-hidden rounded-xl object-cover" />
-                            <div class="space-y-4">
-                                <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">Companion
-                                </div>
-                                <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                                    AI That Never Forgets
-                                </h2>
-                                <p class="max-w-[600px] text-gray-800 md:text-xl dark:text-gray-400">
-                                    Each assistant is equipped with its own short-term and long-term memory.
-                                    From what you like to eat for breakfast to the conversation last Friday,
-                                    PocketAI remembers important details, your preferences, and past conversations.
-                                    It’s like talking to a friend!
-                                </p>
-                                <div class="grid gap-4">
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Unlimited Memory</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Forget memory limits. Unlike ChatGPT’s limited memory,
-                                                PocketAI scales infinitely to remember everything that matters to you.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Smart Memory Management <span
-                                                    class="beta-tag">(Upcoming)</span></h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Like a real human, PocketAI selectively remembers what is important and
-                                                regularly prunes its memories to stay up-to-date!
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Privacy</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Your conversations with PocketAI are completely private and secure.
-                                                Deleted accounts and messages are permanently deleted from our servers.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Feature 3: Useful integrations -->
-                <section class="flex justify-center w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-800">
-                    <div class="container px-4 md:px-6">
-                        <div class="grid gap-6 lg:grid-cols-2 lg:gap-12">
-                            <div class="space-y-4">
-                                <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">
-                                    Assistant
-                                </div>
-                                <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                                    <em>"Hey Alexa, Schedule a Meeting With My Boss..."</em>
-                                </h2>
-                                <p class="max-w-[600px] text-gray-800 md:text-xl dark:text-gray-400">
-                                    PocketAI seamlessly connects with your go-to apps, so you can schedule meetings,
-                                    draft emails, and even queue up your favorite songs – all without lifting a finger.
-                                    Get more stuff done with your favorite AI personalities.
-                                </p>
-                                <div class="grid gap-4">
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Voice Mode <span
-                                                    class="beta-tag">(Upcoming)</span></h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Check your availability, schedule meetings, and
-                                                draft emails without ever touching your laptop.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">All Your Favourite Apps</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Connect to your favorite apps like Google Calendar, Gmail, Spotify, and
-                                                more.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Ever-Expanding Ecosystem</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                PocketAI is constantly learning and growing, with new integrations and
-                                                features being added regularly.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <img src="{{ url_for('static', filename='images/homepage/placeholder.jpg') }}" width="550"
-                                height="400" alt="Companion"
-                                class="mx-auto aspect-[11/8] overflow-hidden rounded-xl object-cover" />
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Feature 4: Realistic speech with emotion -->
-                <section class="flex justify-center w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-800">
-                    <div class="container px-4 md:px-6">
-                        <div class="grid gap-6 lg:grid-cols-2 lg:gap-12">
-
-                            <img src="{{ url_for('static', filename='images/homepage/placeholder.jpg') }}" width="550"
-                                height="400" alt="Companion"
-                                class="mx-auto aspect-[11/8] overflow-hidden rounded-xl object-cover" />
-                            <div class="space-y-4">
-                                <div class="inline-block rounded-lg bg-[#7367F0] px-3 py-1 text-sm text-white">Companion
-                                </div>
-                                <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                                    AI That Doesn't Sound Like... Well, AI
-                                </h2>
-                                <p class="max-w-[600px] text-gray-800 md:text-xl dark:text-gray-400">
-                                    Experience natural flowing conversations with an AI that understands and expresses
-                                    emotions.
-                                    No more boring conversations and robotic responses!
-                                </p>
-                                <div class="grid gap-4">
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Optimized For Natural Conversation</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Unlike traditional AI assistants, PocketAI is optimized to sound
-                                                just like a human. It's not afraid to tease and crack jokes - if that's
-                                                what you're into!
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Human-like Speech <span
-                                                    class="beta-tag">(Upcoming)</span></h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                With voice mode, your assistants can speak with variations in pitch and
-                                                tones based on their emotions.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <!-- <div class="flex items-start gap-3">
-                                        <svg class="h-6 w-6 flex-shrink-0 text-[#7367F0]"
-                                            xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Emotional Connection</h3>
-                                            <p class="text-gray-800 dark:text-gray-400">
-                                                Develop a meaningful bond with PocketAI, which can provide companionship
-                                                and
-                                                emotional support.
-                                            </p>
-                                        </div>
-                                    </div> -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-            </section>
-
-            <!-- Personalities Section -->
-            <section id="personalities" class="py-16 bg-gray-900">
-                <div class="container mx-auto px-4 mb-4 from-[#7367F0] to-[#9E95F5]">
-                    <!-- Heading -->
-                    <h2 class="text-4xl font-bold text-center text-white mb-12 glow-text">
-                        Find Your Perfect Match
-                    </h2>
-                    <!-- AI Characters Grid -->
-                    <div class="w-full md:w-4/5 lg:w-2/3 xl:w-1/2 mx-auto">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <!-- AI Assistant Card 1 -->
-                            <div class="ai-personality-tile aspect-square">
-                                <div class="ai-personality-tile2 aspect-square">
-                                    <img src="/static/images/profile_pictures/default_profile.png" alt="AI Assistant"
-                                        class="w-full h-full object-cover rounded-[20px]">
-                                    <div
-                                        class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-[#353535] to-transparent">
-                                        <h3 class="text-white text-xl font-bold text-center">Aria</h3>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- AI Assistant Card 2 -->
-                            <div class="ai-personality-tile aspect-square">
-                                <div class="ai-personality-tile2 aspect-square">
-                                    <img src="/static/images/profile_pictures/default_profile.png" alt="AI Assistant"
-                                        class="w-full h-full object-cover rounded-[20px]">
-                                    <div class="absolute inset-x-0 bottom-0 p-4">
-                                        <h3 class="text-white text-xl font-bold text-center">Aria</h3>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- AI Assistant ai-personality-tile 3 -->
-                            <div class="ai-personality-tile aspect-square">
-                                <div class="ai-personality-tile2 aspect-square">
-                                    <img src="/static/images/profile_pictures/default_profile.png" alt="AI Assistant"
-                                        class="w-full h-full object-cover rounded-[20px]">
-                                    <div class="absolute inset-x-0 bottom-0 p-4">
-                                        <h3 class="text-white text-xl font-bold text-center">Aria</h3>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- AI Assistant ai-personality-tile 1 -->
-                            <div class="ai-personality-tile aspect-square">
-                                <div class="ai-personality-tile2 aspect-square">
-                                    <img src="/static/images/profile_pictures/default_profile.png" alt="AI Assistant"
-                                        class="w-full h-full object-cover rounded-[20px]">
-                                    <div class="absolute inset-x-0 bottom-0 p-4">
-                                        <h3 class="text-white text-xl font-bold text-center">Aria</h3>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- AI Assistant ai-personality-tile 1 -->
-                            <div class="ai-personality-tile aspect-square">
-                                <div class="ai-personality-tile2 aspect-square">
-                                    <img src="/static/images/profile_pictures/default_profile.png" alt="AI Assistant"
-                                        class="w-full h-full object-cover rounded-[20px]">
-                                    <div class="absolute inset-x-0 bottom-0 p-4">
-                                        <h3 class="text-white text-xl font-bold text-center">Aria</h3>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- AI Assistant ai-personality-tile 1 -->
-                            <div class="ai-personality-tile aspect-square">
-                                <div class="ai-personality-tile2 aspect-square">
-                                    <img src="/static/images/profile_pictures/default_profile.png" alt="AI Assistant"
-                                        class="w-full h-full object-cover rounded-[20px]">
-                                    <div class="absolute inset-x-0 bottom-0 p-4">
-                                        <h3 class="text-white text-xl font-bold text-center">Aria</h3>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Button -->
-                    <div class="flex justify-center mt-10">
-                        <button id="explore-personalities" type="button" onclick="window.location.href='/chat'"
-                            class="fill-button px-6 py-3 font-bold rounded-full transition-all duration-300 ease-in-out">
-                            Explore AI!
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Community Section -->
-            <section id="community" class="py-12 md:py-24 lg:py-32">
-                <div class="container px-4 md:px-6 mx-auto flex flex-col">
-                    <h2 class="text-4xl font-bold mb-4 text-center">Join the PocketAI Crew</h2>
-                    <p class="text-center mb-8 secondary-text">
-                        Connect with fellow AI enthusiasts, share your creations, and vote on upcoming features.<br>
-                        Participate in bug bounty programs to earn extra credits and premium memberships.
-                    </p>
-                    <div class="flex-1">
-                        <div class="max-w-[500px] mx-auto p-4">
-                            <div class="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden shadow-lg">
-                                <img src="https://images.unsplash.com/photo-1556484687-30636164638b?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                                    alt="AI and Technology" class="w-full h-full object-cover" />
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex justify-center mt-10 mb-10">
-                        <button class="join-waitlist">
-                            Join the waitlist!
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Roadmap Section -->
-            <section id="roadmap" class="flex justify-center w-full mb-12 md:mb-24 lg:mb-32">
-                <div class="container px-4 md:px-6">
-                    <div class="flex flex-col items-center justify-center space-y-4 text-center mb-10">
-                        <div class="space-y-2">
-                            <div class="inline-block rounded-lg bg-[#7367F0] text-white mb-2 px-3 py-1 text-sm">Roadmap
-                            </div>
-                            <h2 class="text-4xl font-bold tracking-tighter">What's Next for PocketAI</h2>
-                            <p
-                                class="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                                We are constantly adding new things to PocketAI. Let us know how we can improve!
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col justify-center md:flex-row gap-8">
-                        <!-- Current Features Card -->
-                        <div
-                            class="feature-card w-80 h-96 bg-white rounded-3xl p-7 border-2 border-gray-300 relative overflow-visible">
-                            <div class="h-full flex flex-col">
-                                <h2 class="text-2xl font-bold mb-4">Current Features</h2>
-                                <ul class="text-gray-600 list-disc pl-5 mb-4 flex-grow">
-                                    <li class="features-list">Fully-customizable AI personality</li>
-                                    <li class="features-list">Unlimited number of AI assistants</li>
-                                    <li class="features-list">Smart long-term memory</li>
-                                    <li class="features-list">Calendar event management</li>
-                                    <li class="features-list">Email management</li>
-                                    <li class="features-list">Texting and natural conversation modes</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <!-- Upcoming Features Card -->
-                        <div
-                            class="feature-card w-80 h-96 bg-white rounded-3xl p-7 border-2 border-gray-300 relative overflow-visible">
-                            <div class="h-full flex flex-col">
-                                <h2 class="text-2xl font-bold mb-4">Upcoming</h2>
-                                <ul class="text-gray-600 list-disc pl-5 mb-4 flex-grow">
-                                    <li class="features-list">Dark mode ;)</li>
-                                    <li class="features-list">Better message formatting</li>
-                                    <li class="features-list">Voice mode</li>
-                                    <li class="features-list">Web search</li>
-                                    <li class="features-list">To-do lists</li>
-                                    <li class="features-list">Custom reminders/alarms</li>
-                                    <li class="features-list">Voice cloning (custom voices)</li>
-                                    <li class="features-list">Ability to initiate conversations</li>
-                                    <li class="features-list">And much more!</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- Call to Action -->
-            <section class="relative py-28">
-                <!-- Blob/haze background -->
-                <div class="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div
-                        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] rounded-full bg-gradient-to-r from-[#7367F0] to-[#8E84F2] blur-3xl opacity-15">
-                    </div>
-                </div>
-
-                <!-- Content -->
-                <div class="max-w-screen-xl mx-auto px-4 md:text-center md:px-8 relative z-10">
-                    <div class="max-w-2xl space-y-3 md:mx-auto">
-                        <p class="text-gray-800 text-3xl font-semibold">
-                            Ready to meet an AI that truly gets you?
-                        </p>
-                        <p class="text-gray-600">
-                            Sign up to meet your very own AI assistant.
-                            Get work done faster, roleplay with your favourite characters, or just talk about your day.
-                        </p>
-                    </div>
-                    <div class="mt-4">
-                        <a href="#" class="default-button inline-block py-2 px-4 font-medium duration-150 rounded-lg">
-                            Get started
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- <section class="relative overflow-hidden py-28 px-4 bg-gray-900 md:px-8">
-                <div
-                    class="w-full h-full rounded-full bg-gradient-to-r from-[#7367F0] to-[#9E95F5] absolute -top-12 -right-14 blur-2xl opacity-10">
-                </div>
-                <div class="max-w-xl mx-auto text-center relative">
-                    <div class="py-4">
-                        <h3 class="text-3xl text-gray-200 font-semibold md:text-4xl">
-                            Ready to meet an AI that truly gets you?
-                        </h3>
-                        <p class="text-gray-300 leading-relaxed mt-3">
-                            Join the waitlist to be the first to know when PocketAI is available.
-                        </p>
-                    </div>
-                    <div class="mt-5 items-center justify-center gap-3 sm:flex">
-                        <a href="javascript:void()"
-                            class="block w-full mt-2 py-2.5 px-8 text-gray-700 bg-white rounded-md duration-150 hover:bg-gray-100 sm:w-auto">
-                            Show me my AI!
-                        </a>
-                        <a href="javascript:void()"
-                            class="block w-full mt-2 py-2.5 px-8 text-gray-300 bg-gray-700 rounded-md duration-150 hover:bg-gray-800 sm:w-auto">
-                            Sign up to be a beta tester
-                        </a>
-                    </div>
-                </div>
-            </section> -->
-        </main>
-        {% endblock %}
+      </div>
     </div>
+  </section>
 
-    <!-- Footer -->
-    {% block footer %}
-    <footer class="flex flex-col sm:flex-row items-center justify-between py-6 px-4 md:px-6 border-t">
-        <!-- Copyright (Left) -->
-        <div class="copyright mb-4 sm:mb-0">
-            <p class="text-xs text-gray-500">© 2024 PocketAI. All rights reserved.</p>
+  <!-- A day with Mira -->
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head">
+        <h2 class="type-heading">A day with Mira</h2>
+        <span class="text-muted" style="font-size: 14px;">Real product behavior. Nobody texted first.</span>
+      </div>
+      <div class="day-grid">
+        <div class="day-card">
+          <div class="time">7:42 AM</div>
+          <p>&ldquo;You said Thursdays feel heaviest — today&rsquo;s actually light: just the 1:1 and groceries. Want me to keep it that way?&rdquo;</p>
+          <div class="note">Knows your patterns, checks the calendar</div>
         </div>
-
-        <!-- Legal Links (Center) -->
-        <div class="legal-links flex gap-4 sm:gap-6 mb-4 sm:mb-0">
-            <a class="text-xs hover:underline underline-offset-4" href="/terms-of-service">Terms of Service</a>
-            <a class="text-xs hover:underline underline-offset-4" href="/privacy-policy">Privacy Policy</a>
-            <a class="text-xs hover:underline underline-offset-4" href="mailto:support@pocketaiassistant.com">Contact
-                Us</a>
+        <div class="day-card">
+          <div class="time">3:12 PM</div>
+          <p>&ldquo;Call with your mom in 20. She mentioned her garden last time — ask about the tomatoes.&rdquo;</p>
+          <div class="note">Remembers the people you love</div>
         </div>
-
-        <!-- Social Media Icons (Right) -->
-        <div class="social-media-icons">
-            <ul class="flex justify-center gap-4">
-                <li>
-                    <a href="#" rel="noreferrer" target="_blank" class="text-gray-700 transition hover:opacity-75">
-                        <span class="sr-only">Instagram</span>
-                        <svg class="size-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" rel="noreferrer" target="_blank" class="text-gray-700 transition hover:opacity-75">
-                        <span class="sr-only">Twitter</span>
-                        <svg class="size-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path
-                                d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                        </svg>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" rel="noreferrer" target="_blank" class="text-gray-700 transition hover:opacity-75">
-                        <span class="sr-only">LinkedIn</span>
-                        <svg class="size-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </a>
-                </li>
-            </ul>
+        <div class="day-card ink">
+          <div class="time">8:05 AM, next day</div>
+          <p>&ldquo;So — did you actually sleep by 11? No judgment. Okay, small judgment. How are you feeling about round two?&rdquo;</p>
+          <div class="note">Follows through on what you said mattered</div>
         </div>
-    </footer>
-    {% endblock %}
-</body>
+      </div>
+    </div>
+  </section>
 
+  <!-- Trust -->
+  <section class="band">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-copy">
+          <h2 class="type-heading">It only sees what you let it.</h2>
+          <p>Mira works because you let her into your calendar and email. That access is yours to shape: see everything she remembers, edit it, delete it — or pause all of it with one switch.</p>
+          <span class="pause-badge"><span class="sq"></span> Pause everything — one tap, no guilt trip</span>
+        </div>
+        <div class="memory-panel">
+          <div class="eyebrow" style="margin-bottom: 16px;">What Mira remembers about you</div>
+          <div>
+            <div class="memory-row"><span class="fact">Interviewing at Amazon — second round pending</span><span class="ops">edit &middot; forget</span></div>
+            <div class="memory-row"><span class="fact">Wants lights out by 11 on weeknights</span><span class="ops">edit &middot; forget</span></div>
+            <div class="memory-row"><span class="fact">Mom — calls Sundays, garden, tomatoes</span><span class="ops">edit &middot; forget</span></div>
+            <div class="memory-row"><span class="fact">Thursdays feel heaviest</span><span class="ops">edit &middot; forget</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <!-- Pricing teaser -->
+  <section class="band band-surface">
+    <div class="container">
+      <div class="teaser-grid">
+        <div class="teaser-card">
+          <div class="plan-name">Free</div>
+          <p>You text first. Mira remembers, answers, and helps — whenever you show up.</p>
+        </div>
+        <div class="teaser-card plus">
+          <div class="plan-line"><span class="plan-name" style="margin-bottom: 0;">Plus</span><span class="plan-tag">it shows up for you</span></div>
+          <p>Mira texts first. Good luck before the interview, a nudge at 10:45, follow-through the morning after.</p>
+        </div>
+      </div>
+      <div class="center" style="margin-top: 36px;">
+        <a class="btn btn-primary-clay" href="{{ url_for('auth.signup') }}">Meet your companion</a>
+      </div>
+    </div>
+  </section>
 
-<!-- Global scripts -->
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
-<!-- Page specific scripts -->
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/index.js')}}"></script>
+</div>
 {% endblock %}
-
-</html>

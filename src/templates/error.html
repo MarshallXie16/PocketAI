@@ -1,12 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Error</title>
-</head>
-<body>
-    <h1>Error Page</h1>
+{% extends '_base.html' %}
+
+{% block title %}Something went wrong — PocketAI{% endblock %}
+
+{% block content %}
+<div class="status-wrap">
+  <div class="status-card">
+    <div class="status-icon bad">!</div>
+    <h1>Something went wrong</h1>
     <p>{{ message }}</p>
-    <a href="/login">Back to Login</a>
-</body>
-</html>
+    <div style="margin-top: 24px;">
+      <a class="btn btn-primary-ink" href="{{ url_for('auth.login') }}">Back to sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
