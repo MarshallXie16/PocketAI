@@ -1,7 +1,14 @@
 import os
+
+from dotenv import load_dotenv
+
+# Load .env before anything else: several components read API keys from the
+# environment at import time.
+load_dotenv()
+
+import logging
 import pytz
 import datetime
-from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, current_app, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -18,7 +25,7 @@ from src.models.users import User, AIModel, UserSettings, AISettings, Contacts
 from src.models.google_user import GoogleUser
 from src.models.message import Message
 
-from config import DevelopmentConfig, ProductionConfig, TestingConfig
+from config import select_config, MESSAGE_COST, PREMIUM_CREDITS_GRANT
 from src.utils.extensions import db, migrate
 from src.utils.utils import utilities
 from src.utils.auth import oauth, google, init_oauth
@@ -35,23 +42,31 @@ import boto3
 '''
 
 # global variables
-SAVE_EVERY_X = 2
 DEFAULT_WELCOME_MSG = "Hello, how can I help you today?"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 YOUR_DOMAIN = os.environ.get('YOUR_DOMAIN')
-MESSAGE_COST = 1
-stripe.api_key = os.environ.get('STRIPE_API_KEY')
 
-load_dotenv()
 login_manager = LoginManager()
 
+logger = logging.getLogger(__name__)
+
+
 # Instantiates and configures app
-def create_app(config_class=DevelopmentConfig):
-    # create app and configure app variables
+def create_app(config_class=None):
+    """Create the Flask app. Config is selected from APP_ENV unless a
+    config class is passed explicitly (used by tests)."""
+    config_class = config_class or select_config()
     app = Flask(__name__, template_folder=config_class.TEMPLATE_FOLDER, static_folder=config_class.STATIC_FOLDER)
     app.config.from_object(config_class)
 
-    # intitialize extensions
+    # third-party API config (after load_dotenv, unlike the old import-time reads)
+    stripe.api_key = os.environ.get('STRIPE_API_KEY')
+    app.config['S3_BUCKET_NAME'] = os.environ.get('S3_BUCKET_NAME')
+    app.config['S3_KEY'] = os.environ.get('S3_KEY')
+    app.config['S3_SECRET'] = os.environ.get('S3_SECRET')
+    app.config['S3_LOCATION'] = os.environ.get('S3_LOCATION')
+
+    # initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -60,25 +75,27 @@ def create_app(config_class=DevelopmentConfig):
 
     init_oauth(app)
 
+    if not app.debug:
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+
     return app
+
 
 app = create_app()
 
-# Load environment variables into app.config
-app.config['S3_BUCKET_NAME'] = os.getenv('S3_BUCKET_NAME')
-app.config['S3_KEY'] = os.getenv('S3_KEY')
-app.config['S3_SECRET'] = os.getenv('S3_SECRET')
-app.config['S3_LOCATION'] = os.environ.get('S3_LOCATION')
+# Lazily-created S3 client (avoids import-time AWS client construction).
+_s3_client = None
 
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=app.config['S3_KEY'],
-    aws_secret_access_key=app.config['S3_SECRET']
-)
 
-# for debugging
-# import logging
-# logging.basicConfig(level=logging.DEBUG)
+def get_s3():
+    global _s3_client
+    if _s3_client is None:
+        _s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=app.config['S3_KEY'],
+            aws_secret_access_key=app.config['S3_SECRET'],
+        )
+    return _s3_client
 
 ''' page routes '''
 
@@ -312,7 +329,7 @@ def send_message():
         print(f'Enabled: {ai_model.settings.voice_enabled}')
         print(ai_model.settings.voice_id)
         print(ai_model.settings.voice_model)
-        voice_handler = VoiceHandler(s3)
+        voice_handler = VoiceHandler(get_s3())
         voice_url = voice_handler.generate_voice(
             ai_response,
             ai_model.settings.voice_id or 'alloy',  # default
@@ -601,7 +618,7 @@ def delete_ai(ai_id):
                 if len(profile_url_parts) > 1:
                     profile_image_key = profile_url_parts[1].split('?')[0]
                     print(f"Deleting profile image: {profile_image_key}")
-                    s3.delete_object(
+                    get_s3().delete_object(
                         Bucket=app.config["S3_BUCKET_NAME"],
                         Key=profile_image_key
                     )
@@ -632,7 +649,7 @@ def delete_ai(ai_id):
         # Batch delete voice files from S3 if any exist
         if voice_files_to_delete:
             try:
-                s3.delete_objects(
+                get_s3().delete_objects(
                     Bucket=app.config["S3_BUCKET_NAME"],
                     Delete={
                         'Objects': voice_files_to_delete,
@@ -754,7 +771,7 @@ def save_profile_picture(profile_image, model, model_type):
         timestamp = datetime.datetime.now(datetime.UTC).timestamp()
         filename = f'{model_type}_profile_image{str(model.id)}{timestamp}.png'
         # upload to s3
-        s3.upload_fileobj(
+        get_s3().upload_fileobj(
             profile_image,
             app.config["S3_BUCKET_NAME"],
             filename,
