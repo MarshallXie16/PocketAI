@@ -1,0 +1,34 @@
+src/ai/prompts.py
+  s_4c467e2481b592::t_4b11946d1d6683 1-67
+src/ai/voice.py
+  s_4c467e2481b592::t_c2c951090dc05c 35,59
+  s_4c467e2481b592::t_fa793aa30d34ac 1-9,12,14,30-31,61-62
+src/models/memory_entry.py
+  s_4c467e2481b592::t_b7eae0705d03de 3
+src/ai/tools.py
+  s_4c467e2481b592::t_d8b872e2399937 1-183
+src/ai/agent.py
+  s_4c467e2481b592::t_16c44729110f7b 1-108
+src/ai/memory.py
+  s_4c467e2481b592::t_eb29e201894812 51-88
+  s_4c467e2481b592::t_b7eae0705d03de 18
+  s_4c467e2481b592::t_deaf298d5b72bf 89-90
+src/models/conversation_state.py
+  s_4c467e2481b592::t_b7eae0705d03de 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "9029411c5323012bc6961cd1b2f367d238924699",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
