@@ -13,7 +13,19 @@ SEC-2 (purge + history rewrite), SEC-3 (Fernet-encrypted tokens), BUG-1..12 (all
 - **LAUNCH-2 — Cookie/transport hardening**: Secure/HttpOnly/SameSite cookies (already in ProductionConfig), ProxyFix, HTTPS enforcement + security headers (Talisman), rate limiting (Flask-Limiter) on login/signup/AI calls/webhook.
 - **LAUNCH-3 — Deploy target**: Dockerfile (python-slim + gunicorn) → managed Postgres + S3; delete Heroku (`Procfile`, `.slugignore`, `runtime.txt`) and EB (`.ebextensions/`, `.ebignore`) artifacts once chosen. `/health` endpoint + uptime monitoring (maintainer: no Sentry).
 - **LAUNCH-4 — IP character roster + "uncensored" tier** (STRAT-2): replace copyrighted roster with original characters; drop "Uncensored Models" pricing bullet (`pricing.html:176`); restore Gemini safety settings (`ai_models.py` BLOCK_NONE). Roster must be re-seeded as `is_template=True` rows regardless (old template rows were discarded with the DB).
-- **LAUNCH-5 — Alembic baseline**: regenerate single clean baseline AFTER Phase-4 tables land (dev uses create_all meanwhile).
+- **LAUNCH-5 — Alembic baseline**: all Phase-4 tables have landed — generate the single clean baseline now (delete 2 stale revisions in migrations/versions/, `flask db revision --autogenerate -m baseline` against an empty DB, review SQLite→Postgres types).
+- **LAUNCH-6 — Live-key verification**: whole pipeline is tested with mocks only. With a populated .env: one real chat turn per provider, calendar/email tool round-trip incl. draft→confirm, proactive tick end-to-end, TTS (Gemini + fallback) + /transcribe. Also verify `gpt-5-mini`/`gemini-3-pro-preview` pricing in MODEL_REGISTRY (flagged unverified).
+
+## 🎨 Waiting on Cloud Design (frontend integration once the new UI returns)
+- **UI-1** — mic button → MediaRecorder → POST /transcribe → textarea (review-before-send). Backend live.
+- **UI-2** — render Message.initiated with the "reached out" tag + one-tap "less often / pause" (maps to UserSettings.max_proactive_per_day / clearing daily_checkin_time).
+- **UI-3** — onboarding "let them into your world" step: Google connect + proactive consent (`proactive_consent_at`) + daily check-in time + quiet hours + calendar_experiment opt-in. No UI sets these columns yet — proactive features are dormant until this ships.
+- **UI-4** — "what I remember about you" view (MemoryEntry + KeyFact list, editable/deletable) + "day N together" header line.
+
+## 🔧 Tech debt (post-overhaul)
+- **DEBT-5** — proactive tick: real job queue + per-user fairness (currently bounded batch of 10/tick, FIFO by scheduled_for); DST-ambiguous daily-checkin times (zoneinfo fold).
+- **DEBT-6** — integrations cleanup: email/calendar services still carry legacy enum-date methods (unused by the tool layer) + ruff per-file-ignores; rewrite when Phase-4b features stabilize.
+- **DEBT-7** — pgvector ranking swap once managed Postgres exists (MemoryStore interface ready; in-Python cosine fine at current scale).
 
 ---
 
