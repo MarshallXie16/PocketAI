@@ -1,0 +1,60 @@
+src/tests/test_gemini_provider.py
+  s_4c467e2481b592::t_fa49440913085f 26-29
+src/tests/test_conversation_service.py
+  s_4c467e2481b592::t_fa49440913085f 66-68,70-71
+src/providers/gemini_provider.py
+  s_4c467e2481b592::t_ed4f3db9c4ee8a 87,93-94
+  s_4c467e2481b592::t_0592fedd39df1a 111-112,114
+src/models/conversation_state.py
+  s_4c467e2481b592::t_6b3961387e7473 34-42,48-52
+  s_4c467e2481b592::t_b30f71063fc78c 20-23
+src/ai/memory.py
+  s_4c467e2481b592::t_e2151ab2ab0ad4 83-87,89-100,102-105,118-123
+  s_4c467e2481b592::t_4108a0afb30243 114-117,125
+  s_640ee1f5bee28a::t_776b53ba429db1 124
+src/tests/test_tool_confirmation.py
+  s_4c467e2481b592::t_795c63297ebefe 1-104
+src/ai/tools.py
+  s_4c467e2481b592::t_f50e85ffc9ab56 101-105,118-128,131-136
+  s_4c467e2481b592::t_15ca6bd48d9e4a 143-229,254-255,258-262,266-271
+  s_4c467e2481b592::t_06d26ff6b81953 137
+src/services/conversation_service.py
+  s_4c467e2481b592::t_29fcd10b7490d9 99-101,103-104
+  s_4c467e2481b592::t_3834089f84f67d 45-49,52
+  s_4c467e2481b592::t_8c2e46eb54a6c7 71-76,78-82
+  s_4c467e2481b592::t_549afa4685b958 65
+  s_640ee1f5bee28a::t_4801008ebca45a 53
+src/services/integrations/email_service.py
+  s_4c467e2481b592::t_0dfceda932233e 192-194,196-197,199
+  s_4c467e2481b592::t_946434115148c3 270,272,274-282
+src/ai/prompts.py
+  s_4c467e2481b592::t_d51caeb02430d3 64-66
+  s_4c467e2481b592::t_d54503c94834c8 53-56
+src/ai/agent.py
+  s_4c467e2481b592::t_e2bfc955453fbe 30
+  s_4c467e2481b592::t_bb170838755999 91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "dde677b8e9b418b8d193261e82b51d42a2328e16",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    },
+    "s_640ee1f5bee28a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a2802a9c-9b5e-4783-995c-2bde753e69ad",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
