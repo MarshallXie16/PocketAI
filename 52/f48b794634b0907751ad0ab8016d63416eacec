@@ -1,0 +1,65 @@
+.claude/hooks/lib.sh
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-114
+.claude/hooks/post-compaction.sh
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-61
+.context/backlog.md
+  s_ab802cb4f936b5::t_6102797f4cccd3 1-137
+.claude/templates/rules.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-47
+docs/INDEX.md
+  s_ab802cb4f936b5::t_a0432c5344d60a 1-31
+.claude/templates/notepad.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-240
+.claude/hooks/session-start.sh
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-77
+.claude/settings.json
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-59
+.claude/hooks/on-user-message.sh
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-92
+.claude/templates/rule-file.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-164
+.claude/templates/docs-index.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-70
+.claude/templates/project.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-270
+.claude/templates/sprint.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-264
+.claude/hooks/pre-compact.sh
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-53
+.claude/templates/backlog.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-152
+.claude/hooks/reminders.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-10
+.context/checkpoints/current.md
+  s_ab802cb4f936b5::t_3f230e42dff607 1-24
+docs/designs/overhaul-and-repositioning.md
+  s_ab802cb4f936b5::t_1a7619dab988d9 1-129
+.claude/skills/learn.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-199
+.claude/skills/session-end.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-135
+.context/project.md
+  s_ab802cb4f936b5::t_7f1d450ab4d24b 1-118
+CLAUDE.md
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-445
+.context/sprints/bootstrap/sprint.md
+  s_ab802cb4f936b5::t_d056b8ac52d9ef 1-100
+.claude/hooks/on-stop.sh
+  s_ab802cb4f936b5::t_beda39ec3e4e6c 1-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "52f48b794634b0907751ad0ab8016d63416eacec",
+  "prompts": {},
+  "sessions": {
+    "s_ab802cb4f936b5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ae6f9143-1589-4b88-9021-8d9b7b7c2003",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
