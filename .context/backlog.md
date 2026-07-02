@@ -1,9 +1,19 @@
 # Backlog
 
-**Last updated:** 2026-07-01
+**Last updated:** 2026-07-01 (post Phase-1)
 **Size cap:** ~200 lines
 
-Prioritized, actionable work for the PocketAI overhaul, distilled from the 2026-07-01 codebase audit. Full context and phasing in `docs/designs/overhaul-and-repositioning.md`. Severity: **S1 critical → S4 minor**. File:line refs are to the code as inherited.
+Prioritized, actionable work for the PocketAI overhaul. Roadmap: `docs/designs/overhaul-roadmap.md`. Severity: **S1 critical → S4 minor**.
+
+## ✅ Absorbed by Phase 0–1 (2026-07-01, branch `phase-1-stabilize`)
+SEC-2 (purge + history rewrite), SEC-3 (Fernet-encrypted tokens), BUG-1..12 (all fixed; BUG-9 fixed by removing the dead cache), PROD-1 (env-driven config, fail-closed prod), DEBT-1 (deps pinned/pruned). Also fixed beyond the audit: `strip_customer_id`/`token_expires_at` column typos, template-clone prompt leak (`AIModel.is_template` gate), Stripe webhook secret in history (scrubbed), import-time client crashes (lazy clients), stale `Message.timestamp` default.
+
+## 🚀 Pre-launch requirements (deferred from Phase 1 by maintainer priority — MUST land before public deploy)
+- **LAUNCH-1 — CSRF protection**: Flask-WTF CSRFProtect + `{{ csrf_token() }}` in forms + `X-CSRFToken` header in the ~8 fetch() sites (`chat.js`, `chat-improved.js`, `user-contacts.js`, `profile.html`); exempt the Stripe webhook. Must land atomically with template updates.
+- **LAUNCH-2 — Cookie/transport hardening**: Secure/HttpOnly/SameSite cookies (already in ProductionConfig), ProxyFix, HTTPS enforcement + security headers (Talisman), rate limiting (Flask-Limiter) on login/signup/AI calls/webhook.
+- **LAUNCH-3 — Deploy target**: Dockerfile (python-slim + gunicorn) → managed Postgres + S3; delete Heroku (`Procfile`, `.slugignore`, `runtime.txt`) and EB (`.ebextensions/`, `.ebignore`) artifacts once chosen. `/health` endpoint + uptime monitoring (maintainer: no Sentry).
+- **LAUNCH-4 — IP character roster + "uncensored" tier** (STRAT-2): replace copyrighted roster with original characters; drop "Uncensored Models" pricing bullet (`pricing.html:176`); restore Gemini safety settings (`ai_models.py` BLOCK_NONE). Roster must be re-seeded as `is_template=True` rows regardless (old template rows were discarded with the DB).
+- **LAUNCH-5 — Alembic baseline**: regenerate single clean baseline AFTER Phase-4 tables land (dev uses create_all meanwhile).
 
 ---
 

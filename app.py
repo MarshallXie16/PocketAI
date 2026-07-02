@@ -1,7 +1,15 @@
 import os
+
+from dotenv import load_dotenv
+
+# Load .env before anything else: several components read API keys from the
+# environment at import time.
+load_dotenv()
+
+import logging
 import pytz
 import datetime
-from dotenv import load_dotenv
+import requests
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, current_app, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -17,11 +25,12 @@ from src.components.voice_handler import VoiceHandler
 from src.models.users import User, AIModel, UserSettings, AISettings, Contacts
 from src.models.google_user import GoogleUser
 from src.models.message import Message
+from src.models.billing import StripeEvent
 
-from config import DevelopmentConfig, ProductionConfig, TestingConfig
+from config import select_config, MESSAGE_COST, PREMIUM_CREDITS_GRANT
 from src.utils.extensions import db, migrate
 from src.utils.utils import utilities
-from src.utils.auth import oauth, google, init_oauth
+from src.utils.auth import oauth, init_oauth
 
 import boto3
 
@@ -35,23 +44,31 @@ import boto3
 '''
 
 # global variables
-SAVE_EVERY_X = 2
 DEFAULT_WELCOME_MSG = "Hello, how can I help you today?"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 YOUR_DOMAIN = os.environ.get('YOUR_DOMAIN')
-MESSAGE_COST = 1
-stripe.api_key = os.environ.get('STRIPE_API_KEY')
 
-load_dotenv()
 login_manager = LoginManager()
 
+logger = logging.getLogger(__name__)
+
+
 # Instantiates and configures app
-def create_app(config_class=DevelopmentConfig):
-    # create app and configure app variables
+def create_app(config_class=None):
+    """Create the Flask app. Config is selected from APP_ENV unless a
+    config class is passed explicitly (used by tests)."""
+    config_class = config_class or select_config()
     app = Flask(__name__, template_folder=config_class.TEMPLATE_FOLDER, static_folder=config_class.STATIC_FOLDER)
     app.config.from_object(config_class)
 
-    # intitialize extensions
+    # third-party API config (after load_dotenv, unlike the old import-time reads)
+    stripe.api_key = os.environ.get('STRIPE_API_KEY')
+    app.config['S3_BUCKET_NAME'] = os.environ.get('S3_BUCKET_NAME')
+    app.config['S3_KEY'] = os.environ.get('S3_KEY')
+    app.config['S3_SECRET'] = os.environ.get('S3_SECRET')
+    app.config['S3_LOCATION'] = os.environ.get('S3_LOCATION')
+
+    # initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -60,25 +77,37 @@ def create_app(config_class=DevelopmentConfig):
 
     init_oauth(app)
 
+    if not app.debug:
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+
     return app
+
 
 app = create_app()
 
-# Load environment variables into app.config
-app.config['S3_BUCKET_NAME'] = os.getenv('S3_BUCKET_NAME')
-app.config['S3_KEY'] = os.getenv('S3_KEY')
-app.config['S3_SECRET'] = os.getenv('S3_SECRET')
-app.config['S3_LOCATION'] = os.environ.get('S3_LOCATION')
+# Lazily-created S3 client (avoids import-time AWS client construction).
+_s3_client = None
 
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=app.config['S3_KEY'],
-    aws_secret_access_key=app.config['S3_SECRET']
-)
 
-# for debugging
-# import logging
-# logging.basicConfig(level=logging.DEBUG)
+def get_s3():
+    global _s3_client
+    if _s3_client is None:
+        _s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=app.config['S3_KEY'],
+            aws_secret_access_key=app.config['S3_SECRET'],
+        )
+    return _s3_client
+
+def form_get(field, default=''):
+    """Read a form field as a stripped string, tolerating missing fields.
+
+    The old pattern of calling .strip() directly on request.form.get() raised
+    AttributeError (a 500) whenever a field was absent from the POST body
+    (BUG-10)."""
+    value = request.form.get(field)
+    return value.strip() if isinstance(value, str) else default
+
 
 ''' page routes '''
 
@@ -99,8 +128,8 @@ def login():
     # login request
     if request.method == 'POST':
         # obtain login info from form
-        username = request.form.get('username').strip()
-        password = request.form.get('password').strip()
+        username = form_get('username')
+        password = form_get('password')
         
         # form validation
         if not username or not password:
@@ -128,10 +157,10 @@ def signup():
     # sign up request
     if request.method == 'POST':
         # extract info from sign-up form
-        username = request.form.get('username').strip()
-        email = request.form.get('email').strip()
-        password = request.form.get('password').strip()
-        confirm_password = request.form.get('confirm-password').strip()
+        username = form_get('username')
+        email = form_get('email')
+        password = form_get('password')
+        confirm_password = form_get('confirm-password')
 
         # input validation
         if not username or not email or not password or not confirm_password:
@@ -198,13 +227,26 @@ def chat():
         db.session.commit()
         messages = [message_obj]
         
-    print(session)  # debug
+    logger.debug(session)  # debug
 
     return render_template('chat.html', ai_model=ai_model, messages=messages)
 
 
 def get_ai_model(ai_id):
+    """Fetch an AIModel with NO ownership check — only safe for template
+    lookups. Routes taking an id from the URL must use get_owned_ai()."""
     return AIModel.query.filter_by(id=ai_id).first()
+
+
+def get_owned_ai(user, ai_id):
+    """Return the AIModel only if it exists and belongs to `user`, else None.
+
+    The single ownership gate for every route that accepts an AI id from
+    the URL or request body (fixes the /ai-settings IDOR)."""
+    ai_model = AIModel.query.filter_by(id=ai_id).first()
+    if ai_model is None or ai_model not in user.ai_models:
+        return None
+    return ai_model
 
 # user settings
 @app.route('/profile', methods=['GET', 'POST'])
@@ -213,10 +255,10 @@ def profile():
     if request.method == 'POST':
 
         # get form data
-        username = request.form.get('username').strip()
-        password = request.form.get('password').strip()
-        timezone = request.form.get('timezone').strip()
-        context_length = request.form.get('context-length').strip()
+        username = form_get('username')
+        password = form_get('password')
+        timezone = form_get('timezone')
+        context_length = form_get('context-length')
         profile_image = request.files.get('profile-image')
         
         # save profile picture
@@ -276,67 +318,61 @@ def logout():
 
 ''' Chat Functionality '''
 # sends a text message
-@login_required
 @app.route('/send_message', methods=['POST'])
+@login_required
 def send_message():
-# try:
-    data = request.json
-    user_message = data.get('message')
-    ai_model_id = int(data.get('modelId'))
+    try:
+        data = request.get_json(silent=True) or {}
+        user_message = data.get('message')
+        ai_model_id = data.get('modelId')
+        if not user_message or ai_model_id is None:
+            return jsonify({'error': 'Missing required fields', 'code': 'BAD_REQUEST'}), 400
+        ai_model_id = int(ai_model_id)
 
-    # Check if user has enough credits
-    if current_user.free_credits + current_user.paid_credits < MESSAGE_COST:
-        return jsonify({'error': 'Insufficient credits', 'code': 'INSUFFICIENT_CREDITS'}), 402
+        # Check if user has enough credits
+        if current_user.free_credits + current_user.paid_credits < MESSAGE_COST:
+            return jsonify({'error': 'Insufficient credits', 'code': 'INSUFFICIENT_CREDITS'}), 402
 
-    # Get the AI model associated with ID; check if it exists
-    ai_model = get_ai_model(ai_id=ai_model_id)
-    if not ai_model:
-        return jsonify({'error': 'AI model does not exist', 'code': 'MODEL_NOT_FOUND'}), 404
-    
-    # Check if user has access to AI model
-    if ai_model not in current_user.ai_models:
-        return jsonify({'error': 'You do not have access to this AI model', 'code': 'ACCESS_DENIED'}), 403
+        # AI model must exist and belong to the user
+        ai_model = get_owned_ai(current_user, ai_model_id)
+        if not ai_model:
+            return jsonify({'error': 'AI model not found', 'code': 'MODEL_NOT_FOUND'}), 404
 
-    # add user message to the database
-    # TODO: return user message id
-    update_conversation_history(current_user.id, ai_model.id, sender="user", message=user_message)
+        # add user message to the database
+        update_conversation_history(current_user.id, ai_model.id, sender="user", message=user_message)
 
-    # Get AI response
-    ai_response = run_ai_response(ai_model.id, user_message)
-    if not ai_response:
-        raise Exception("Failed to generate AI response")
-    
-    # generate voice message if enabled
-    voice_url = None
-    if ai_model.settings.voice_enabled:
-        print(f'Enabled: {ai_model.settings.voice_enabled}')
-        print(ai_model.settings.voice_id)
-        print(ai_model.settings.voice_model)
-        voice_handler = VoiceHandler(s3)
-        voice_url = voice_handler.generate_voice(
-            ai_response,
-            ai_model.settings.voice_id or 'alloy',  # default
-            ai_model.settings.voice_model or 'tts-1'  # default
-        )
-        print(voice_url)
+        # Get AI response
+        ai_response = run_ai_response(ai_model.id, user_message)
+        if not ai_response:
+            raise RuntimeError("Failed to generate AI response")
 
-    # add ai message to the database
-    ai_message_id = update_conversation_history(current_user.id, ai_model.id, sender="assistant", message=ai_response, voice_url=voice_url)
+        # generate voice message if enabled
+        voice_url = None
+        if ai_model.settings.voice_enabled:
+            voice_handler = VoiceHandler(get_s3())
+            voice_url = voice_handler.generate_voice(
+                ai_response,
+                ai_model.settings.voice_id or 'alloy',
+                ai_model.settings.voice_model or 'tts-1'
+            )
 
-    # Deduct credits from user
-    current_user.use_credits(MESSAGE_COST)
-    db.session.commit()
+        # add ai message to the database
+        ai_message_id = update_conversation_history(current_user.id, ai_model.id, sender="assistant", message=ai_response, voice_url=voice_url)
 
-    return jsonify({"response": ai_response, 
-                    "voice_url": voice_url,
-                    "timestamp": datetime.datetime.now().isoformat(), 
-                    "ai_message_id": ai_message_id
-                    }), 200
+        # Deduct credits from user
+        current_user.use_credits(MESSAGE_COST)
+        db.session.commit()
 
-    # except Exception as e:
-    #     db.session.rollback()
-    #     app.logger.error(f"Error in send_message: {str(e)}") # TODO: swap print statements for app logger?
-    #     return jsonify({'error': 'An unexpected error occurred', 'code': 'SERVER_ERROR'}), 500
+        return jsonify({"response": ai_response,
+                        "voice_url": voice_url,
+                        "timestamp": datetime.datetime.now().isoformat(),
+                        "ai_message_id": ai_message_id
+                        }), 200
+
+    except Exception:
+        db.session.rollback()
+        logger.exception("Error in send_message")
+        return jsonify({'error': 'An unexpected error occurred', 'code': 'SERVER_ERROR'}), 500
 
 
 # run through message generation with conversation history again
@@ -350,9 +386,9 @@ def regenerate_message():
         user_message = data.get('user_message')
         ai_model_id = int(data.get('modelId'))
             
-        print(f"Regenerating message with ID: {message_id}")
-        print(f"User message: {user_message}")
-        print(f"AI model ID: {ai_model_id}")
+        logger.info(f"Regenerating message with ID: {message_id}")
+        logger.info(f"User message: {user_message}")
+        logger.info(f"AI model ID: {ai_model_id}")
         
         # Validation
         
@@ -365,20 +401,21 @@ def regenerate_message():
         if ai_model not in current_user.ai_models:
             return jsonify({'error': 'Access denied', 'code': 'ACCESS_DENIED'}), 403
 
-        # Selected message is valid
+        # Selected message is valid and belongs to this user/conversation
         message = Message.query.get_or_404(message_id)
-        if message.sender != 'assistant':
+        if message.sender != 'assistant' or message.user_id != current_user.id or message.ai_id != ai_model_id:
             return jsonify({'error': 'Invalid message ID'}), 400
-        
-        # Find and delete all later messages in thread
+
+        # Delete the regenerated message and everything after it. Selection is
+        # by id (monotonic), ordered — timestamps can collide within a second
+        # and previously deleted the preceding user message too.
         subsequent_messages = Message.query.filter(
             Message.user_id == current_user.id,
             Message.ai_id == ai_model_id,
-            Message.timestamp >= message.timestamp
-        ).all()
-        
+            Message.id >= message.id
+        ).order_by(Message.id).all()
+
         deleted_ids = [msg.id for msg in subsequent_messages]
-        print(deleted_ids[1:])
         for msg in subsequent_messages:
             db.session.delete(msg)
 
@@ -413,7 +450,7 @@ def regenerate_message():
         
     except Exception as e:
         db.session.rollback()
-        print(f'Error in regenerating message: {str(e)}')
+        logger.error(f'Error in regenerating message: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 @app.route('/edit_message', methods=['PUT'])
@@ -451,7 +488,7 @@ def edit_message():
 
     except Exception as e:
         db.session.rollback()
-        print(f'Error editing message: {str(e)}')
+        logger.error(f'Error editing message: {str(e)}')
         return jsonify({'error': 'An unexpected error occurred', 'code': 'SERVER_ERROR'}), 500
 
 @app.route('/load-more-messages', methods=['POST'])
@@ -465,7 +502,7 @@ def load_more_messages():
     messages = Message.query.filter_by(user_id=current_user.id, ai_id=ai_id).order_by(Message.timestamp.desc()).offset(current_message_count).limit(10).all()[::-1]
     # Format messages to be sent back
     formatted_messages = [{'sender': msg.sender, 'message': msg.message, 'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')} for msg in messages]
-    print(formatted_messages)
+    logger.info(formatted_messages)
     return jsonify(formatted_messages)
 
 
@@ -490,27 +527,27 @@ def ai_settings(ai_id: int):
     if request.method == 'POST':
         # retrieve form data
         profile_image = request.files.get('profile-image')
-        ai_name = request.form.get('ai-name').strip()
-        ai_model_name = request.form.get('ai-model').strip()
-        ai_prompt = request.form.get('ai-prompt').strip()
-        ai_description = request.form.get('ai-description').strip()
-        ai_memory_chunk_size = request.form.get('memory-chunk-size').strip()
-        ai_conversation_mode = request.form.get('conversation-mode').strip()
+        ai_name = form_get('ai-name')
+        ai_model_name = form_get('ai-model')
+        ai_prompt = form_get('ai-prompt')
+        ai_description = form_get('ai-description')
+        ai_memory_chunk_size = form_get('memory-chunk-size')
+        ai_conversation_mode = form_get('conversation-mode')
         voice_enabled = 'voice-enabled' in request.form
-        voice_id = request.form.get('voice-id').strip()
-        voice_model = request.form.get('voice-model').strip()
+        voice_id = form_get('voice-id')
+        voice_model = form_get('voice-model')
         
         # form validation
         if not ai_name or not ai_model_name or not ai_prompt or not ai_description or not ai_memory_chunk_size:
             flash('Please fill out all fields.', 'error')
             return redirect(url_for('ai_settings', ai_id=ai_id))
         
-        # validation: check if model exists
-        ai_model = get_ai_model(ai_id=ai_id)
+        # validation: model must exist and belong to the current user
+        ai_model = get_owned_ai(current_user, ai_id)
         if not ai_model:
             flash('AI model not found.', 'error')
             return redirect(url_for('profile'))
-        
+
         # change ai profile picture (if valid)
         if profile_image and allowed_file(profile_image.filename):
             save_profile_picture(profile_image, ai_model, "ai")
@@ -534,10 +571,10 @@ def ai_settings(ai_id: int):
             db.session.add(ai_model)
             db.session.add(ai_settings)
             db.session.commit()
-            print('AI model and settings updated successfully.')
+            logger.info('AI model and settings updated successfully.')
         except Exception as e:
             db.session.rollback()
-            print(f'Error updating AI model: {e}')
+            logger.error(f'Error updating AI model: {e}')
             flash('Error updating AI model and settings.', 'error')
             return redirect(url_for('ai_settings', ai_id=ai_id))
 
@@ -549,11 +586,11 @@ def ai_settings(ai_id: int):
         return redirect(url_for('ai_settings', ai_id=ai_id))
     # display ai settings for ai belonging to user
     else:
-        # try to find the ai model
-        ai_model = get_ai_model(ai_id=ai_id)
+        # model must exist and belong to the current user
+        ai_model = get_owned_ai(current_user, ai_id)
         if not ai_model:
             flash('AI model not found or does not belong to user', 'error')
-            return redirect(url_for('profile'))  
+            return redirect(url_for('profile'))
 
         # find associated ai settings, otherwise create it
         if not ai_model.settings:
@@ -569,10 +606,10 @@ def ai_settings(ai_id: int):
 @login_required
 def change_ai(ai_id):
     # validation - does user have access
-    if not get_ai_model(ai_id) in current_user.ai_models:
+    if not get_owned_ai(current_user, ai_id):
         flash('You do not have access to this AI model!', 'error')
-        return render_template('chat.html')
-    
+        return redirect(url_for('chat'))
+
     # Set last active_ai_id in user settings
     current_user.settings.last_active_ai_id = ai_id
     db.session.add(current_user.settings)
@@ -600,13 +637,13 @@ def delete_ai(ai_id):
                 profile_url_parts = ai_model.profile_image_url.split('.amazonaws.com/')
                 if len(profile_url_parts) > 1:
                     profile_image_key = profile_url_parts[1].split('?')[0]
-                    print(f"Deleting profile image: {profile_image_key}")
-                    s3.delete_object(
+                    logger.info(f"Deleting profile image: {profile_image_key}")
+                    get_s3().delete_object(
                         Bucket=app.config["S3_BUCKET_NAME"],
                         Key=profile_image_key
                     )
             except Exception as e:
-                print(f"Error deleting AI profile image from S3: {e}")
+                logger.error(f"Error deleting AI profile image from S3: {e}")
                 raise e
         
         # Get and delete all associated messages and their voice files
@@ -621,9 +658,9 @@ def delete_ai(ai_id):
                     if len(voice_url_parts) > 1:
                         voice_key = voice_url_parts[1].split('?')[0]
                         voice_files_to_delete.append({'Key': voice_key})
-                        print(f"Adding voice file to deletion queue: {voice_key}")
+                        logger.info(f"Adding voice file to deletion queue: {voice_key}")
                 except Exception as e:
-                    print(f"Error processing voice URL for message {message.id}: {e}")
+                    logger.error(f"Error processing voice URL for message {message.id}: {e}")
                     raise e
             
             # Delete the message from database
@@ -632,7 +669,7 @@ def delete_ai(ai_id):
         # Batch delete voice files from S3 if any exist
         if voice_files_to_delete:
             try:
-                s3.delete_objects(
+                get_s3().delete_objects(
                     Bucket=app.config["S3_BUCKET_NAME"],
                     Delete={
                         'Objects': voice_files_to_delete,
@@ -640,7 +677,7 @@ def delete_ai(ai_id):
                     }
                 )
             except Exception as e:
-                print(f"Error batch deleting voice files from S3: {e}")
+                logger.error(f"Error batch deleting voice files from S3: {e}")
                 raise e
 
         # Remove association with current user
@@ -669,7 +706,7 @@ def delete_ai(ai_id):
         
     except Exception as e:
         db.session.rollback()
-        print(f'Error deleting AI model: {e}')
+        logger.error(f'Error deleting AI model: {e}')
         return jsonify({'error': 'An unexpected error occurred'}), 500  \
             
 
@@ -689,9 +726,9 @@ def onboarding_user():
     if request.method == 'POST':
         # grab user settings info from form
         profile_image = request.files.get('profile-image')
-        username = request.form.get('username').strip()
-        user_timezone = request.form.get('timezone').strip()
-        context_length = request.form.get('messages').strip()
+        username = form_get('username')
+        user_timezone = form_get('timezone')
+        context_length = form_get('messages')
 
         # form validation
         if not username or not user_timezone or not context_length:
@@ -734,9 +771,9 @@ def update_user_settings(user, user_timezone, context_length, last_active_ai_id=
         user.settings.context_length = context_length
         user.settings.last_active_ai_id = last_active_ai_id if last_active_ai_id else user.settings.last_active_ai_id
     db.session.commit()
-    print(f'User settings for user {user.id} has been updated.')
-    print(f'Timezone: {user.settings.timezone}')
-    print(f'Context length: {user.settings.context_length}')
+    logger.info(f'User settings for user {user.id} has been updated.')
+    logger.info(f'Timezone: {user.settings.timezone}')
+    logger.info(f'Context length: {user.settings.context_length}')
 
 
 # onboarding AI page
@@ -754,7 +791,7 @@ def save_profile_picture(profile_image, model, model_type):
         timestamp = datetime.datetime.now(datetime.UTC).timestamp()
         filename = f'{model_type}_profile_image{str(model.id)}{timestamp}.png'
         # upload to s3
-        s3.upload_fileobj(
+        get_s3().upload_fileobj(
             profile_image,
             app.config["S3_BUCKET_NAME"],
             filename,
@@ -762,14 +799,14 @@ def save_profile_picture(profile_image, model, model_type):
         )
         # Generate a versioned URL to force browser to load the new image
         versioned_url = f'{app.config["S3_LOCATION"]}{filename}'
-        print(f'Profile image for {model.id} has been saved to S3! ImageURL: {versioned_url}')  # debug
+        logger.debug(f'Profile image for {model.id} has been saved to S3! ImageURL: {versioned_url}')  # debug
         model.profile_image_url = versioned_url
         
         db.session.commit()
         
     except Exception as e:
         db.session.rollback()
-        print(f'Error saving profile picture for {model_type} {model.id}: {e}')
+        logger.error(f'Error saving profile picture for {model_type} {model.id}: {e}')
         return False
     
     
@@ -783,7 +820,7 @@ def onboarding_ai_existing():
         
         ai_id = request.form.get('ai-id')
 
-        print(f'Onboarding/ai/existing: {ai_id}') # debug
+        logger.debug(f'Onboarding/ai/existing: {ai_id}') # debug
 
         # form validation
         if not ai_id:
@@ -791,7 +828,8 @@ def onboarding_ai_existing():
             return redirect(url_for('onboarding_ai_existing'))
         
         ai_model = get_ai_model(ai_id=ai_id)
-        if not ai_model:
+        # only prebuilt templates may be cloned — never another user's AI
+        if not ai_model or not ai_model.is_template:
             flash('AI model not found.', 'error')
             return redirect(url_for('onboarding_ai_existing'))
 
@@ -819,15 +857,15 @@ def onboarding_ai_create():
         try:
             # get form data
             profile_image = request.files.get('profile-image')
-            ai_name = request.form.get('ai-name').strip()
-            ai_model_name = request.form.get('ai-model').strip()
-            ai_prompt= request.form.get('ai-prompt').strip()
-            ai_description = request.form.get('ai-description').strip()
-            memory_chunk_size = request.form.get('memory-chunk-size').strip()
-            conversation_mode = request.form.get('conversation-mode').strip()
+            ai_name = form_get('ai-name')
+            ai_model_name = form_get('ai-model')
+            ai_prompt= form_get('ai-prompt')
+            ai_description = form_get('ai-description')
+            memory_chunk_size = form_get('memory-chunk-size')
+            conversation_mode = form_get('conversation-mode')
             voice_enabled = 'voice-enabled' in request.form
-            voice_id = request.form.get('voice-id').strip()
-            voice_model = request.form.get('voice-model').strip()
+            voice_id = form_get('voice-id')
+            voice_model = form_get('voice-model')
             
             # form validation
             if not ai_name or not ai_model_name or not ai_prompt or not ai_description or not memory_chunk_size:
@@ -862,7 +900,7 @@ def onboarding_ai_create():
             return redirect('/chat')
         except Exception as e:
             db.session.rollback()
-            print(f'Error creating new AI model: {e}')
+            logger.error(f'Error creating new AI model: {e}')
             flash('Error creating new AI model.', 'error')
             return redirect(url_for('onboarding_ai_create'))
     
@@ -892,7 +930,7 @@ def add_contacts():
         new_contact = create_user_contact(current_user.id, name, email, relationship, phone, notes)
         current_user.add_contact(new_contact)
         
-        print(new_contact)
+        logger.info(new_contact)
         
         # check status and return response
         if not new_contact:
@@ -911,12 +949,15 @@ def edit_contact(contact_id):
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
     # extract data from form and change the fields
-    data = request.form
-    contact.name = data['name']
-    contact.email = data['email']
-    contact.relationship = data.get('relationship', '')
-    contact.phone = data.get('phone', '')
-    contact.notes = data.get('notes', '')
+    name = form_get('name')
+    email = form_get('email')
+    if not name or not email:
+        return jsonify({'success': False, 'error': 'Name and email are required'}), 400
+    contact.name = name
+    contact.email = email
+    contact.relationship = form_get('relationship')
+    contact.phone = form_get('phone')
+    contact.notes = form_get('notes')
     
     db.session.commit()
     
@@ -968,84 +1009,73 @@ def create_checkout_session():
         # redirect to stripe hosted checkout page
         return redirect(checkout_session.url, code=303)
     except Exception as e:
-        print(f'Subscription Purchase Error: {e}')
+        logger.error(f'Subscription Purchase Error: {e}')
         return redirect('/error?message=Error creating subscription session.')
 
 # webhook endpoint for stripe
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
-    # raw data from stripe servers
+    # raw data from stripe servers + signature proving it came from stripe
     payload = request.data
-    # signature to verify that it came from stripe servers
-    sig_header = request.headers.get('STRIPE_SIGNATURE')
-    # used to verify stripe signature
+    sig_header = request.headers.get('Stripe-Signature')
     endpoint_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
     try:
-        # try to reconstruct event
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except ValueError as e:
-        raise e
-    except stripe.error.SignatureVerificationError as e:
-        raise e
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except (ValueError, stripe.error.SignatureVerificationError):
+        logger.warning('Rejected Stripe webhook with invalid payload/signature')
+        return jsonify({'error': 'invalid signature'}), 400
+
+    # idempotency: Stripe retries webhooks; never grant twice for one event
+    if StripeEvent.query.filter_by(event_id=event['id']).first():
+        return jsonify({'status': 'already processed'}), 200
 
     event_type = event['type']
-    print(f'Event: {event}')
-    # user has successfully paid
     if event_type == 'checkout.session.completed':
-        session = event['data']['object']
-        handle_checkout_session(session)
-    elif event_type == 'customer.subscription.updated':
-        print('Subscription created %s', event.id)
+        handle_checkout_session(event['data']['object'])
     elif event_type == 'customer.subscription.deleted':
-        print('Subscription canceled: %s', event.id)
+        logger.info('Subscription canceled: %s', event['id'])
+    else:
+        logger.info('Unhandled Stripe event type: %s', event_type)
 
+    db.session.add(StripeEvent(event_id=event['id']))
+    db.session.commit()
     return jsonify({'status': 'success'})
 
-# handles successful payment session
-@login_required
-def handle_checkout_session(session):
-    # retrieves user id from session and save strip customer id
-    user_id = session.client_reference_id
-    stripe_customer_id = session.customer
-    current_user.stripe_customer_id = stripe_customer_id
-    db.session.commit()
-    print(f'Suceessful payment for user: {user_id}')
 
-    # retrieve subscription id
+# handles successful payment session
+# NOTE: called from the webhook — there is no logged-in session here, so the
+# user always comes from client_reference_id, never current_user.
+def handle_checkout_session(checkout_session):
+    user_id = checkout_session['client_reference_id']
+    user = User.query.get(user_id)
+    if not user:
+        logger.error('Stripe checkout for unknown user id %s', user_id)
+        return
+
+    user.stripe_customer_id = checkout_session['customer']
+
+    # resolve the purchased price's lookup key
     session_with_line_item = stripe.checkout.Session.retrieve(
-        session['id'],
+        checkout_session['id'],
         expand=['line_items']
     )
-    # Get the price ID from the single line item
     line_item = session_with_line_item['line_items']['data'][0]
-    price_id = line_item['price']['id']
-
-    # Retrieve the price object to get the lookup key
-    price = stripe.Price.retrieve(price_id)
+    price = stripe.Price.retrieve(line_item['price']['id'])
     lookup_key = price['lookup_key']
 
-    print(f'User purchased product: {lookup_key}')
-        
-    # Update the user's subscription status or credits
-    update_user_subscription(user_id, lookup_key)
+    update_user_subscription(user, lookup_key)
+    logger.info('Fulfilled checkout for user %s (plan: %s)', user_id, lookup_key)
+
 
 # updates user subscription plan
-def update_user_subscription(user_id, subscription_plan):
-    # set user subscription plan and credits
-    user = User.query.get(user_id)
-    user.plan = subscription_plan
+def update_user_subscription(user, subscription_plan):
     if subscription_plan == 'premium':
-        print("User has purchased Premium subscription plan.")
-        user.credits += 100
+        user.plan = 'premium'
+        user.add_paid_credits(PREMIUM_CREDITS_GRANT)
     else:
-        print("Not valid subscription plan.")
-
+        logger.error('Unknown subscription plan in Stripe fulfillment: %s', subscription_plan)
     db.session.commit()
-
-    print(f'User {user_id} has been updated to subscription plan {subscription_plan}.')
 
 @app.route('/cancel-subscription', methods=['POST'])
 @login_required
@@ -1094,24 +1124,23 @@ def cancel():
     return render_template('payment-canceled.html')
 
 
-''' Credits and Admin Routes '''
+''' Admin Routes '''
+# NOTE: the old GET /add-credits/<amount> route was removed — it let any
+# logged-in user grant themselves unlimited credits. Credits are granted
+# only by Stripe fulfillment and admin actions.
 
-# testing implementation
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'your_admin_password')
 from flask import abort
+import hmac
 
-@app.route('/add-credits/<int:amount>', methods=['GET'])
-@login_required
-def add_credits(amount):
-    current_user.add_paid_credits(amount)
-    db.session.commit()
-    return jsonify({'success': True}), 200
 
 @app.route('/admin/reset_credits', methods=['POST'])
+@login_required
 def reset_credits():
-    password = request.form.get('password')
-    if password != ADMIN_PASSWORD:
-        abort(403)  # Forbidden
+    # requires an admin user AND the admin password (no default; unset = disabled)
+    admin_password = os.getenv('ADMIN_PASSWORD')
+    password = request.form.get('password') or ''
+    if not current_user.is_admin or not admin_password or not hmac.compare_digest(password, admin_password):
+        abort(403)
 
     users = User.query.all()
     for user in users:
@@ -1203,12 +1232,12 @@ def authorize():
             flash('Google account linked!', 'success')
             return redirect(url_for('onboarding_user'))
         else:
-            print('redirecting to chat')
+            logger.info('redirecting to chat')
             return redirect('/chat')
         
     except Exception as e:
         db.session.rollback()
-        print(f'Google Login Error: {e}')
+        logger.info(f'Google Login Error: {e}')
         flash('Failed to authenticate google account. :(', 'error')
         return redirect('/login')
     
@@ -1265,13 +1294,13 @@ def authorize_link():
             flash('Google account linked!', 'success')
         except Exception as e:
             db.session.rollback()
-            print(f"Error linking Google account: {e}")  # Basic logging
+            logger.error(f"Error linking Google account: {e}")  # Basic logging
             flash('Failed to link Google account. Please try again.', 'error')
 
         return redirect(url_for('onboarding_user'))
     
     except Exception as e:
-        print(f"Error in authorize_link: {e}")  # Basic logging
+        logger.error(f"Error in authorize_link: {e}")  # Basic logging
         flash('Failed to link Google account. Please try again.', 'error')
         return redirect(url_for('onboarding_user'))
 
@@ -1298,23 +1327,30 @@ def initiate_google_login(login_type=None):
 # Purpose: refreshes access token for google user
 # Input: google_user (GoogleUser)
 # Output: status (boolean)
+# NOTE: the old implementation called a method on the module-level `google`
+# object, which was permanently None (BUG-11); this talks to Google's token
+# endpoint directly.
 def refresh_access_token(google_user):
-    # try to refresh access token
     try:
-        # refresh token
-        new_token = google.refresh_token(
-            refresh_url='https://oauth2.googleapis.com/token',
-            refresh_token=google_user.refresh_token
+        resp = requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'client_id': app.config['GOOGLE_CLIENT_ID'],
+                'client_secret': app.config['GOOGLE_CLIENT_SECRET'],
+                'refresh_token': google_user.refresh_token,
+                'grant_type': 'refresh_token',
+            },
+            timeout=10,
         )
+        resp.raise_for_status()
+        new_token = resp.json()
 
-        # update access token and expiration time
         google_user.access_token = new_token['access_token']
         google_user.token_expires_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=new_token['expires_in'])
         db.session.commit()
         return True
-    # handle exception; return false
-    except Exception as e:
-        print(f'Failed to refresh google access token: {e}')
+    except Exception:
+        logger.exception('Failed to refresh google access token')
         return False
     
 # Purpose: Logs in user and set user and selected ai session variables
@@ -1371,7 +1407,7 @@ def get_active_ai(user):
         # return the first one if no active ai model, if no models, return none
         return user.ai_models[0] if user.ai_models else None
     except Exception as e:
-        print(f'Error getting active AI model: {e}')
+        logger.error(f'Error getting active AI model: {e}')
         return None
 
 
@@ -1394,17 +1430,17 @@ def run_ai_response(ai_id, user_message):
     ai_name = session.get('ai_name', 'Assistant')
 
     # Settings for debugging
-    print(f'---- Settings ----')
-    print(f'Memory Queue Count: {memory_queue_count}')  # debug
-    print(f'Memory Queue:       {memory_queue}')        # debug
-    print(f'Context length:     {context_length}')      # debug
-    print(f'------------------')
+    logger.info(f'---- Settings ----')
+    logger.debug(f'Memory Queue Count: {memory_queue_count}')  # debug
+    logger.debug(f'Memory Queue:       {memory_queue}')        # debug
+    logger.debug(f'Context length:     {context_length}')      # debug
+    logger.info(f'------------------')
 
     # Instantiate AI model
     try: 
         ai = AI_model(ai_id, current_user.username)
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         raise Exception("Failed to instantiate AI model.") 
 
     # query and parse conversation history
@@ -1415,7 +1451,7 @@ def run_ai_response(ai_id, user_message):
             Message.timestamp.desc()).limit(context_length).all()[::-1]
         latest_messages = [{"role": msg.sender, "content": msg.message} for msg in conversation_history]
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         latest_messages = []
         
     # get system info
@@ -1429,9 +1465,9 @@ def run_ai_response(ai_id, user_message):
     if intention and is_function_call:
         # format system info
         context, function_log = context_analyzer.parse_func(intention, latest_messages, current_user.id, ai_id, system_info)
-        print(f'Context: {context}')  # debug
-        print(f'Function log: {function_log}')  # debug
-        print("---------------------------------")
+        logger.debug(f'Context: {context}')  # debug
+        logger.debug(f'Function log: {function_log}')  # debug
+        logger.info("---------------------------------")
     # clarification is needed but no functions were called
     elif intention:
         context = f'Seek clarification: {intention}'
@@ -1444,22 +1480,22 @@ def run_ai_response(ai_id, user_message):
     # run ai response with the provided context (if any) 
     response = ai.get_response(latest_messages, context=context, function_log=function_log, system_info=system_info)
 
-    print(f'AI response: {response}')  # debug
-    print(f'Message count: {memory_queue_count}/{memory_chunk_size}')  # debug
-    print("---------------------------------")
+    logger.debug(f'AI response: {response}')  # debug
+    logger.debug(f'Message count: {memory_queue_count}/{memory_chunk_size}')  # debug
+    logger.info("---------------------------------")
 
     # saves short-term memory to long-term memory every x message cycles
     if memory_queue_count >= memory_chunk_size:
-        print(f'Short-term memory: {memory_queue}') # debug
+        logger.debug(f'Short-term memory: {memory_queue}') # debug
         # determine if message is important
         memory = utilities.summarize(memory_queue, ai_name, current_user.username)
         if memory.lower().strip() == 'false':
-            print("message not saved (not important).")
+            logger.info("message not saved (not important).")
         elif memory:
             long_term_memory.save_memory(current_user.id, ai_id, memory)
-            print("message saved.")
+            logger.info("message saved.")
         else:
-            print("message not saved (error).")
+            logger.info("message not saved (error).")
         memory_queue_count = 0
         memory_queue.clear()
     else:
@@ -1492,7 +1528,7 @@ def get_system_info(user_timezone):
         
         return f"{date_str} {time_str}"
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         return None
 
 # Purpose: adds a single message to msg database
@@ -1506,9 +1542,9 @@ def update_conversation_history(user_id, ai_id, sender, message, voice_url=None)
 
 # Purpose: prints conversation history for debugging
 def print_conversation_history(conversation_history: list):
-    print("---- Conversation History ----")
+    logger.info("---- Conversation History ----")
     for msg in conversation_history:
-        print(f"{msg['role']}: {msg['content']}")
+        logger.info(f"{msg['role']}: {msg['content']}")
     print ("-------------------------------")
 
 # Purpose: checks if file is allowed to be uploaded
@@ -1583,7 +1619,7 @@ def create_user_contact(user_id, name, email, relationship="", phone="", notes="
         return new_contact
     except Exception as e:
         db.session.rollback()
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         return False    
 
 # Purpose: Generates a welcome message and saves it to db
@@ -1596,7 +1632,7 @@ def generate_welcome_message(ai_model, user):
         welcome_message = tmp_model.get_response(False, WELCOME_PROMPT)
         return welcome_message
     except Exception as e:
-        print(f'Error generating welcome message: {e}')
+        logger.error(f'Error generating welcome message: {e}')
         return False
     
 

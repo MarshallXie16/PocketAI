@@ -1,10 +1,6 @@
 import os
 from uuid import uuid4
 from pinecone import Pinecone
-import chromadb
-from chromadb.config import Settings
-# from langchain.embeddings.openai import OpenAIEmbeddings
-# from langchain.vectorstores import Chroma
 
 from src.utils.AI_model_client import openai_client
 
@@ -29,8 +25,17 @@ from src.utils.AI_model_client import openai_client
 
 # wrapper class for memory
 class LongTermMemory:
+    """Lazily constructs the backing vector store on first use — building it
+    at import time made the app unimportable without a PINECONE_API_KEY."""
+
     def __init__(self) -> None:
-        self.memory = PineconeMemory() # swap out for other memory models if needed
+        self._memory = None
+
+    @property
+    def memory(self):
+        if self._memory is None:
+            self._memory = PineconeMemory()  # swap out for other memory models if needed
+        return self._memory
 
     def setup_memory(self):
         return self.memory.setup_memory()
@@ -83,8 +88,6 @@ class PineconeMemory:
 
         # vectorize the query
         query_vector = self.get_embedding(query)
-        with open("save.txt", "w") as f:
-            f.write(str(query_vector))
 
         # query vectordb
         results = self.db.query(

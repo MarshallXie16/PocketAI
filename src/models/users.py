@@ -1,6 +1,8 @@
 from flask_login import UserMixin
-from src.utils.extensions import db, migrate
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from config import FREE_CREDITS_DEFAULT, MEMORY_CHUNK_SIZE_DEFAULT
+from src.utils.extensions import db
 
 # many-to-many relationship between users and ai_models
 user_ai = db.Table('user_ai',
@@ -17,11 +19,12 @@ class User(UserMixin, db.Model):
     profile_image_url = db.Column(db.String(2048), nullable=True)
     active = db.Column(db.Boolean, default=True)
     plan = db.Column(db.String(64), default='free')
-    free_credits = db.Column(db.Integer, default=1500)
+    free_credits = db.Column(db.Integer, default=FREE_CREDITS_DEFAULT)
     paid_credits = db.Column(db.Integer, default=0)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     auth_type = db.Column(db.String(128))
     google_id = db.Column(db.String(256), nullable=True, unique=True)
-    strip_customer_id = db.Column(db.String(256), nullable=True)
+    stripe_customer_id = db.Column(db.String(256), nullable=True)
     settings = db.relationship('UserSettings', backref='user', uselist=False, cascade='all, delete-orphan')
     ai_models = db.relationship('AIModel', secondary=user_ai, back_populates='users')
     messages = db.relationship('Message', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
@@ -56,9 +59,9 @@ class User(UserMixin, db.Model):
         if contact in self.contacts:
             self.contacts.remove(contact)
 
-    # reset free credits to 1500 for free users (premium users don't have free credits)
+    # monthly reset for free users (premium users don't use free credits)
     def reset_free_credits(self):
-        self.free_credits = 100 if self.plan == 'free' else 0
+        self.free_credits = FREE_CREDITS_DEFAULT if self.plan == 'free' else 0
         
     def add_free_credits(self, amount):
         self.free_credits += amount
@@ -85,6 +88,9 @@ class AIModel(db.Model):
     prompt = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text)
     profile_image_url = db.Column(db.String(2048), nullable=True)
+    # Prebuilt roster entries users may clone during onboarding. Without this
+    # flag, any user could clone any other user's private AI (prompt leak).
+    is_template = db.Column(db.Boolean, default=False, nullable=False)
     users = db.relationship('User', secondary=user_ai, back_populates='ai_models')
     settings = db.relationship('AISettings', backref='ai_model', uselist=False, cascade='all, delete-orphan')
     messages = db.relationship('Message', back_populates='ai_model', cascade='all, delete-orphan')
@@ -120,14 +126,14 @@ class UserSettings(db.Model):
 # AI Settings model
 class AISettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    memory_chunk_size = db.Column(db.Integer, default=256)
+    memory_chunk_size = db.Column(db.Integer, default=MEMORY_CHUNK_SIZE_DEFAULT)
     conversation_mode = db.Column(db.String(64), default='conversation')
     voice_enabled = db.Column(db.Boolean, default=False)
     voice_id = db.Column(db.String(64), default='alloy')
     voice_model = db.Column(db.String(64), default='tts-1')
     ai_model_id = db.Column('ai_model_id', db.Integer, db.ForeignKey('ai_model.id', ondelete='CASCADE'), nullable=False)
 
-    def __init__(self, ai_model_id, memory_chunk_size=6):
+    def __init__(self, ai_model_id, memory_chunk_size=MEMORY_CHUNK_SIZE_DEFAULT):
         self.ai_model_id = ai_model_id
         self.memory_chunk_size = memory_chunk_size
 
