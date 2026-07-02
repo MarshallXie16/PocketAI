@@ -1,0 +1,51 @@
+src/blueprints/settings.py
+  s_4c467e2481b592::t_64ae1ea668ddeb 1-153
+docs/designs/reference/chat-mobile.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-39
+docs/designs/reference/onboarding-2-companion.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-73
+docs/designs/reference/landing.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-135
+docs/designs/reference/settings.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-103
+docs/designs/reference/chat.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-85
+docs/designs/reference/onboarding-1-user.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-48
+.context/sprints/bootstrap/phase-5-frontend.md
+  s_4c467e2481b592::t_f038bb168dae71 1-43
+src/services/proactive_service.py
+  s_4c467e2481b592::t_bc1c9aa43fde2b 135-138
+  s_4c467e2481b592::t_f1508c87a5a9eb 302,307-308
+  s_4c467e2481b592::t_f8366612b599fc 309-310
+src/models/users.py
+  s_4c467e2481b592::t_5dfb343aba711e 126-128
+src/blueprints/profile.py
+  s_4c467e2481b592::t_f49e1133b6ac0b 120-162
+docs/designs/reference/onboarding-3-consent.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-78
+docs/designs/reference/pricing.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-62
+docs/designs/reference/component-sheet.html
+  s_4c467e2481b592::t_ec7be40f1557a6 1-164
+src/blueprints/chat.py
+  s_4c467e2481b592::t_4ff5bf6d0f473b 82-83,85-96
+src/app_factory.py
+  s_4c467e2481b592::t_f625214a5a293b 107,110-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "e6d1ceeec490e365712629d8ef02cd98251bbe3e",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
