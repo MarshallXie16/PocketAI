@@ -23,4 +23,23 @@
 **Decision:** Model tiers (config MODEL_REGISTRY): default `claude-sonnet-4-6`, premium `claude-opus-4-8`, utility/summaries `claude-haiku-4-5`; keep OpenAI + Gemini adapters for user-selectable models. NO Fable (maintainer: cost).
 **Tier:** 2 (maintainer pre-approved tiers in plan review).
 
-## Status: IN PROGRESS — awaiting provider-API research brief for adapter implementation; scaffolding (protocol, models, store, loop skeleton) can proceed
+## Reviews (1 native opus + 1 external codex gpt-5.5)
+Codex verified all adapter wire-shapes against the INSTALLED SDK source: clean. Findings fixed:
+- **[codex Critical] Consequential tools executed on model say-so** → server-side two-phase gate: `calendar_create`/`email_send` store a draft in `ConversationState.pending_action`; `confirm_action` executes only if a genuine USER message exists with id > draft's message_id (injection in the same turn cannot confirm itself). Tests in `test_tool_confirmation.py`.
+- **[native C1] Memory queue reset before background success = silent loss** → queue persists; `consolidate_and_save` removes exactly the consumed lines after success/gate-drop; failures leave the queue for retry next turn.
+- **[native M1] email contact lookup dead NoResultFound branch** (`get_user_contact` returns None) + `search_inbox` session-scoped user_id → fixed, user_id threaded from dispatch.
+- **[native M2] tool schemas demanded RFC3339 offsets the model was never given** → `get_system_info` now includes the numeric UTC offset.
+- **[native M3] persona `.format()` crashed on user braces** (pre-existing, carried over) → token `.replace()`.
+- **[codex M] ConversationState get_or_create race** → with_for_update + IntegrityError retry; queue updates documented last-write-wins.
+- **[codex M/native m2] past_context never wired** → `AgentTurn.tool_context` collected in the loop, stored (truncated 2000 chars), passed as `extra_context` next turn.
+- Minors: generic tool error strings (no internals leak), Gemini text-parts read (response.text raises on tool-only candidates), embedding-dim guard self-consistent vs query embedding, regenerate trailing-user-row replaced not duplicated.
+
+## Verification
+130 tests green (zero env keys), ruff clean, app boots, chat smoke OK. NOT yet verified with real API keys — needs a live chat turn + tool round-trip when maintainer runs with a populated .env.
+
+## For Phase 4 / docs
+- docs/architecture.md still describes src/components/ as "legacy, to be replaced" — update in the Phase-4 docs pass (components/ is now gone).
+- 'gpt-5-mini' and 'gemini-3-pro-preview' pricing in MODEL_REGISTRY flagged unverified (cost logging only).
+- Research agent claimed "Sonnet 5 supersedes 4.6" without web access — NOT adopted; env-confirmed lineup (Opus 4.8/Sonnet 4.6/Haiku 4.5) used.
+
+## Status: COMPLETE (2026-07-01) — merged to master
