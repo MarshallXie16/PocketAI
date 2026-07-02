@@ -37,3 +37,4 @@ python-dotenv==1.2.2
 pytz==2026.2
 requests==2.34.2
 beautifulsoup4==4.15.0
+numpy==2.4.6           # embedding similarity math (src/ai/memory.py)
