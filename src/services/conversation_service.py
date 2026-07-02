@@ -1,134 +1,95 @@
 """The chat turn: orchestrating an AI response.
 
-``run_ai_response`` is the heart of it — it loads conversation history and
-session memory, runs the legacy context-analyzer cascade for tool use, calls
-the persona model, and flushes short-term memory into long-term (Pinecone)
-memory on a cadence. This whole flow is replaced by the hand-rolled tool loop
-in Phase 3; here it is only relocated, not rewritten.
+Phase-3 shape: one hand-rolled agent loop (src/ai/agent.py) on the persona
+model with native tool use — the legacy context-analyzer router and its
+4–5 sequential LLM hops are gone. Short-term memory lives in the database
+(ConversationState), not the session cookie, and long-term memory
+consolidation runs on the background executor after the reply is returned.
 """
 
 import datetime
 import logging
 
 import pytz
-from flask import session
+from flask import current_app, session
 from flask_login import current_user
 
-from src.components.ai_models import AI_model
-from src.components.context_analyzer import context_analyzer
-from src.components.memory import long_term_memory
+from src.ai import agent, memory
+from src.ai.background import submit as submit_background
 from src.extensions import db
+from src.models.conversation_state import ConversationState
 from src.models.message import Message
-from src.utils.utils import utilities
+from src.models.users import AIModel
 
 logger = logging.getLogger(__name__)
 
 
 def run_ai_response(ai_id, user_message):
     """Run a user message (with conversation history) through the selected AI
-    model and return the response string."""
+    model and return the response string. Ownership of ai_id is checked by
+    the calling route."""
+    ai_model = AIModel.query.get(ai_id)
+    if ai_model is None:
+        raise ValueError(f'AI model {ai_id} not found')
+    settings = ai_model.settings
 
-    # load session variables
-    # TODO: rename these session variables
-    memory_queue = session.get('memory_queue', [])
-    memory_queue_count = session.get('memory_queue_count', 0)
-    context_length = session.get('context_length', 6)
-    memory_chunk_size = session.get('memory_chunk_size', 2)
-    ai_name = session.get('ai_name', 'Assistant')
+    context_length = session.get('context_length', 10)
+    user_timezone = session.get('user_timezone', 'UTC')
+    memory_chunk_size = (settings.memory_chunk_size if settings else None) or 6
+    conversation_mode = (settings.conversation_mode if settings else None) or 'conversation'
 
-    # Settings for debugging
-    logger.info('---- Settings ----')
-    logger.debug(f'Memory Queue Count: {memory_queue_count}')
-    logger.debug(f'Memory Queue:       {memory_queue}')
-    logger.debug(f'Context length:     {context_length}')
-    logger.info('------------------')
+    # conversation history (most recent N, oldest first), neutral format
+    rows = Message.query.filter_by(user_id=current_user.id, ai_id=ai_id).order_by(
+        Message.timestamp.desc()).limit(context_length).all()[::-1]
+    history = [{'role': m.sender, 'content': m.message} for m in rows]
+    if not history or history[-1]['role'] != 'user' or history[-1]['content'] != user_message:
+        history.append({'role': 'user', 'content': user_message})
 
-    # Instantiate AI model
-    try:
-        ai = AI_model(ai_id, current_user.username)
-    except Exception as e:
-        logger.error(f'Error: {e}')
-        raise Exception('Failed to instantiate AI model.')
+    turn = agent.run_turn(
+        model_name=ai_model.model_name,
+        persona_prompt=ai_model.prompt,
+        ai_name=ai_model.name,
+        username=current_user.username,
+        conversation_mode=conversation_mode,
+        system_info=get_system_info(user_timezone) or '',
+        history=history,
+        user_id=current_user.id,
+        ai_id=ai_id,
+        user_timezone=user_timezone,
+    )
 
-    # query and parse conversation history
-    # TODO: keep track of conversation history in cache/session
-    # TODO: limit conversation history based on token size as well (currently number of messages)
-    try:
-        conversation_history = Message.query.filter_by(user_id=current_user.id, ai_id=ai_id).order_by(
-            Message.timestamp.desc()).limit(context_length).all()[::-1]
-        latest_messages = [{'role': msg.sender, 'content': msg.message} for msg in conversation_history]
-    except Exception as e:
-        logger.error(f'Error: {e}')
-        latest_messages = []
-
-    # get system info
-    system_info = get_system_info(session.get('user_timezone'))
-
-    # analyze the context and determine intent (latest 6 messages)
-    print_conversation_history(latest_messages)
-    intention, is_function_call = context_analyzer.analyze_context(latest_messages)
-
-    # if more context is needed, call a function
-    if intention and is_function_call:
-        context, function_log = context_analyzer.parse_func(intention, latest_messages, current_user.id, ai_id, system_info)
-        logger.debug(f'Context: {context}')
-        logger.debug(f'Function log: {function_log}')
-        logger.info('---------------------------------')
-    # clarification is needed but no functions were called
-    elif intention:
-        context = f'Seek clarification: {intention}'
-        function_log = None
-    # otherwise, no additional context is needed
+    # short-term memory cadence (DB-backed; was a session-cookie queue)
+    state = ConversationState.get_or_create(current_user.id, ai_id)
+    queue = list(state.memory_queue or [])
+    queue.append(f'"{current_user.username}": {user_message}, {ai_model.name}: {turn.text}')
+    if len(queue) >= memory_chunk_size:
+        # consolidate off the hot path; pass primitives, not ORM objects
+        submit_background(
+            current_app, memory.consolidate_and_save,
+            current_user.id, ai_id, queue, ai_model.name, current_user.username,
+        )
+        state.memory_queue = []
+        state.memory_queue_count = 0
     else:
-        context = ''
-        function_log = None
+        state.memory_queue = queue
+        state.memory_queue_count = len(queue)
+    db.session.commit()
 
-    # run ai response with the provided context (if any)
-    response = ai.get_response(latest_messages, context=context, function_log=function_log, system_info=system_info)
-
-    logger.debug(f'AI response: {response}')
-    logger.debug(f'Message count: {memory_queue_count}/{memory_chunk_size}')
-    logger.info('---------------------------------')
-
-    # saves short-term memory to long-term memory every x message cycles
-    if memory_queue_count >= memory_chunk_size:
-        logger.debug(f'Short-term memory: {memory_queue}')
-        # determine if message is important
-        memory = utilities.summarize(memory_queue, ai_name, current_user.username)
-        if memory.lower().strip() == 'false':
-            logger.info('message not saved (not important).')
-        elif memory:
-            long_term_memory.save_memory(current_user.id, ai_id, memory)
-            logger.info('message saved.')
-        else:
-            logger.info('message not saved (error).')
-        memory_queue_count = 0
-        memory_queue.clear()
-    else:
-        memory_queue_count += 1
-        memory_queue.append(
-            f'"{current_user.username}": {user_message}, {ai_name}: {response}')
-
-    # update session variables
-    session['memory_queue_count'] = memory_queue_count
-    session['memory_queue'] = memory_queue
-    session['past_context'] = context
-
-    return response
+    return turn.text
 
 
 def get_system_info(user_timezone):
     """Return the current date and time, formatted for the given timezone."""
     try:
-        timezone = pytz.timezone(user_timezone)
+        timezone = pytz.timezone(user_timezone or 'UTC')
         current_time = datetime.datetime.now(timezone)
 
         date_str = current_time.strftime('Today is %A, %b %d, %Y.')
         time_str = current_time.strftime('The current time is %I:%M%p.').lower()
 
-        return f'{date_str} {time_str}'
-    except Exception as e:
-        logger.error(f'Error: {e}')
+        return f'{date_str} {time_str} User timezone: {user_timezone or "UTC"}.'
+    except Exception:
+        logger.exception('Failed to build system info')
         return None
 
 
@@ -140,20 +101,22 @@ def update_conversation_history(user_id, ai_id, sender, message, voice_url=None)
     return message.id
 
 
-def print_conversation_history(conversation_history):
-    """Log conversation history for debugging."""
-    logger.info('---- Conversation History ----')
-    for msg in conversation_history:
-        logger.info(f"{msg['role']}: {msg['content']}")
-    logger.info('-------------------------------')
-
-
 def generate_welcome_message(ai_model, user):
     """Generate an in-character welcome message. Returns the string, or False on error."""
-    welcome_prompt = 'This is the first time you are chatting with the user. Generate a welcome message for the user, in character.'
     try:
-        tmp_model = AI_model(ai_model.id, user.username)
-        return tmp_model.get_response(False, welcome_prompt)
-    except Exception as e:
-        logger.error(f'Error generating welcome message: {e}')
+        turn = agent.run_turn(
+            model_name=ai_model.model_name,
+            persona_prompt=ai_model.prompt,
+            ai_name=ai_model.name,
+            username=user.username,
+            conversation_mode=(ai_model.settings.conversation_mode if ai_model.settings else 'conversation'),
+            system_info=get_system_info(session.get('user_timezone', 'UTC')) or '',
+            history=[{'role': 'user', 'content': 'This is the first time you are chatting with the user. '
+                                                 'Generate a welcome message for the user, in character.'}],
+            user_id=user.id,
+            ai_id=ai_model.id,
+        )
+        return turn.text
+    except Exception:
+        logger.exception('Error generating welcome message')
         return False

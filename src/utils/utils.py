@@ -2,102 +2,14 @@ import datetime
 import pytz
 import re
 from bs4 import BeautifulSoup
-from src.utils.AI_model_client import openai_client
 from src.models.users import Contacts
 
 # contains useful functions
 class Utilities:
 
     def __init__(self):
-        self.utilities_model = "gpt-4o-mini"
-        self.client = openai_client
+        pass
 
-    # Purpose: Summarizes a snippet of conversation history for long term memory
-    # Input: messages (string), AI_name (string), username (string)
-    # Output: summary (string)
-    def summarize(self, messages, AI_name, username):
-        prompt_template = f'''You are {AI_name} having a chat with {username}. Analyze this conversation snippet and determine if there's important information to remember.
-        Examples of important information:
-        1. New details about peoples, places, events, or things
-        2. New information about {username}'s preferences, interests, or experiences
-        3. Changes in {username}'s life or circumstances
-        4. Emotional states or reactions that provide context for future conversations
-        
-        If important information is found:
-        - summarize it in 50 words or less from the perspective of {AI_name}
-        
-        If no important information is found, respond with only the world 'false'.'''
-
-        prompt = [{"role": "system", "content": prompt_template}, 
-                  {"role": "user", "content": f"Conversation snippet: {messages}. Summary (if important): "}]
-
-        # make openAI API call
-        response = self.client.chat.completions.create(
-            model=self.utilities_model,
-            messages=prompt,
-        )
-
-        # parse response
-        message = response.choices[0].message.content
-        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        message = date + " " + message if message.lower().strip() != 'false' else 'false'
-
-        print(f'Model used: {self.utilities_model}')
-        print(f'Tokens used (summarize): {response.usage.total_tokens}')
-        print(f'Cost: {calculate_cost(self.utilities_model, response.usage.prompt_tokens, response.usage.completion_tokens)}')
-        print(f'Summary: {message}')
-
-        return message
-
-    # Purpose: summarize context retrieved from the user's calendar, email, or to-do list. Reduces overall burden on primary conversation model.
-    # Input: context (large string)
-    # Output: summary (string)
-    def summarize_context(self, context):
-        prompt_template = f'''You are a useful assistant. Below is a set of context retrieved from the user's calendar, email, or to-do list.
-        Summarize and reorder the context in bullet point form, making sure not to omit any information. Filter out any obvious junk mail or spam. 
-        Include relevant links that the user might be interested in. Apply additional instructions depending on the type of context.
-        
-        For each email:
-        - Identify the sender of the email (name and email address)
-        - Date and time sent
-        - Extract subject line
-        - Summarize email body concisely
-        - Highlight any action items or requests made in the email
-        - Include any relevant links or attachments
-        - Filter out any promotional or spam emails
-        
-        For each calendar event:
-        - Event title
-        - Date and time
-        - Summarize the event description
-        - Highlight any attendees
-        - Include any relevant links or attachments
-        
-        For to-do lists:
-        - No additional instructions
-        
-        Context: {context}
-
-        Your summary (in bullet points):'''
-
-        prompt = [{"role": "system", "content": prompt_template}]
-
-        # make openAI API call
-        response = self.client.chat.completions.create(
-            model=self.utilities_model,
-            messages=prompt,
-        )
-
-        # parse response
-        summarized_context = response.choices[0].message.content
-
-        print(f'Model used: {self.utilities_model}')
-        print(f'Tokens used (summarize context): {response.usage.total_tokens}')
-        print(f'Cost: {calculate_cost(self.utilities_model, response.usage.prompt_tokens, response.usage.completion_tokens)}')
-        print(f'Context Summary: {summarized_context}')
-
-        return summarized_context
-    
     # Purpose: returns user's contact given user_id and contact_name
     def get_user_contact(self, user_id, contact_name):
         if user_id is None or contact_name is None:
@@ -382,26 +294,3 @@ class Utilities:
         return text
 
 utilities = Utilities()
-
-# Purpose: calculate API costs of using large language models
-# Input: model_name (string), input_tokens (int), output_tokens (int)
-# Output: cost (str)
-def calculate_cost(model_name, input_tokens, output_tokens):
-    # Cost for each model
-    input_cost = {"gpt-4o-mini": 0.15, 
-                  "gpt-4o": 2.50, 
-                  "claude-3-5-sonnet-20241022": 3.00, 
-                  "claude-3-haiku-20240307": 0.25,
-                  "gemini-1.5-flash": 0.075,
-                  "gemini-1.5-pro": 1.25
-                  }
-    output_cost = {"gpt-4o-mini": 0.60, 
-                   "gpt-4o": 10.00, 
-                   "claude-3-5-sonnet-20241022": 15.00, 
-                   "claude-3-haiku-20240307": 1.25,
-                   "gemini-1.5-flash": 0.30,
-                   "gemini-1.5-pro": 5.00
-                   }
-    TOKEN_BASE = 1000000  # 1 million tokens
-
-    return f'${round((input_tokens/TOKEN_BASE) * input_cost[model_name] + (output_tokens/TOKEN_BASE) * output_cost[model_name], 5)}'

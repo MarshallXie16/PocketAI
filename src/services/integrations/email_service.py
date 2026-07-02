@@ -41,87 +41,6 @@ Future updates:
 
 
 # wrapper class for email service
-class Email:
-    # set the type of email client used
-    def __init__(self):
-        self.my_email = Gmail()
-
-    # Purpose: parse function args into read_email function
-    # Input: user_id (int), func_args (json)
-    # Output: list of emails (list of string)
-    def read_email(self, user_id, func_args):
-        # parse function arguments
-        args_data = json.loads(func_args)
-        operation_type = args_data.get('operation_type')
-        date_reference = args_data.get('date_reference', None)
-        day_of_week = args_data.get('day_of_week', None)
-        specific_date = args_data.get('specific_date', None)
-        time_range = args_data.get('time_range', None)
-        sender_name = args_data.get('sender_name', None)
-        subject = args_data.get('subject', None)
-        
-        # return list of emails for a specified date OR return summary of retrieved emails from search results
-        try:
-            list_of_emails = self.my_email.read_email(user_id, operation_type, date_reference, day_of_week, specific_date, time_range, sender_name, subject)
-        except Exception as e:
-            print(f'Read Email Error: {e}')
-            return [f"Inform the user there has been an error in reading their emails. Error: {str(e)}"]
-
-        # summarize returned list of emails
-        if not list_of_emails:
-            summarized_context = "No emails found."
-        else:
-            try:
-                summarized_context = utilities.summarize_context(list_of_emails)
-            except Exception as e:
-                print(f"Error extracting email body: {e}")
-                return ["No readable content found. Likely due to trouble parising HTML emails."]
-        return [f"Summarize, in character, the following emails. If there are no emails, tell the user. Emails: {summarized_context}"]
-
-    # Purpose: parse function args into write_email function
-    # Input: user_id (int), func_args (json)
-    # Output: email body and output (string)
-    def write_email(self, user_id, func_args):
-        # parse function arguments
-        args_data = json.loads(func_args)
-        operation = args_data.get('operation_type')
-        recipient_name = args_data.get('recipient_name')
-        body = args_data.get('body')
-        recipient_email = args_data.get('recipient_email', None)
-        subject = args_data.get('subject', None)
-        email_thread_id = args_data.get('email_thread_id', None)
-
-        try: 
-            draft = self.my_email.write_email(user_id, operation, recipient_name, body, recipient_email, subject, email_thread_id)
-        except Exception as e:
-            return [f"Inform the user that there has been an error in drafting their email. Error: {str(e)}"]
-    
-        return f"Show user the full email draft, do not omit anything (this part can be out of character): {draft}"
-
-    # Purpose: parse function args into send_email function
-    # Input: user_id (int), func_args (json)
-    # Output: email body and output (string)
-    def send_email(self, user_id, func_args):
-        # parse function arguments
-        args_data = json.loads(func_args)
-        operation = args_data.get('operation_type')
-        recipient_name = args_data.get('recipient_name')
-        body = args_data.get('body')
-        recipient_email = args_data.get('recipient_email', None)
-        subject = args_data.get('subject', None)
-        email_thread_id = args_data.get('email_thread_id', None)
-
-        try: 
-            email = self.my_email.send_email(user_id, operation, recipient_name, body, recipient_email, subject, email_thread_id)
-        except Exception as e:
-            return [f"Inform the user there has been an error in sending their email. Error: {str(e)}"]
-    
-        return f"Tell user that email has been successfully sent: {email}. Please include the full email surrounded by ```."
-
-        
-    
-
-# represents a user's gmail calendar
 class Gmail:
 
     def __init__(self):
@@ -552,7 +471,3 @@ class Gmail:
         self.display_email_info(emails)
 
         return emails
-
-
-
-user_email = Email()

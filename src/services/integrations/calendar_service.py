@@ -37,67 +37,6 @@ Future updates
 
 # TODO: centralize service objects and service cache
 
-# represents a generic calendar
-class Calendar:
-
-    def __init__(self):
-        # TODO: configurable by the user in the future, currently only supports Google Calendar
-        self.my_calendar = GoogleCalendar()
-
-    # Purpose: parse function info for read_calendar operation
-    # Input: user_id (int), func_args (json)
-    # Output: list of events (list of string)
-    def read_calendar(self, user_id, func_args):
-        # extract event information
-        args_data = json.loads(func_args)
-        query_type = args_data.get('query_type')
-        date_reference = args_data.get('date_reference')
-        day_of_week = args_data.get('day_of_week', None)
-        specific_date = args_data.get('specific_date', None)
-        time_range = args_data.get('time_range', None)
-        event_name = args_data.get('event_name', None)
-
-        # search for event(s) on calendar
-        try:
-            list_of_events = self.my_calendar.read_calendar(user_id, query_type, date_reference, day_of_week, specific_date, time_range, event_name)
-        except Exception as e:
-            print(f"Read Calendar Error: {e}")
-            return [f"Inform the user that you could not fetch calendar events. Please try again later or contact support. Error: {e}"]
-
-        # have another model summarize the list of returned events
-        if not list_of_events:
-            summarized_context = "No upcoming events found."
-        else:
-            summarized_context = utilities.summarize_context(list_of_events)
-        return [f"Summarize and do not omit any events. User's calendar has returned the following events: {summarized_context}"]
-
-    # Purpose: parse function info for write_calendar operation
-    # Input: user_id (int), func_args (json), user_timezone (string), description (string)
-    # Output: success message or error (string)
-    def write_calendar(self, user_id, func_args, description='This is some placeholder description.'):
-        # extracts event information
-        args_data = json.loads(func_args)
-        event_type = args_data.get('event_type')
-        event_name = args_data.get('event_name')
-        date_reference = args_data.get('date_reference')
-        day_of_week = args_data.get('day_of_week', None)
-        specific_date = args_data.get('specific_date', None)
-        time_range = args_data.get('time_range', None)
-        recurrence_frequency = args_data.get('recurrence_frequency', None)
-        
-        # create google calendar event(s)
-        try:
-            link = self.my_calendar.write_calendar(
-                user_id, event_type, event_name, date_reference, 
-                day_of_week, specific_date, time_range, 
-                recurrence_frequency, description
-            )
-        except Exception as e:
-            print(f"Write Calendar Error: {e}")
-            return f"Inform the user that you could not book the event. Error: {e}"
-        return f"Inform the user that calendar event successfully created! Link to Event: {link}"
-
-
 # represents a user's google calendar
 class GoogleCalendar:
 
@@ -438,4 +377,3 @@ class GoogleCalendar:
             raise Exception(error_message)
 
 
-user_calendar = Calendar()
