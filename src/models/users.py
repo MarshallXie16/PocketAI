@@ -88,6 +88,9 @@ class AIModel(db.Model):
     prompt = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text)
     profile_image_url = db.Column(db.String(2048), nullable=True)
+    # Prebuilt roster entries users may clone during onboarding. Without this
+    # flag, any user could clone any other user's private AI (prompt leak).
+    is_template = db.Column(db.Boolean, default=False, nullable=False)
     users = db.relationship('User', secondary=user_ai, back_populates='ai_models')
     settings = db.relationship('AISettings', backref='ai_model', uselist=False, cascade='all, delete-orphan')
     messages = db.relationship('Message', back_populates='ai_model', cascade='all, delete-orphan')
