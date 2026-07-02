@@ -28,7 +28,7 @@ from src.models.message import Message
 from src.models.billing import StripeEvent
 
 from config import select_config, MESSAGE_COST, PREMIUM_CREDITS_GRANT
-from src.utils.extensions import db, migrate
+from src.extensions import db, migrate
 from src.utils.utils import utilities
 from src.utils.auth import oauth, init_oauth
 

@@ -1,7 +1,7 @@
 from flask_login import UserMixin
 
 from src.utils.crypto import EncryptedString
-from src.utils.extensions import db
+from src.extensions import db
 
 
 class GoogleUser(UserMixin, db.Model):

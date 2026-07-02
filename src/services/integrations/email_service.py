@@ -16,7 +16,7 @@ from src.models.google_user import GoogleUser
 from src.models.message import Message
 
 from src.utils.utils import utilities
-from src.utils.extensions import db
+from src.extensions import db
 
 import email.utils
 from sqlalchemy.orm.exc import NoResultFound
