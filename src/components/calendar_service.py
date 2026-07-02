@@ -14,7 +14,6 @@ from src.models.message import Message
 
 from src.utils.utils import utilities
 from src.utils.extensions import db
-from src.utils.auth import google
 
 '''Represents integration with google calendar API
 
