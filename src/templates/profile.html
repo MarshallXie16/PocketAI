@@ -529,7 +529,7 @@ Profile for {{ current_user.username }}
 
         document.querySelectorAll('.cancel-button').forEach(cancelButton => {
             cancelButton.addEventListener('click', () => {
-                window.location.href = "{{ url_for('chat') }}";
+                window.location.href = "{{ url_for('chat.chat') }}";
             });
         });
 

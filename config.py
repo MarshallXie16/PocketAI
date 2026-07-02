@@ -31,7 +31,6 @@ class Config:
     PERMANENT_SESSION_LIFETIME = 604800
     TEMPLATE_FOLDER = 'src/templates'
     STATIC_FOLDER = 'src/static'
-    LOGIN_URL = '/login'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')

@@ -2,7 +2,7 @@ from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import FREE_CREDITS_DEFAULT, MEMORY_CHUNK_SIZE_DEFAULT
-from src.utils.extensions import db
+from src.extensions import db
 
 # many-to-many relationship between users and ai_models
 user_ai = db.Table('user_ai',

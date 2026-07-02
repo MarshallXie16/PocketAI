@@ -101,6 +101,7 @@ Resurrect PocketAI safely and set the overhaul's direction. This sprint does the
 | Date | Session Summary | Next Steps |
 |------|-----------------|------------|
 | 2026-07-01 | Sprint scaffolded from the 2026-07-01 audit. Project context, backlog, and overhaul/repositioning design doc created. Sprint is `planned` pending kickoff. | Kick off: start BOOT-1 (credential rotation) and BOOT-3 (direction decision) in parallel; flip status to `active`. |
+| 2026-07-01 (2) | Plan approved by maintainer (roadmap: `docs/designs/overhaul-roadmap.md`). BOOT-2 DONE (backup + history purge + force-push; extra Stripe whsec found & scrubbed). BOOT-3 DONE ("companion that actually acts"). BOOT-1 amended: evidence given, rotation = maintainer's call. design.md delivered for Cloud Design. Phase 1 DONE + merged (config, BUG-1..12 + 5 unaudited fixes, deps, logging). Phase 2 code+tests+docs COMPLETE on `phase-2-modularize` (34 tests green, ruff clean, native review passed). | Await codex external review (background) → address findings → merge Phase 2 → Phase 3 (provider-API research brief also running in background at `.context/research/`). |
 
 ## Deferred
 _(none yet)_

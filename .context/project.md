@@ -3,9 +3,9 @@
 **Last updated:** 2026-07-01
 **Size cap:** ~200 lines
 
-PocketAI is a Flask web app that gives each user one or more **personalized AI assistants** — custom persona + name + voice + conversation style — backed by **persistent long-term memory** (vector DB) and **real tool use** (Google Calendar, Gmail, contacts). It was built ~2022–2024, "agentic before AI agents were a category," was deployed on Heroku, and was taken down ~2 months ago (≈May 2026). It is being resurrected for a full overhaul (bug fixes, modularization, AI-core modernization) **and** a strategic repositioning toward the gap between task assistants (Claude/ChatGPT) and virtual companions (Character.ai). **See `docs/designs/overhaul-and-repositioning.md` — that is the north-star plan for this effort.**
+PocketAI is a Flask web app being repositioned as **"a companion that actually acts"** — a persistent, personalized AI presence that maintains a relationship with you (persona, episodic memory, voice) AND takes real action in your life (Google Calendar, Gmail, proactive check-ins). Identity locked by the maintainer 2026-07-01. **Roadmap: `docs/designs/overhaul-roadmap.md`** (supersedes the original assessment in `overhaul-and-repositioning.md`).
 
-> ⚠️ **This codebase is NOT production-ready and NOT currently secure.** Real user data and live OAuth tokens are committed to git; the app runs in DEBUG mode with a weak secret; several auth/billing endpoints are exploitable. Read the "Known Limitations" section and the overhaul doc before deploying anything. Fix the Phase-0 security items first.
+**Overhaul status (2026-07-01):** Phase 0 (secrets purged from git history, force-pushed) ✅ · Phase 1 (env-driven config, BUG-1..12 + 5 unaudited bugs fixed, deps pinned, logging) ✅ · Phase 2 (factory + blueprints + services, tests, docs, CI) ✅ · Phase 3 (AI-core modernization) next · Phase 4 (companion features) after. Pre-launch requirements live in `backlog.md` (LAUNCH-1..5: CSRF, hardening, deploy target, IP-roster/uncensored cleanup, Alembic baseline). **Not deployed; deployment deferred by maintainer.**
 
 ---
 
@@ -36,49 +36,45 @@ See `requirements.txt` (currently **fully unpinned**, with duplicates and deskto
 
 ```
 PocketAI/
-├── app.py                       # THE MONOLITH: app factory + ~38 routes + all business logic + helpers
-├── config.py                    # Dev/Testing/Production config classes
-├── db_create.py                 # `db.create_all()` bootstrap (imports the whole monolith)
-├── requirements.txt             # Unpinned deps (needs cleanup)
-├── Procfile / runtime.txt / Aptfile / .slugignore   # Heroku artifacts
-├── .ebextensions/ / .ebignore   # AWS Elastic Beanstalk artifacts (conflicts with Heroku)
-├── migrations/                  # Alembic — DRIFTED from current models (see limitations)
-├── save.txt                     # 34 KB debug dump written on every memory search — delete
+├── wsgi.py                      # entry point (gunicorn target + dev runner)
+├── config.py                    # env-driven select_config() + product constants (credits, memory)
+├── requirements.txt             # PINNED (requirements-dev.txt adds pytest/ruff)
+├── pyproject.toml               # ruff + pytest config
+├── .github/workflows/ci.yml    # CI: ruff + pytest
+├── migrations/                  # stale — fresh Alembic baseline pending (LAUNCH-5); dev uses create_all
 └── src/
-    ├── models/                  # SQLAlchemy: users, google_user, message
-    ├── components/              # "Services": ai_models, memory, context_analyzer,
-    │                            #   voice_handler(TTS), email_service, calendar_service,
-    │                            #   speech_to_text(commented), text_to_speech(commented)
-    ├── utils/                   # auth, extensions(db/migrate), utils, AI_model_client,
-    │                            #   calendar_utilities(dead), ms_voice(dead), audio_record(dead),
-    │                            #   google_service(empty), create_app(commented-out dead)
-    ├── templates/               # 25 Jinja pages (chat, onboarding, pricing, settings, legal…)
-    ├── tests/                   # pytest: date utils, context analyzer, calendar classify
-    ├── prototypes/              # Experimental scripts + media (DALL·E/Vision/etc.) — dead weight
-    ├── deprecated/              # Old desktop UI + another save.txt — dead weight
-    ├── instance/users.db        # ⚠️ committed SQLite DB with REAL user data + OAuth tokens
-    └── db/chroma.sqlite3        # ⚠️ committed Chroma vector store
+    ├── app_factory.py           # create_app(): config, extensions, OAuth, blueprints, user loader
+    ├── extensions.py             # db, migrate, login_manager, oauth singletons
+    ├── blueprints/               # pages, auth, chat, ai, profile, contacts, billing, admin (thin routes)
+    ├── services/                 # business logic: auth, session, conversation, ai_model, user,
+    │   └── integrations/         #   contact, billing, storage + email/calendar (Google APIs)
+    ├── components/               # LEGACY AI core (ai_models, context_analyzer, memory, voice_handler)
+    │                             #   → replaced by src/providers/ + src/ai/ in Phase 3
+    ├── models/                   # users (User/AIModel/AISettings/UserSettings/Contacts),
+    │                             #   google_user (Fernet-encrypted tokens), message, billing (StripeEvent)
+    ├── utils/                    # crypto (EncryptedString), forms (form_get), utils, AI_model_client (legacy)
+    ├── templates/                # Jinja pages (UI redesign pending — Cloud Design)
+    └── tests/                    # pytest suite: 34 green with zero env keys; live-API modules skipped
 ```
+
+See `docs/architecture.md` for request flow and how-to-extend recipes.
 
 ---
 
-## Architecture (current reality)
+## Architecture (post-Phase-2)
 
-- **App factory** lives inline as `create_app()` in `app.py`, and `app = create_app()` runs **at import time with `DevelopmentConfig` hardcoded** (`app.py:65`) — so gunicorn serves a DEBUG app. There is no env-driven config selection. A cleaner `src/utils/create_app.py` exists but is entirely commented out.
-- **No blueprints, no service layer.** ~38 routes and all business logic live in `app.py`, with a pile of module-level "service" helpers at the bottom of the file.
-- **Chat turn** (`run_ai_response`, `app.py:1386`): load last N messages from SQL + a rolling summary queue **stored in the Flask session cookie** → run a `context_analyzer` LLM call (gpt-3.5-turbo, deprecated `functions=` API) to pick a tool → optionally chain 4–5 sequential blocking LLM calls for calendar/email/memory → call the persona model → save reply → periodically summarize into Pinecone.
-- **Memory:** short-term = recent SQL messages + session-cookie queue; long-term = OpenAI-embedded LLM summaries in Pinecone, retrieved only when the router chooses `remember`.
-- **Target architecture** (where the overhaul is taking this): real env-driven app factory, blueprints per domain, a service layer, one unified `LLMProvider` interface, one vector DB, native tool-use instead of the hand-rolled router, short-term memory out of the cookie. Details in `docs/designs/overhaul-and-repositioning.md`.
+- **Factory + blueprints + services**: `create_app()` in `src/app_factory.py` (env-driven via `APP_ENV`; prod fails closed on missing secrets); 8 thin blueprints; business logic in `src/services/`. Route paths are frozen — the frontend JS hardcodes them.
+- **Chat turn** (`conversation_service.run_ai_response` — still legacy internals, Phase-3 target): last N messages from SQL + rolling summary queue in the session cookie → `context_analyzer` LLM router (deprecated `functions=` API) → sequential tool calls → persona model → periodic summary into Pinecone. **Phase 3 replaces this** with a hand-rolled native tool-use loop on an `LLMProvider` protocol (Opus 4.8 / Sonnet 4.6 / Haiku 4.5 — NO Fable per maintainer), pgvector memory, DB-backed short-term state, ThreadPoolExecutor for TTS/memory writes.
+- **Conventions**: services own DB commits; blueprints stay thin; every id-from-URL route goes through `ai_model_service.get_owned_ai()`; secrets only via env (`.env.example` documents them); tests must pass with zero API keys (mock at service boundary).
 
 ---
 
 ## How to Run
 
-- **Dev server:** `python app.py` (uses `DevelopmentConfig` → SQLite at `src/instance/users.db`, DEBUG on, binds `0.0.0.0:5000`).
-- **Prod (as-is, do not trust yet):** `gunicorn app:app` — but this ALSO serves the DEBUG dev app until config selection is fixed (Phase 1).
-- **DB bootstrap:** `python db_create.py`. **Migrations are drifted** — regenerate a clean Alembic baseline before relying on `flask db upgrade`.
-- **Tests:** `pytest src/tests/` (partial coverage; no CI, no lint/format config).
-- **Requires** a populated `.env` (see Environment Variables) — the app imports fine in dev but AI/voice/OAuth/Stripe calls need real keys.
+- **Dev server:** `./.venv/bin/python wsgi.py` (DevelopmentConfig → SQLite, DEBUG, 0.0.0.0:5000). Venv lives at `.venv/`.
+- **DB bootstrap (dev):** `./.venv/bin/flask --app wsgi shell` → `db.create_all()` (Alembic baseline pending, LAUNCH-5).
+- **Tests:** `./.venv/bin/pytest src/tests/ -q` — green with zero env keys. **Lint:** `./.venv/bin/ruff check .`. CI runs both.
+- `.env` from `.env.example`; app boots keyless, AI/OAuth/Stripe features need real keys. See README.md for the full quickstart.
 
 ---
 
@@ -93,14 +89,12 @@ PocketAI/
 
 ---
 
-## Known Limitations & Gotchas (the "cursed" list)
+## Known Limitations & Gotchas (post-Phase-2)
 
-- **Security (must fix before any deploy):** real user data + plaintext Google OAuth tokens committed in `src/instance/users.db`; hardcoded Azure/ElevenLabs keys in `text_to_speech.py`; DEBUG-on-by-default + weak `SECRET_KEY` default; **privilege escalation** via `GET /add-credits/<amount>`; **auth bypass** on `/send_message` (decorator order); unprotected `/admin/reset_credits`; **IDOR** on `/ai-settings/<id>`; no CSRF anywhere. Full list in the overhaul doc.
-- **Billing is broken:** Stripe webhook uses the wrong signature header, `@login_required` on a non-route helper, and grants a non-existent `user.credits` attr. Credit accounting is inconsistent (1500 vs 100 vs 900 across model/reset/pricing).
-- **Migration drift:** live DB is at Alembic revision `f961159bf1ce`, which does not exist in `migrations/`; committed migrations don't match current models.
-- **Stale AI:** hardcoded model IDs are retired/invalid (`claude-3-5-sonnet-20241022` retired; `claude-3-opus-20241022` never existed; Gemini 1.5 via the deprecated `google.generativeai` SDK). Cross-provider bug at `ai_models.py:148`.
-- **Dead weight:** `src/prototypes/`, `src/deprecated/`, commented STT/TTS, empty `google_service.py`, `calendar_utilities.py` dup, `save.txt` files, Azure + desktop-audio deps (`PyAudio`/`keyboard`/`sounddevice`), dual vector DBs, dual deploy configs.
-- **Split-brain product:** markets both "productivity assistant" and "emotional companion" simultaneously — the repositioning work resolves this.
+- **Pre-launch blockers** (`backlog.md` LAUNCH-1..5): no CSRF; no rate-limiting/Talisman; no deploy target chosen (Heroku + EB artifacts both still present); IP character roster + "uncensored" pricing bullet + Gemini BLOCK_NONE safety settings deferred by maintainer decision; Alembic baseline pending (dev uses `create_all`).
+- **Legacy AI core** (`src/components/` + `src/utils/AI_model_client.py`): stale/retired model IDs, deprecated `functions=` router, deprecated `google.generativeai` SDK, session-cookie short-term memory, serialized chat turn — all replaced in Phase 3.
+- **Templates reference missing assets** (css/profile.css, js/profile.js, /upload_audio) — pre-existing; resolved by the UI redesign (Cloud Design, in flight).
+- **Prebuilt roster rows were discarded** with the old DB — `/onboarding/ai/existing` has no templates to clone until re-seeded (`AIModel.is_template=True` rows; LAUNCH-4).
 
 ---
 

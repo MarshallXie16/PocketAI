@@ -2,8 +2,8 @@ import json
 
 from src.utils.AI_model_client import openai_client
 from src.components.memory import long_term_memory
-from src.components.calendar_service import user_calendar
-from src.components.email_service import user_email
+from src.services.integrations.calendar_service import user_calendar
+from src.services.integrations.email_service import user_email
 
 """ Analyzes the context of conversations and determines the best course of action.
 
