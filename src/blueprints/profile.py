@@ -117,3 +117,46 @@ def onboarding_user():
         return redirect('/onboarding/ai')
 
     return render_template('onboarding-user.html')
+
+
+@profile_bp.route('/onboarding/world', methods=['GET', 'POST'])
+@login_required
+def onboarding_world():
+    """Onboarding step 3 — "let them into your world".
+
+    Consent-forward: Google connect (via auth.link_google), proactive-message
+    consent, daily check-in time, quiet hours. Skippable; everything editable
+    later in /settings."""
+    import datetime as _dt
+
+    from src.services.session_service import get_active_ai
+
+    if request.method == 'POST':
+        settings = current_user.settings
+
+        def _parse_time(value):
+            value = (value or '').strip().lower()
+            if not value or value == 'none':
+                return None
+            return _dt.datetime.strptime(value, '%H:%M').time()
+
+        try:
+            settings.daily_checkin_time = _parse_time(form_get('daily_checkin_time'))
+            settings.quiet_hours_start = _parse_time(form_get('quiet_start'))
+            settings.quiet_hours_end = _parse_time(form_get('quiet_end'))
+        except ValueError:
+            flash('Invalid time format.', 'error')
+            return redirect(url_for('profile.onboarding_world'))
+
+        if form_get('proactive_enabled') == 'on':
+            if settings.proactive_consent_at is None:
+                settings.proactive_consent_at = _dt.datetime.now(_dt.UTC)
+            if current_user.google_id:
+                settings.calendar_experiment = True
+        db.session.commit()
+        return redirect(url_for('chat.chat'))
+
+    ai_model = get_active_ai(current_user)
+    return render_template('onboarding-world.html', ai_model=ai_model,
+                           google_linked=bool(current_user.google_id),
+                           user_settings=current_user.settings)

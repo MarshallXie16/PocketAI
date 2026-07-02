@@ -132,7 +132,10 @@ def tick() -> dict:
     now = _now()
     stats = {'materialized': 0, 'planned': 0, 'sent': 0, 'skipped': 0, 'suppressed': 0}
 
-    consented = UserSettings.query.filter(UserSettings.proactive_consent_at.isnot(None)).all()
+    consented = UserSettings.query.filter(
+        UserSettings.proactive_consent_at.isnot(None),
+        UserSettings.paused.is_(False),
+    ).all()
     for settings in consented:
         try:
             stats['materialized'] += _materialize_daily_checkin(settings, now)
@@ -296,9 +299,13 @@ def _deliver(row: ScheduledMessage, now: datetime.datetime) -> str:
     ai_model = AIModel.query.get(row.ai_id)
     user = User.query.get(row.user_id)
 
-    # server-side guardrails — consent, quiet hours, daily cap
+    # server-side guardrails — consent, pause, quiet hours, daily cap
     if settings is None or settings.proactive_consent_at is None or ai_model is None or user is None:
         row.status = 'cancelled'
+        db.session.commit()
+        return 'suppressed'
+    if settings.paused:
+        row.status = 'pending'   # release the claim; resumes when unpaused
         db.session.commit()
         return 'suppressed'
     if _in_quiet_hours(settings, now):

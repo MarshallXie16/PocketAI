@@ -123,6 +123,9 @@ class UserSettings(db.Model):
     quiet_hours_end = db.Column(db.Time, nullable=True)
     calendar_experiment = db.Column(db.Boolean, default=False, nullable=False)  # opt-in: planner may read calendar
     max_proactive_per_day = db.Column(db.Integer, default=2, nullable=False)
+    # "Pause everything": companion goes quiet, nothing is deleted — distinct
+    # from consent (proactive_consent_at stays as the audit record).
+    paused = db.Column(db.Boolean, default=False, nullable=False)
 
     def __init__(self, user_id, timezone="UTC", context_length=10):
         self.user_id = user_id

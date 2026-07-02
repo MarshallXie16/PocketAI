@@ -79,9 +79,21 @@ def chat():
         db.session.commit()
         messages = [message_obj]
 
-    logger.debug(session)
+    # relationship line ("day N together") + pending draft card, if any
+    import datetime as _dt
 
-    return render_template('chat.html', ai_model=ai_model, messages=messages)
+    from src.models.conversation_state import ConversationState
+    from src.models.relationship import RelationshipState
+
+    rel = RelationshipState.query.filter_by(user_id=current_user.id, ai_id=ai_model.id).first()
+    days_together = 0
+    if rel and rel.first_met_at:
+        days_together = max((_dt.datetime.now(_dt.UTC).date() - rel.first_met_at.date()).days, 0)
+    conv_state = ConversationState.query.filter_by(user_id=current_user.id, ai_id=ai_model.id).first()
+    pending_action = conv_state.pending_action if conv_state else None
+
+    return render_template('chat.html', ai_model=ai_model, messages=messages,
+                           days_together=days_together, pending_action=pending_action)
 
 
 @chat_bp.route('/send_message', methods=['POST'])

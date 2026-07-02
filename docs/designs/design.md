@@ -1,7 +1,7 @@
 # PocketAI — Design Brief for Claude Design
 
 **Product:** PocketAI — *a companion that actually acts*
-**Prepared:** 2026-07-02 (v2 — supersedes the v1 doc that prescribed a palette/type system and a time-of-day "Dayfall" theme; both are retired. Visual language is now fully Claude Design's call.)
+**Prepared:** 2026-07-02
 **Stack note:** Server-rendered Jinja2 + Tailwind + Alpine.js. Deliver HTML/CSS (Tailwind-friendly) page templates + components mappable onto Jinja. No SPA framework.
 
 ---

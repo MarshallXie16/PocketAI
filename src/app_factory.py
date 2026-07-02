@@ -104,9 +104,11 @@ def _register_blueprints(app):
     from src.blueprints.contacts import contacts_bp
     from src.blueprints.pages import pages_bp
     from src.blueprints.profile import profile_bp
+    from src.blueprints.settings import settings_bp
     from src.blueprints.tasks import tasks_bp
 
-    for bp in (pages_bp, auth_bp, chat_bp, ai_bp, profile_bp, contacts_bp, billing_bp, admin_bp, tasks_bp):
+    for bp in (pages_bp, auth_bp, chat_bp, ai_bp, profile_bp, contacts_bp, billing_bp, admin_bp, tasks_bp,
+               settings_bp):
         app.register_blueprint(bp)
 
 
