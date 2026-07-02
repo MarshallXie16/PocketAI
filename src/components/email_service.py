@@ -124,20 +124,17 @@ class Email:
 # represents a user's gmail calendar
 class Gmail:
 
-    _service_cache = {}
-
     def __init__(self):
         pass
 
     # Purpose: authenticates gmail, returns service object. Refreshes access token if necessary.
     # Input: user_id (int)
     # Output: service (Object)
+    # NOTE: the old class-level _service_cache was checked but never written
+    # (BUG-9), and a shared dict of per-user credentials would be a
+    # concurrency hazard anyway. Building the service object is cheap
+    # (no network call), so it is built per call.
     def authenticate(self, user_id):
-        # check if service is already cached
-        if user_id in Gmail._service_cache:
-            return Gmail._service_cache[user_id]
-        
-        # otherwise, create a new service object
         user = User.query.get(user_id)
         google_user = GoogleUser.query.filter_by(google_id=user.google_id).first()
         print(f'Google user: {google_user}')
@@ -227,7 +224,9 @@ class Gmail:
         subject = subject if subject else 'No Subject'
         # search for recipient email in contacts
         # TODO: handle cases where multiple recipients might share the same first name
-        recipient = Contacts.query.filter(user_id == user_id, Contacts.name.ilike(f'%{recipient_name}%')).first()
+        # BUG-8: the old filter compared the user_id parameter to itself
+        # (always true), so it searched every user's contacts.
+        recipient = Contacts.query.filter(Contacts.user_id == user_id, Contacts.name.ilike(f'%{recipient_name}%')).first()
         recipient_email = recipient.email if recipient else recipient_email
         
         formatted_email = f'Email Draft\n'

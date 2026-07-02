@@ -101,8 +101,6 @@ class Calendar:
 
 # represents a user's google calendar
 class GoogleCalendar:
-    # cache service objects
-    _service_cache = {}
 
     def __init__(self):
         pass
@@ -110,12 +108,9 @@ class GoogleCalendar:
     # Purpose: authenticates google calendar, returns service object. Refreshes access token if necessary.
     # Input: user_id (int)
     # Output: service (Object)
+    # NOTE: see Gmail.authenticate — the old _service_cache was dead code
+    # (BUG-9) and unsafe to share across users; the service is built per call.
     def authenticate(self, user_id):
-        # check if service is already cached
-        if user_id in GoogleCalendar._service_cache:
-            return GoogleCalendar._service_cache[user_id]
-        
-        # otherwise, create a new service object
         user = User.query.get(user_id)
         google_user = GoogleUser.query.filter_by(google_id=user.google_id).first()
         if google_user and google_user.access_token:

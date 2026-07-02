@@ -144,12 +144,12 @@ class GPT:
         # parse response
         output = response.choices[0].message.content
         
-        # Logging
-        print(f'Finish Reason: {response.candidates[0].finish_reason}')
-        print(f'Model used: {response.model} ')
-        print(f'Tokens used (response): {response.usage.total_tokens}')
-        print(f'Cost: {calculate_cost(response.model, response.usage.prompt_tokens, response.usage.completion_tokens)}')
-        print("---------------------------------")
+        # Logging (BUG-6: the old code read response.candidates — a Gemini
+        # attribute — and crashed after every successful OpenAI response)
+        logger.info('Finish reason: %s | model: %s | tokens: %s | cost: %s',
+                    response.choices[0].finish_reason, response.model,
+                    response.usage.total_tokens,
+                    calculate_cost(response.model, response.usage.prompt_tokens, response.usage.completion_tokens))
 
         return output
 
