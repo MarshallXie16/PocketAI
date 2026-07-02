@@ -1,0 +1,31 @@
+src/ai/memory.py
+  s_4c467e2481b592::t_e66a54d861a5d8 1-71
+requirements.txt
+  s_4c467e2481b592::t_6db0eac203c7d1 40
+src/providers/base.py
+  s_4c467e2481b592::t_ef1d95f7967a00 1-67
+src/models/memory_entry.py
+  s_4c467e2481b592::t_fe6b3d33d80a60 1-33
+.context/sprints/bootstrap/phase-3-modernize-ai.md
+  s_4c467e2481b592::t_bf7be55992af93 1-26
+src/models/conversation_state.py
+  s_4c467e2481b592::t_3cce136e0340eb 1-36
+src/ai/background.py
+  s_4c467e2481b592::t_3c6de397bdc63c 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "a804b1ac17c8129efd9929282d7ef510b9a558b2",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
