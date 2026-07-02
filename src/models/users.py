@@ -116,6 +116,13 @@ class UserSettings(db.Model):
     context_length = db.Column(db.Integer, default=10)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     last_active_ai_id = db.Column(db.Integer, nullable=True)
+    # Proactive outreach (Phase 4b). Nothing fires unless consent was given.
+    proactive_consent_at = db.Column(db.DateTime, nullable=True)
+    daily_checkin_time = db.Column(db.Time, nullable=True)      # user-set; None = no daily check-in
+    quiet_hours_start = db.Column(db.Time, nullable=True)
+    quiet_hours_end = db.Column(db.Time, nullable=True)
+    calendar_experiment = db.Column(db.Boolean, default=False, nullable=False)  # opt-in: planner may read calendar
+    max_proactive_per_day = db.Column(db.Integer, default=2, nullable=False)
 
     def __init__(self, user_id, timezone="UTC", context_length=10):
         self.user_id = user_id

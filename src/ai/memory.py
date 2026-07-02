@@ -48,49 +48,124 @@ def save_memory(user_id: int, ai_id: int, content: str, *, emotional_tone=None,
     return entry
 
 
+RETROSPECTIVE_PROMPT = '''You are {ai_name}, reflecting on a recent stretch of conversation with {username}. Extract what is worth remembering, as JSON.
+
+Return EXACTLY this JSON shape (no markdown fences, no commentary):
+{{
+  "important": true/false,
+  "situation": "what happened / what was discussed, specific enough to find later by describing it differently (1-2 sentences, from your perspective)",
+  "emotional_tone": "one short phrase for how {username} seemed to feel, or null",
+  "key_insight": "the single most useful thing you learned about {username} or their world, or null",
+  "importance": 0.0-1.0,
+  "entity_tags": ["specific people/places/events/topics mentioned"],
+  "key_facts": [
+    {{"fact_type": "commitment|event|person|preference|goal",
+      "content": "one actionable fact, e.g. 'said they will sleep by 11pm tonight' or 'Amazon interview'",
+      "due_at": "ISO-8601 UTC datetime if time-bound, else null"}}
+  ],
+  "tone_note": "a short note on how {username} likes to be talked to, ONLY if this snippet revealed one, else null"
+}}
+
+Guidance: importance 0.1-0.3 routine chat, 0.4-0.6 useful context, 0.7-0.9 significant life details or emotional moments. key_facts are ONLY concrete, actionable items — commitments the user made, upcoming events, people who matter. If nothing is worth remembering set "important": false and leave other fields null/empty. Current UTC time: {now_utc}.'''
+
+
 def consolidate_and_save(user_id: int, ai_id: int, queue_lines: list[str],
                          ai_name: str, username: str) -> None:
-    """Summarize a batch of exchanges and persist it if it matters.
+    """Retrospective: turn a batch of exchanges into an episode + key facts.
 
     Runs on the background executor after a chat turn returns — the LLM
-    gate ("is this worth remembering?") + embedding + write are all off the
-    hot path. Ported from the legacy utilities.summarize prompt.
+    extraction, embedding, and writes are all off the hot path. Adapted from
+    the episodic-memory research design (situation/insight/importance/tags),
+    with the consolidation step emitting structured KeyFact rows that power
+    proactive follow-through.
     """
     import datetime as _dt
+    import json
 
     from config import UTILITY_MODEL
     from src.providers.registry import get_provider
 
-    prompt = f'''You are {ai_name} having a chat with {username}. Analyze this conversation snippet and determine if there's important information to remember.
-Examples of important information:
-1. New details about people, places, events, or things
-2. New information about {username}'s preferences, interests, or experiences
-3. Changes in {username}'s life or circumstances
-4. Emotional states or reactions that provide context for future conversations
-
-If important information is found:
-- summarize it in 50 words or less from the perspective of {ai_name}
-
-If no important information is found, respond with only the word 'false'.'''
+    now_utc = _dt.datetime.now(_dt.UTC)
+    system = RETROSPECTIVE_PROMPT.replace('{ai_name}', ai_name).replace('{username}', username) \
+                                 .replace('{now_utc}', now_utc.isoformat())
+    # the prompt uses {{ }} for literal JSON braces; collapse them after token substitution
+    system = system.replace('{{', '{').replace('}}', '}')
 
     result = get_provider(UTILITY_MODEL).generate(
         model=UTILITY_MODEL,
-        system=prompt,
-        messages=[{'role': 'user', 'content': f'Conversation snippet: {queue_lines}. Summary (if important): '}],
-        max_tokens=200,
+        system=system,
+        messages=[{'role': 'user', 'content': 'Conversation snippet:\n' + '\n'.join(queue_lines)}],
+        max_tokens=600,
     )
-    summary = (result.text or '').strip()
-    if summary and summary.lower() != 'false':
-        stamped = _dt.datetime.now(_dt.UTC).strftime('%Y-%m-%d %H:%M:%S ') + summary
-        save_memory(user_id, ai_id, stamped)
-        logger.info('Memory saved (user=%s ai=%s)', user_id, ai_id)
+
+    raw = (result.text or '').strip()
+    if raw.startswith('```'):
+        raw = raw.strip('`').removeprefix('json').strip()
+    try:
+        data = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        logger.warning('Retrospective returned unparseable JSON (user=%s ai=%s): %.120s', user_id, ai_id, raw)
+        data = {'important': False}
+
+    if data.get('important') and data.get('situation'):
+        content = now_utc.strftime('%Y-%m-%d %H:%M ') + data['situation']
+        save_memory(
+            user_id, ai_id, content,
+            emotional_tone=data.get('emotional_tone'),
+            key_insight=data.get('key_insight'),
+            importance=min(max(float(data.get('importance') or 0.5), 0.0), 1.0),
+            entity_tags=data.get('entity_tags') or [],
+        )
+        logger.info('Episode saved (user=%s ai=%s importance=%s)', user_id, ai_id, data.get('importance'))
     else:
         logger.info('Memory gate: nothing worth saving (user=%s ai=%s)', user_id, ai_id)
+
+    _save_key_facts(user_id, ai_id, data.get('key_facts') or [])
+    _save_tone_note(user_id, ai_id, data.get('tone_note'))
 
     # Success (or an intentional gate-drop): remove exactly the consumed
     # lines from the live queue. On exception we never reach here, the queue
     # stays intact, and the next full turn retries — no silent memory loss.
     _consume_queue_lines(user_id, ai_id, queue_lines)
+
+
+def _save_key_facts(user_id: int, ai_id: int, facts: list[dict]) -> None:
+    import datetime as _dt
+
+    from src.models.relationship import KeyFact
+
+    valid_types = {'commitment', 'event', 'person', 'preference', 'goal'}
+    for fact in facts[:5]:
+        content = (fact.get('content') or '').strip()
+        fact_type = (fact.get('fact_type') or '').strip()
+        if not content or fact_type not in valid_types:
+            continue
+        # dedupe on exact content for this pair
+        exists = KeyFact.query.filter_by(user_id=user_id, ai_id=ai_id, content=content).first()
+        if exists:
+            continue
+        due_at = None
+        if fact.get('due_at'):
+            try:
+                due_at = _dt.datetime.fromisoformat(str(fact['due_at']).replace('Z', '+00:00'))
+            except ValueError:
+                pass
+        db.session.add(KeyFact(user_id=user_id, ai_id=ai_id, fact_type=fact_type,
+                               content=content, due_at=due_at))
+    db.session.commit()
+
+
+def _save_tone_note(user_id: int, ai_id: int, note) -> None:
+    from src.models.relationship import RelationshipState
+
+    if not note or not isinstance(note, str):
+        return
+    state = RelationshipState.get_or_create(user_id, ai_id)
+    prefs = list(state.tone_prefs or [])
+    if note not in prefs:
+        prefs.append(note)
+        state.tone_prefs = prefs[-10:]   # keep the latest handful
+        db.session.commit()
 
 
 def _consume_queue_lines(user_id: int, ai_id: int, consumed: list[str]) -> None:
@@ -126,14 +201,34 @@ def search_memory(user_id: int, ai_id: int, query: str, top_k: int = 3) -> list[
     matrix = np.vstack([np.frombuffer(r.embedding, dtype=np.float32) for r in rows])
     # cosine similarity; embeddings from OpenAI are unit-length but normalize defensively
     norms = np.linalg.norm(matrix, axis=1) * (np.linalg.norm(query_vec) or 1.0)
-    scores = matrix @ query_vec / np.where(norms == 0, 1.0, norms)
+    similarity = matrix @ query_vec / np.where(norms == 0, 1.0, norms)
+
+    # Composite recall (episodic-memory design): similarity dominates,
+    # recency/reinforcement/importance modulate — memories that matter and
+    # get used stay vivid; trivia fades.
+    now = datetime.datetime.now(datetime.UTC)
+
+    def _days_since(dt):
+        if dt is None:
+            return 365.0
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.UTC)
+        return max((now - dt).total_seconds() / 86400.0, 0.0)
+
+    recency = np.array([np.exp(-0.023 * _days_since(r.last_accessed)) for r in rows])  # ~30d half-life
+    reinforcement = np.array([min(1.0 + 0.1 * np.log1p(r.access_count or 0), 1.5) for r in rows])
+    importance = np.array([r.importance if r.importance is not None else 0.5 for r in rows])
+
+    scores = similarity * 0.6 + recency * 0.15 + reinforcement * 0.10 + importance * 0.15
 
     ranked = sorted(zip(scores, rows), key=lambda pair: -pair[0])[:top_k]
 
-    now = datetime.datetime.now(datetime.UTC)
     for _, row in ranked:
         row.last_accessed = now
         row.access_count += 1
     db.session.commit()
 
-    return [row.content for _, row in ranked]
+    return [
+        row.content + (f' — insight: {row.key_insight}' if row.key_insight else '')
+        for _, row in ranked
+    ]
