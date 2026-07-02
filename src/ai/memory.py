@@ -80,12 +80,29 @@ If no important information is found, respond with only the word 'false'.'''
         max_tokens=200,
     )
     summary = (result.text or '').strip()
-    if not summary or summary.lower() == 'false':
+    if summary and summary.lower() != 'false':
+        stamped = _dt.datetime.now(_dt.UTC).strftime('%Y-%m-%d %H:%M:%S ') + summary
+        save_memory(user_id, ai_id, stamped)
+        logger.info('Memory saved (user=%s ai=%s)', user_id, ai_id)
+    else:
         logger.info('Memory gate: nothing worth saving (user=%s ai=%s)', user_id, ai_id)
+
+    # Success (or an intentional gate-drop): remove exactly the consumed
+    # lines from the live queue. On exception we never reach here, the queue
+    # stays intact, and the next full turn retries — no silent memory loss.
+    _consume_queue_lines(user_id, ai_id, queue_lines)
+
+
+def _consume_queue_lines(user_id: int, ai_id: int, consumed: list[str]) -> None:
+    from src.models.conversation_state import ConversationState
+
+    state = ConversationState.query.filter_by(user_id=user_id, ai_id=ai_id).first()
+    if state is None:
         return
-    stamped = _dt.datetime.now(_dt.UTC).strftime('%Y-%m-%d %H:%M:%S ') + summary
-    save_memory(user_id, ai_id, stamped)
-    logger.info('Memory saved (user=%s ai=%s)', user_id, ai_id)
+    remaining = [line for line in (state.memory_queue or []) if line not in consumed]
+    state.memory_queue = remaining
+    state.memory_queue_count = len(remaining)
+    db.session.commit()
 
 
 def search_memory(user_id: int, ai_id: int, query: str, top_k: int = 3) -> list[str]:
@@ -94,7 +111,18 @@ def search_memory(user_id: int, ai_id: int, query: str, top_k: int = 3) -> list[
     if not rows:
         return []
 
-    query_vec = np.frombuffer(_embed(query), dtype=np.float32)
+    query_bytes = _embed(query)
+    # skip rows whose stored embedding doesn't match the current embedder's
+    # dimensionality (e.g. rows written under a different EMBEDDING_MODEL)
+    usable = [r for r in rows if len(r.embedding) == len(query_bytes)]
+    if len(usable) != len(rows):
+        logger.warning('Skipping %d memory rows with mismatched embedding dims (user=%s ai=%s)',
+                       len(rows) - len(usable), user_id, ai_id)
+        rows = usable
+        if not rows:
+            return []
+
+    query_vec = np.frombuffer(query_bytes, dtype=np.float32)
     matrix = np.vstack([np.frombuffer(r.embedding, dtype=np.float32) for r in rows])
     # cosine similarity; embeddings from OpenAI are unit-length but normalize defensively
     norms = np.linalg.norm(matrix, axis=1) * (np.linalg.norm(query_vec) or 1.0)

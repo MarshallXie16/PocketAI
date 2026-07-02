@@ -63,9 +63,12 @@ def test_queue_full_triggers_background_and_resets(app, make_user, make_ai, patc
     assert args[5] == 'Conv'        # ai name
     assert args[6] == 'conv_user'   # username
 
+    # The queue is NOT cleared in the request path — consolidate_and_save
+    # removes the consumed lines only after a successful save, so a failed
+    # background task never silently loses memories (review finding C1).
     state = ConversationState.query.filter_by(user_id=user.id, ai_id=ai.id).first()
-    assert state.memory_queue == []
-    assert state.memory_queue_count == 0
+    assert state.memory_queue_count == 1
+    assert state.memory_queue == calls[0][0][4]
 
 
 def test_missing_ai_id_raises_value_error(app, patch_agent):

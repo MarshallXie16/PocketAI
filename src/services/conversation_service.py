@@ -42,8 +42,14 @@ def run_ai_response(ai_id, user_message):
     rows = Message.query.filter_by(user_id=current_user.id, ai_id=ai_id).order_by(
         Message.timestamp.desc()).limit(context_length).all()[::-1]
     history = [{'role': m.sender, 'content': m.message} for m in rows]
-    if not history or history[-1]['role'] != 'user' or history[-1]['content'] != user_message:
+    # the request's user_message is authoritative for this turn — replace a
+    # trailing user row (it may differ after an edit/regenerate) or append
+    if history and history[-1]['role'] == 'user':
+        history[-1]['content'] = user_message
+    else:
         history.append({'role': 'user', 'content': user_message})
+
+    state = ConversationState.get_or_create(current_user.id, ai_id)
 
     turn = agent.run_turn(
         model_name=ai_model.model_name,
@@ -56,24 +62,28 @@ def run_ai_response(ai_id, user_message):
         user_id=current_user.id,
         ai_id=ai_id,
         user_timezone=user_timezone,
+        extra_context=state.past_context or '',
     )
 
     # short-term memory cadence (DB-backed; was a session-cookie queue)
-    state = ConversationState.get_or_create(current_user.id, ai_id)
     queue = list(state.memory_queue or [])
     queue.append(f'"{current_user.username}": {user_message}, {ai_model.name}: {turn.text}')
+    state.memory_queue = queue
+    state.memory_queue_count = len(queue)
+    # carry this turn's tool/memory context forward for follow-up questions
+    state.past_context = turn.tool_context[:2000] if turn.tool_context else ''
+    db.session.commit()
+
     if len(queue) >= memory_chunk_size:
-        # consolidate off the hot path; pass primitives, not ORM objects
+        # Consolidate off the hot path. The queue is NOT cleared here —
+        # consolidate_and_save removes exactly the lines it consumed after a
+        # successful save (or an intentional gate-drop), so a failed
+        # background task never silently loses memories; the next turn
+        # simply retries with the queue intact.
         submit_background(
             current_app, memory.consolidate_and_save,
             current_user.id, ai_id, queue, ai_model.name, current_user.username,
         )
-        state.memory_queue = []
-        state.memory_queue_count = 0
-    else:
-        state.memory_queue = queue
-        state.memory_queue_count = len(queue)
-    db.session.commit()
 
     return turn.text
 
@@ -86,8 +96,12 @@ def get_system_info(user_timezone):
 
         date_str = current_time.strftime('Today is %A, %b %d, %Y.')
         time_str = current_time.strftime('The current time is %I:%M%p.').lower()
+        # numeric offset so the model can emit correct RFC3339 tool arguments
+        raw_offset = current_time.strftime('%z')
+        offset = f'{raw_offset[:3]}:{raw_offset[3:]}' if raw_offset else '+00:00'
 
-        return f'{date_str} {time_str} User timezone: {user_timezone or "UTC"}.'
+        return (f'{date_str} {time_str} User timezone: {user_timezone or "UTC"} '
+                f'(current UTC offset: {offset}).')
     except Exception:
         logger.exception('Failed to build system info')
         return None

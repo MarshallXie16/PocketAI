@@ -27,6 +27,7 @@ class AgentTurn:
 
     text: str
     tools_used: list[str] = field(default_factory=list)
+    tool_context: str = ''          # concatenated tool outputs (carried to the next turn)
     total_input_tokens: int = 0
     total_output_tokens: int = 0
     stop_reason: str = base.STOP_END_TURN
@@ -87,6 +88,7 @@ def run_turn(*, model_name: str, persona_prompt: str, ai_name: str, username: st
             output = tool_registry.dispatch(call.name, call.args, user_id=user_id,
                                             ai_id=ai_id, user_timezone=user_timezone)
             turn.tools_used.append(call.name)
+            turn.tool_context += f'[{call.name}] {output}\n'
             result_blocks.append({'type': 'tool_result', 'tool_call_id': call.id, 'content': output})
         messages.append({'role': 'user', 'content': result_blocks})
     else:

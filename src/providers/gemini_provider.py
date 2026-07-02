@@ -84,11 +84,14 @@ class GeminiProvider:
 
         candidate = response.candidates[0] if response.candidates else None
         tool_calls = []
+        text_parts = []
         if candidate is not None:
             for i, part in enumerate(candidate.content.parts or []):
                 fc = getattr(part, 'function_call', None)
                 if fc:
                     tool_calls.append(ToolCall(id=f'gemini::{fc.name}::{i}', name=fc.name, args=dict(fc.args or {})))
+                elif getattr(part, 'text', None):
+                    text_parts.append(part.text)
 
         finish = str(getattr(candidate, 'finish_reason', 'STOP') or 'STOP')
         if tool_calls:
@@ -105,8 +108,10 @@ class GeminiProvider:
             input_tokens=getattr(usage_meta, 'prompt_token_count', 0) or 0,
             output_tokens=getattr(usage_meta, 'candidates_token_count', 0) or 0,
         )
+        # concatenate text parts explicitly — response.text warns/raises on
+        # candidates that contain only function_call parts
         return LLMResult(
-            text=response.text or '' if candidate else '',
+            text=''.join(text_parts),
             tool_calls=tool_calls,
             stop_reason=stop_reason,
             usage=usage,

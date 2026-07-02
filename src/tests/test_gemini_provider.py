@@ -23,9 +23,10 @@ def _fc_part(name, args):
     return SimpleNamespace(function_call=SimpleNamespace(name=name, args=args))
 
 
-def _text_part():
-    """A response part with no function_call (text lives on response.text)."""
-    return SimpleNamespace(function_call=None)
+def _text_part(text='the reply'):
+    """A response part carrying text (the adapter reads part.text directly —
+    response.text warns/raises on candidates with only function_call parts)."""
+    return SimpleNamespace(function_call=None, text=text)
 
 
 def _fake_response(*, parts, finish_reason=types.FinishReason.STOP, text='',

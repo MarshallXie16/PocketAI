@@ -189,13 +189,14 @@ class Gmail:
             if not user:
                 return "Error: User not found."
 
-            # Search for the contact if recipient_email is not provided
+            # Search for the contact if recipient_email is not provided.
+            # get_user_contact returns None for a missing contact (it never
+            # raises NoResultFound — the old except branch was dead code).
             if not recipient_email:
-                try:
-                    contact = utilities.get_user_contact(user_id, recipient_name)
-                    recipient_email = contact.email
-                except NoResultFound:
+                contact = utilities.get_user_contact(user_id, recipient_name)
+                if contact is None:
                     raise Exception(f"Contact '{recipient_name}' not found in your contacts. Please add this contact first or check the spelling of the name.")
+                recipient_email = contact.email
 
             # Create the email message
             message = MIMEMultipart()
@@ -266,14 +267,19 @@ class Gmail:
     # Purpose: searches emails based on sender's name and/or subject
     # Input: service (Object), start_date (datetime), end_date (datetime), sender_name (string), subject (string)
     # Output: list of emails (list of string)
-    def search_inbox(self, service, start_date, end_date, sender_name=None, subject=None):
+    def search_inbox(self, service, start_date, end_date, sender_name=None, subject=None, user_id=None):
         query = f'after:{start_date.strftime("%Y/%m/%d")} before:{end_date.strftime("%Y/%m/%d")}'
-                
+
         if sender_name:
-            # query for sender email from user contacts
-            sender_email = utilities.get_user_contact(session.get('user_id', None), sender_name).email
-            print(f'Sender Email: {sender_email}')
-            query += f' from:{sender_email}'
+            # resolve sender via the caller-scoped user id (falls back to the
+            # session for legacy callers); if no contact matches, search the
+            # name as free text rather than crashing on None.email
+            uid = user_id if user_id is not None else session.get('user_id', None)
+            contact = utilities.get_user_contact(uid, sender_name)
+            if contact is not None:
+                query += f' from:{contact.email}'
+            else:
+                query += f' from:{sender_name}'
         if subject:
             query += f' subject:{subject}'
 
