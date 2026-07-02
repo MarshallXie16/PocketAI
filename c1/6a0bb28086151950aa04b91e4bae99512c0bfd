@@ -1,0 +1,26 @@
+app.py
+  s_4c467e2481b592::t_4c47772f4ab2b4 230,389-391,453,491,505,574,577,640,646,661,663,680,709,774-776,802,809,823,903,933,1012,1235,1240,1297,1303,1410,1433-1437,1443,1454,1468-1470,1483-1485,1489,1493,1496,1498,1531,1545,1547,1622,1635
+.context/backlog.md
+  s_4c467e2481b592::t_e4513eda7090e4 3,6-16
+requirements-dev.txt
+  s_4c467e2481b592::t_3f0a825b3ded24 1-4
+.context/sprints/bootstrap/phase-1-stabilize.md
+  s_4c467e2481b592::t_d88d3314f13de5 16-18,21-34
+  s_4c467e2481b592::t_4ab0461c348b59 1-15,19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "c16a0bb28086151950aa04b91e4bae99512c0bfd",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
