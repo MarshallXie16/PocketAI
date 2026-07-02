@@ -1,5 +1,5 @@
 ---
-status: planned
+status: active
 started: 2026-07-01
 updated: 2026-07-01
 ---
@@ -71,10 +71,30 @@ Resurrect PocketAI safely and set the overhaul's direction. This sprint does the
 ---
 
 ## Design Decisions
-_(record BOOT-2 keep-vs-discard and BOOT-3 direction here as they're made)_
+
+**Decision:** BOOT-3 — Product identity is "a companion that actually acts."
+**Tier:** 3 (maintainer signed off 2026-07-01 during plan review)
+**Rationale:** Sits in the defensible gap between task assistants (act, no relationship) and companions (relationship, no action); reuses every existing asset. Full overhaul (Phases 0–4) approved. Priorities: bugs > maintainability > pivot features > prod-hardening (deferred). No Fable models (cost). Gemini TTS + episodic memory (adapted from ~/autonomous-agent-research/episodic-memory). Agent-scheduled proactive outreach.
+**Alternatives rejected:** pure companion (brutal competition + IP/moderation liabilities), niche-vertical-first (kept as GTM framing: executive-function/ADHD-friendly wedge).
+**Reversibility:** positioning/copy reversible; feature work reusable either way.
+**Scope:** entire product; roadmap in `docs/designs/overhaul-roadmap.md`.
+
+**Decision:** BOOT-2 — Keep a local backup, then purge committed data + rewrite history.
+**Tier:** 4 (maintainer chose the option explicitly; force-push approved at plan approval)
+**Rationale:** Repo is PUBLIC; users.db (2 users, plaintext Google OAuth refresh tokens) + Azure/ElevenLabs/Stripe-webhook secrets were in pushed history. Data is ~2 test users, not worth a migration.
+**Executed 2026-07-01:** backup at `~/pocketai-secure-backup-2026-07-01/` (users.db, chroma, save.txt ×2, pre-rewrite.bundle). git-filter-repo purged: users.db, src/db/, save.txt ×2, recording.wav, __pycache__; literal key strings scrubbed via --replace-text (Azure `d031f7f7…`, ElevenLabs `db648b64…`, Stripe `whsec_b359014…` — found during history sweep). Force-pushed to origin/master (`df1cad0`). History-wide sweep for sk-/AKIA/AIza/whsec_/pk_live patterns: clean.
+**Reversibility:** pre-rewrite.bundle restores everything.
+**Scope:** git history, all clones.
+
+**Decision:** BOOT-1 (amended) — Credential rotation is maintainer's call, evidence provided.
+**Tier:** 4 (requires maintainer's provider-console access)
+**Rationale:** Maintainer questioned necessity; evidence gathered: repo public, keys/tokens verifiably in (now-former) history. Recommendation stands: revoke PocketAI at myaccount.google.com/permissions for the 2 accounts; regenerate Azure/ElevenLabs keys if those accounts still exist. History is now scrubbed, but pre-rewrite clones/scrapes may exist. Not blocking any code work.
 
 ## Findings
-_(record discoveries here)_
+- Repo confirmed PUBLIC (`gh repo view`: visibility PUBLIC).
+- Extra secrets found beyond the audit: hardcoded Stripe webhook signing secret in old app.py history + tracked `__pycache__/*.pyc` containing it. Both scrubbed.
+- `.gitignore` had `migrations` ignored (wrong — migrations must be tracked); fixed in the hardened .gitignore.
+- gh CLI has two github.com accounts; repo owner is `MarshallXie16` (pushes need `gh auth switch`).
 
 ## Progress Log
 
