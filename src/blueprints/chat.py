@@ -26,6 +26,29 @@ logger = logging.getLogger(__name__)
 chat_bp = Blueprint('chat', __name__)
 
 
+@chat_bp.route('/transcribe', methods=['POST'])
+@login_required
+def transcribe():
+    """Voice input: transcribe an uploaded MediaRecorder clip to text.
+
+    Returns {"text": ...} for review-before-send — the frontend drops the
+    transcript into the message box; /send_message is unchanged."""
+    from src.services import transcription_service
+
+    audio = request.files.get('audio')
+    if audio is None:
+        return jsonify({'error': 'No audio file provided', 'code': 'BAD_REQUEST'}), 400
+    if request.content_length and request.content_length > transcription_service.MAX_AUDIO_BYTES:
+        return jsonify({'error': 'Audio file too large', 'code': 'PAYLOAD_TOO_LARGE'}), 413
+
+    try:
+        text = transcription_service.transcribe(audio)
+        return jsonify({'text': text}), 200
+    except Exception:
+        logger.exception('Transcription failed')
+        return jsonify({'error': 'Transcription failed', 'code': 'SERVER_ERROR'}), 500
+
+
 @chat_bp.route('/chat')
 @login_required
 def chat():
