@@ -1,0 +1,43 @@
+src/tests/test_admin.py
+  s_4c467e2481b592::t_ed1f61ebc61147 1-39
+src/tests/test_chat_routes.py
+  s_4c467e2481b592::t_910df8b163cc84 1-83
+src/tests/conftest.py
+  s_4c467e2481b592::t_4efdb1c1c35d47 1-122
+src/tests/test_classify_calendar.py
+  s_4c467e2481b592::t_98935b3cbc1e13 1,6-16
+src/tests/test_contacts.py
+  s_4c467e2481b592::t_fed4a172922e72 1-87
+src/tests/test_ai_ownership.py
+  s_4c467e2481b592::t_7e97b31f904fce 1-80
+src/tests/test_auth_routes.py
+  s_4c467e2481b592::t_a4552077ab77e3 1-56
+src/tests/test_date_utils.py
+  s_4c467e2481b592::t_40997a0888f9ec 144
+  s_4c467e2481b592::t_52ece7e1759925 107-110
+  s_4c467e2481b592::t_346d16eca1076d 155
+src/tests/test_date.py
+  s_4c467e2481b592::t_80c464f684daa1 119-169
+  s_4c467e2481b592::t_69640be3edf144 3
+src/tests/test_billing.py
+  s_4c467e2481b592::t_9722186f42f492 1-89
+src/tests/test_context_analyzer.py
+  s_4c467e2481b592::t_ca735d56ed04c0 1,6-14
+  s_4c467e2481b592::t_96a8d6cb26c8c6 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "0a3a1a5a65e54969811e0176f6e8a56f9236a794",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
