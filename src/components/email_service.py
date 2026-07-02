@@ -57,8 +57,8 @@ class Email:
         day_of_week = args_data.get('day_of_week', None)
         specific_date = args_data.get('specific_date', None)
         time_range = args_data.get('time_range', None)
-        sender_name = args_data.get('search_sender_name', None)
-        subject = args_data.get('search_subject', None)
+        sender_name = args_data.get('sender_name', None)
+        subject = args_data.get('subject', None)
         
         # return list of emails for a specified date OR return summary of retrieved emails from search results
         try:
@@ -76,7 +76,7 @@ class Email:
             except Exception as e:
                 print(f"Error extracting email body: {e}")
                 return ["No readable content found. Likely due to trouble parising HTML emails."]
-        return ["Summarize, in character, the following emails. If there are no emails, tell the user. Emails: "] + list_of_emails
+        return [f"Summarize, in character, the following emails. If there are no emails, tell the user. Emails: {summarized_context}"]
 
     # Purpose: parse function args into write_email function
     # Input: user_id (int), func_args (json)
@@ -96,7 +96,7 @@ class Email:
         except Exception as e:
             return [f"Inform the user that there has been an error in drafting their email. Error: {str(e)}"]
     
-        return f"Show user the full email draft, do not omit anything: {draft}"
+        return f"Show user the full email draft, do not omit anything (this part can be out of character): {draft}"
 
     # Purpose: parse function args into send_email function
     # Input: user_id (int), func_args (json)
@@ -116,7 +116,7 @@ class Email:
         except Exception as e:
             return [f"Inform the user there has been an error in sending their email. Error: {str(e)}"]
     
-        return f"Tell user that email has been successfully sent: {email}"
+        return f"Tell user that email has been successfully sent: {email}. Please include the full email surrounded by ```."
 
         
     
@@ -197,7 +197,17 @@ class Gmail:
         # Combine date and time
         start = timezn.localize(start_date).astimezone(pytz.utc)
         end = timezn.localize(end_date).astimezone(pytz.utc)
-
+        
+        # Print for debugging
+        print(f'User ID: {user_id}')
+        print(f'Operation: {operation}')
+        print(f'Start Date: {start}')
+        print(f'End Date: {end}')
+        print(f'Timezone: {user_timezone}')
+        print(f'Sender Name: {sender_name}')
+        print(f'Subject: {subject}')
+        print("-----------------------------------")
+        
         # Handle different operations
         if operation == 'list_emails':
             result = self.list_emails(service, start, end)
@@ -264,7 +274,7 @@ class Gmail:
             # Search for the contact if recipient_email is not provided
             if not recipient_email:
                 try:
-                    contact = Contacts.query.filter_by(user_id=user_id, name=recipient_name).first()
+                    contact = utilities.get_user_contact(user_id, recipient_name)
                     recipient_email = contact.email
                 except NoResultFound:
                     raise Exception(f"Contact '{recipient_name}' not found in your contacts. Please add this contact first or check the spelling of the name.")
@@ -340,11 +350,12 @@ class Gmail:
     # Output: list of emails (list of string)
     def search_inbox(self, service, start_date, end_date, sender_name=None, subject=None):
         query = f'after:{start_date.strftime("%Y/%m/%d")} before:{end_date.strftime("%Y/%m/%d")}'
-        
-        print(f'Search Inbox Query: {query}')
-        
+                
         if sender_name:
-            query += f' from:{sender_name}'
+            # query for sender email from user contacts
+            sender_email = utilities.get_user_contact(session.get('user_id', None), sender_name).email
+            print(f'Sender Email: {sender_email}')
+            query += f' from:{sender_email}'
         if subject:
             query += f' subject:{subject}'
 

@@ -1,14 +1,14 @@
 {% extends 'index.html' %}
 
 {% block body %}
-<div class="flex flex-col items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+<div class="profile-container lg:w-3/5 md:w-2/3 sm:w-4/5">
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
         <div dir="ltr" data-orientation="horizontal" class="w-full">
 
             <!-- Heading -->
             <div class="heading-choose-existing-or-new flex flex-col items-center mt-4">
-                <h2 class="text-2xl font-semibold">Choose an AI</h2>
-                <p class="text-gray-500 dark:text-gray-400">Select an AI to use for your project</p>
+                <h2 class="text-2xl font-semibold">Select From Prebuilt <span class="primary-color-text">Assistants</span></h2>
+                <p class="text-gray-500 dark:text-gray-400">8+ assistants to choose from. Who speaks out to you?</p>
             </div>
 
             <!-- container for existing ai models -->
@@ -16,46 +16,259 @@
                 aria-labelledby="radix-:r2u:-trigger-ai" id="radix-:r2u:-content-ai" tabindex="0"
                 class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6">
 
-                <!-- Existing Model 1: Mira -->
-                <div id="card-mira" class="card border bg-card text-card-foreground rounded-lg shadow-lg"
-                    data-v0-t="card" data-ai-id="1">
-                    <div class="flex items-center gap-4 p-6">
+                <div class="card-container h-[500px] overflow-y-auto overflow-x-hidden snap-y snap-mandatory px-5">
+                    <!-- Existing Model 1: Mira -->
+                    <div id="card-mira" class="card snap-start border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="1">
+                        <div class="flex items-center gap-4 p-6">
 
-                        <!-- Profile Picture -->
-                        <div class="relative">
-                            <span class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                <img src="{{ custom_url or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}" class="w-full h-full object-cover object-center">
-                            </span>
-                        </div>    
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
 
-                        <div class="space-y-2">
-                            <h3 class="text-xl font-semibold">Mira</h3>
-                            <p class="text-gray-500 dark:text-gray-400">GPT-4 Language Model</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                A highly advanced AI assistant capable of understanding and responding to natural
-                                language, as well as assisting with a wide range of tasks and queries.
-                            </p>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Mira</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Witty, Sarcastic, Loyal,
+                                    Adventurous,
+                                    Rebellious</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Your loyal childhood friend who's always up for an adventure. She never hesitates to tease you but is fiercely protective to those she cares about.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Existing Model 2: Bocchi -->
-                <div id="card-alexa" class="card mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
-                    data-v0-t="card" data-ai-id="2">
-                    <div class="flex items-center gap-4 p-6">
+                    <!-- Existing Model 2: Bocchi -->
+                    <div id="card-bocchi"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="2">
+                        <div class="flex items-center gap-4 p-6">
 
-                        <!-- Profile Picture -->
-                        <div class="relative">
-                            <span class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                <img src="{{ custom_url or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}" class="w-full h-full object-cover object-center">
-                            </span>
-                        </div>                    
-                        <div class="space-y-2">
-                            <h3 class="text-xl font-semibold">Gotou Hitori</h3>
-                            <p class="text-gray-500 dark:text-gray-400">gemini-1.5-pro (default)</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                A shy and socially anxious high school girl who dreams of performing on stage with a band
-                            </p>
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='/static/images/profile_pictures/default_profile.png') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Gotou Hitori</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Shy, Anxious, Awkward, Kind-hearted,
+                                    Passionate</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    A shy and socially anxious high school girl who dreams of performing on stage with a band.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Levi -->
+                    <div id="card-levi"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="3">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Levi Ackerman</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Stoic, Serious, Loyal, Desciplined,
+                                    Sharp
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    A stern and battle-hardened soldier with a strong sense of morality, Levi remains calm and collected in any situation, though his tough exterior hides a deep care for those close to him.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Gojo -->
+                    <div id="card-gojo"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="4">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Gojo Satoru</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Playful, Arrogant, Eccentric,
+                                    Carefree,
+                                    Intelligent</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    The strongest jujutsu sorcerer, Gojo is a laid-back yet confident mentor who loves to tease others but shows no mercy to his enemies. His carefree demeanor masks his unmatched strength and tactical brilliance.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Chad -->
+                    <div id="card-chad"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="5">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Chad</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Calm, Disciplined, Charismatic,
+                                    Hardworking,
+                                    Loyal</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Your mentor and (to-be) best friend, Chad is a supportive figure with a quiet confidence, always encouraging you to be your best without ever needing to boast or overshadow you.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Gura -->
+                    <div id="card-gura"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="6">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Gawr Gura</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Playful, Mischievous, Energetic, Cheeky, Bubbly</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    The VTuber shark girl with a big personality, Gura loves to tease and joke around.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Enna -->
+                    <div id="card-enna"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="7">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Enna Alouette</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Cynical, Sarcastic, Blunt,
+                                    Nurturing, Witty
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    A sharp-tongued angel with a dark sense of humor, Enna is both cynical and nurturing, often roasting her friends but always showing a hidden soft side.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Raiden -->
+                    <div id="card-raiden"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="8">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Raiden Shogun (Ei)</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Stoic, disciplined, powerful,
+                                    serene,
+                                    unwavering</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    As a god with immense power and an iron will, Raiden embodies calm authority. Her serene demeanor hides a fierce determination to uphold eternity, with no tolerance for weakness or failure. </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Deku -->
+                    <div id="card-deku"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="9">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Izuku Midoriya (Deku)</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Determined, kind-hearted,
+                                    hardworking,
+                                    brave, humble</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Deku is a hero with an unshakable drive to protect others, constantly pushing himself beyond his limits.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Model 3: Ren -->
+                    <div id="card-ren"
+                        class="card snap-start mt-4 border bg-card text-card-foreground rounded-lg shadow-lg"
+                        data-v0-t="card" data-ai-id="10">
+                        <div class="flex items-center gap-4 p-6">
+
+                            <!-- Profile Picture -->
+                            <div class="relative">
+                                <span
+                                    class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                    <img src="{{ 'https://pocket-ai-profile.s3.us-west-2.amazonaws.com/ai_profile_image11732249278.561146.png' or url_for('static', filename='images/profile_pictures/default-profile-image-ai.jpg') }}"
+                                        class="w-full h-full object-cover object-center">
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-semibold">Ren</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Mysterious, Calm, Sharp, Analytical,
+                                    Subtle
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Ren is the cool, collected type who always seems to know more than he lets on. With his sharp intellect and quiet demeanor, he stays one step ahead, offering support in his own reserved, understated way.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -63,66 +276,64 @@
                 <!-- select button inside form -->
                 <form method="POST" action="/onboarding/ai/existing" class="mt-8 flex flex-col items-center">
                     <input type="hidden" name="ai-id" id="selected-ai-id" value="">
-                        <!-- Display flash messages -->
-                        {% with messages = get_flashed_messages(with_categories=True) %}
-                        {% if messages %}
-                        <div>
-                            {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">
-                                <div class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                        class="mr-3 h-5 w-5 flex-shrink-0">
-                                        {% if category == 'info' %}
-                                        <path fill-rule="evenodd"
-                                            d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
-                                            clip-rule="evenodd" />
-                                        {% elif category == 'success' %}
-                                        <path fill-rule="evenodd"
-                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                            clip-rule="evenodd" />
-                                        {% elif category == 'warning' %}
-                                        <path fill-rule="evenodd"
-                                            d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                                            clip-rule="evenodd" />
-                                        {% elif category == 'error' %}
-                                        <path fill-rule="evenodd"
-                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                                            clip-rule="evenodd" />
-                                        {% endif %}
-                                    </svg>
-                                    <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
-                                </div>
-                                <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                        class="h-5 w-5">
-                                        <path
-                                            d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                                    </svg>
-                                </button>
+
+                    <!-- Display flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                    {% if messages %}
+                    <div>
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    class="mr-3 h-5 w-5 flex-shrink-0">
+                                    {% if category == 'info' %}
+                                    <path fill-rule="evenodd"
+                                        d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
+                                        clip-rule="evenodd" />
+                                    {% elif category == 'success' %}
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                        clip-rule="evenodd" />
+                                    {% elif category == 'warning' %}
+                                    <path fill-rule="evenodd"
+                                        d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                                        clip-rule="evenodd" />
+                                    {% elif category == 'error' %}
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                                        clip-rule="evenodd" />
+                                    {% endif %}
+                                </svg>
+                                <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
                             </div>
-                            {% endfor %}
+                            <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    class="h-5 w-5">
+                                    <path
+                                        d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                                </svg>
+                            </button>
                         </div>
-                        {% endif %}
-                        {% endwith %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+
                     <button type="submit" id="select-existing-model"
                         class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background h-10 px-4 py-2">
                         Select
                     </button>
+
                 </form>
 
             </div>
-            
+
         </div>
     </div>
 </div>
 
 <style>
-    .card.selected {
-        border: 2px solid #4CAF50;
-        /* Green border for selected card */
-        box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
-        /* Glowing effect */
-    }
+    
 </style>
 <script>
     document.addEventListener('DOMContentLoaded', (event) => {

@@ -1,32 +1,4 @@
-/* Dropdown */
-#ai-options {
-    z-index: 100;
-}
-
-
-.ai-option {
-    position: relative;
-    overflow: hidden;
-}
-
-.ai-option::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle, rgba(115, 103, 240, 0.2) 0%, rgba(115, 103, 240, 0) 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.ai-option:hover::before {
-    opacity: 1;
-}
-
-
-/* chat styling */
+/* chat UI styling */
 
 .chat-layer {
     width: 70vw;
@@ -84,6 +56,7 @@
     height: 3.5rem;
     padding: 1rem calc(1rem + var(--chat-button-size));
     outline: none;
+    transition: box-shadow 0.3s ease-in;
 }
 .message-input:focus {
     box-shadow: 0 0 10px 1px var(--secondary-color);
@@ -146,8 +119,6 @@
     }
 }
 
-
-
 /* Error Messages */
 
 #error-alert {
@@ -160,9 +131,9 @@
 }
 
 
+/* UTILITIES */
 
 /* edit panel */
-
 .hover-panel {    
     padding: 4px;
     background-color: white;
@@ -176,18 +147,16 @@
     font-size: 12px;
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
-
 .hover-panel.show {
     opacity: 1;
     transform: translateY(0);
 }
-
 .hover-panel.hide {
     opacity: 0;
     transform: translateY(10px);
 }
 
-.hover-panel-btn {
+.hover-panel-btn, .edit-form > .hover-panel-btn {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -200,7 +169,6 @@
     transition: background-color 0.2s ease;
 }
 
-
 .hover-panel.show {
     opacity: 1;
     transform: translateY(0);
@@ -210,7 +178,7 @@
     opacity: 0;
     transform: translateY(10px);
 }
-.hover-panel-btn:hover {
+.hover-panel-btn:hover, .edit-form > .hover-panel-btn{
     background-color: rgba(0, 0, 0, 0.05);
 }
 
@@ -220,3 +188,76 @@
     stroke: var(--text-color);
 }
 
+
+/* Message Edit Form */
+
+.edit-form {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.edit-form textarea {
+    box-shadow: 0 0 0 2px rgba(115, 103, 240, 0.1);
+    transition: all 0.3s ease-in-out;
+}
+
+.edit-form textarea:focus {
+    box-shadow: 0 0 0 4px rgba(115, 103, 240, 0.2);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dropdown for AI model */
+
+#ai-options {
+    z-index: 100;
+}
+
+.ai-option {
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle, rgba(115, 103, 240, 0.2) 0%, rgba(115, 103, 240, 0) 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.ai-option:hover::before {
+    opacity: 1;
+}
+
+
+/* Additional Buttons - TEMP */
+
+.panel-btn-cancel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.panel-btn-cancel:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}

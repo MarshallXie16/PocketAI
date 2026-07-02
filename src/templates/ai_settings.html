@@ -1,7 +1,13 @@
 {% extends 'index.html' %}
 
+{% block title %}AI Settings - {{ ai_model.name }}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai-settings.css') }}">
+{% endblock %}
+
 {% block body %}
-<div class="flex flex-col items-center justify-center main-container" style="width: 50vw;">
+<div class="profile-container lg:w-3/5 md:w-2/3 sm:w-4/5">
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[800px]">
         <div dir="ltr" data-orientation="horizontal" class="w-full">
 
@@ -78,7 +84,7 @@
                     <div class="space-y-2 text-center flex justify-center">
                         <input
                             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-xl font-semibold"
-                            id="ai-name" name="ai-name" value="{{ ai_model.name }}" />
+                            id="ai-name" name="ai-name" required value="{{ ai_model.name }}" />
                     </div>
                 </div>
 
@@ -128,7 +134,7 @@
                                 <div data-dropdown-panel="ai-model"
                                     class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
                                     <div class="p-1">
-                                        <input type="hidden" name="ai-model" value="{{ ai_model.model_name }}">
+                                        <input type="hidden" name="ai-model" required value="{{ ai_model.model_name }}">
                                         <a href="#" data-dropdown-option
                                             class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
                                             gpt-4o-mini</a>
@@ -144,8 +150,12 @@
                                         <a href="#" data-dropdown-option
                                             class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
                                             claude-3-haiku</a>
+                                        <a href="#" data-dropdown-option
+                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                            claude-3-5-sonnet</a>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
 
@@ -162,7 +172,7 @@
                                 Personality
                             </label>
                             <div
-                                x-data="{ tooltip: 'Dictates the personality and behavior of the assitant. Try to be as descriptive as possible!' }">
+                                x-data="{ tooltip: 'Dictates the personality and behavior of your assistant. Try to be as descriptive as possible!' }">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor"
                                     class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
@@ -175,7 +185,7 @@
                         <!-- Field Content -->
                         <textarea
                             class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            name="ai-prompt" id="ai-prompt" placeholder="Enter AI prompt" rows="4">{{ ai_model.prompt or 'Describe your AI\'s personality!' }}
+                            name="ai-prompt" id="ai-prompt" required placeholder="Describe your assistant's personality, appearance, speech behavior, likes/dislikes, and background." rows="4">{{ ai_model.prompt or 'Describe your assistant\'s personality, appearance, speech behavior, likes/dislikes, and background.' }}
                         </textarea>
 
                     </div>
@@ -200,10 +210,9 @@
                         </div>
                         <textarea
                             class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            name="ai-description" id="ai-description" placeholder="Enter AI description"
-                            rows="3">{{ ai_model.description or 'Describe what your AI does!'}}</textarea>
+                            name="ai-description" id="ai-description" placeholder="Write a short description about what your assistant does!"
+                            rows="3">{{ ai_model.description or 'Write a short description about what your assistant does!'}}</textarea>
                     </div>
-
 
                     <!-- Memory Chunk Size -->
                     <div class="space-y-2 dropdown" id="ai-model-dropdown">
@@ -270,7 +279,7 @@
                     </div>
 
                     <!-- Conversation Modes (new) -->
-                    <div class="space-y-2 dropdown" id="fconversation-mode-wrapper">
+                    <div class="space-y-2 dropdown" id="conversation-mode-wrapper">
                         <div class="ai-setting-heading flex items-center">
                             <label class="mr-2" style="font-size: 14px;">Conversation Modes <span
                                     class="primary-color-text font-semibold">(Beta)</span></label>
@@ -313,8 +322,147 @@
                         </div>
                     </div>
 
+                    <!-- Voice Settings -->
+                    <div class="space-y-4">
 
+                        <!-- Collapsible header -->
+                        <div class="cursor-pointer" id="voice-settings-header">
+                            <div class="flex items-center justify-between" id="voice-settings-header-wrapper">
+                                <div class="flex items-center">
+                                    <h3 class="text-lg font-semibold mr-2">Voice Settings</h3>
+                                    <span class="text-sm font-semibold text-[#7367F0]">(Beta)</span>
+                                    <div x-data="{ tooltip: 'Enable voice generation for AI responses. Voice messages will automatically play when a message is received.' }"
+                                        class="ml-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor"
+                                            class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <!-- Dropdown Arrow -->
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    class="h-5 w-5 transform transition-transform duration-200" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
 
+                        <!-- Hidden content -->
+                        <div class="space-y-4" id="voice-settings-content">
+                            <!-- Enable Voice Toggle -->
+                            <div class="flex items-center space-x-4">
+                                <label class="text-sm font-medium">Enable Voice Messages: </label>
+                                <label class="switch flex items-center">
+                                    <input type="checkbox" name="voice-enabled" {% if ai_settings.voice_enabled
+                                        %}checked{% endif %}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- Voice Selection -->
+                            <div class="space-y-2 dropdown">
+                                <div class="ai-setting-heading flex items-center">
+                                    <label class="mr-2 text-sm font-medium leading-none" for="voice-id">Voice</label>
+                                    <div x-data="{ tooltip: 'Select the voice style for your AI assistant.' }">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor"
+                                            class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="flex">
+                                    <div class="relative inline-block w-full max-w-xs">
+                                        <button data-dropdown-button="voice-id" type="button"
+                                            class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                            {{ ai_settings.voice_id or 'alloy' }}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <div data-dropdown-panel="voice-id"
+                                            class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                            <div class="p-1">
+                                                <input type="hidden" name="voice-id"
+                                                    value="{{ ai_settings.voice_id or 'alloy' }}">
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    alloy</a>
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    echo</a>
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    fable</a>
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    onyx</a>
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    nova</a>
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    shimmer</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Voice Model Selection -->
+                            <div class="space-y-2 dropdown">
+                                <div class="ai-setting-heading flex items-center">
+                                    <label class="mr-2 text-sm font-medium leading-none"
+                                        for="voice-model">Quality</label>
+                                    <div
+                                        x-data="{ tooltip: 'tts-1 is optimized for speed, tts-1-hd for higher quality audio.' }">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor"
+                                            class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="flex">
+                                    <div class="relative inline-block w-full max-w-xs">
+                                        <button data-dropdown-button="voice-model" type="button"
+                                            class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
+                                            {{ ai_settings.voice_model or 'tts-1' }}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <div data-dropdown-panel="voice-model"
+                                            class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
+                                            <div class="p-1">
+                                                <input type="hidden" name="voice-model"
+                                                    value="{{ ai_settings.voice_model or 'tts-1' }}">
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    tts-1</a>
+                                                <a href="#" data-dropdown-option
+                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
+                                                    tts-1-hd</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
 
                 </div>
 
@@ -337,82 +485,15 @@
     </div>
 </div>
 
-<style>
-    .save-changes,
-    #upgrade-button {
-        background-color: #7367F0;
-        color: rgb(255, 255, 255);
-        transition: background-color 1s;
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ai-settings.js') }}"></script>
+{% endblock %}
 
-    }
-
-    .save-changes:hover,
-    #upgrade-button:hover {
-        background-color: #5f53eb;
-        /* transform: scale(1.03); */
-    }
-
-    [data-state="active"] {
-        color: black;
-    }
-
-    .radio-input:checked+.radio-label {
-        background-color: var(--primary-color);
-        color: white;
-        font-weight: 600;
-    }
-</style>
-</style>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const dropdownButtons = document.querySelectorAll('[data-dropdown-button]');
-        const dropdownPanels = document.querySelectorAll('[data-dropdown-panel]');
-        const aiSettingsForm = document.getElementById('ai-settings-form');
-        const profileImageInput = document.getElementById('profile-image-input');
-        const profileImagePreview = document.getElementById('profile-image-preview');
-
-        dropdownButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const panel = document.querySelector(`[data-dropdown-panel="${button.getAttribute('data-dropdown-button')}"]`);
-                panel.classList.toggle('hidden');
-            });
-        });
-
-        dropdownPanels.forEach(panel => {
-            const options = panel.querySelectorAll('[data-dropdown-option]');
-            options.forEach(option => {
-                option.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const button = document.querySelector(`[data-dropdown-button="${panel.getAttribute('data-dropdown-panel')}"]`);
-                    button.textContent = option.textContent;
-                    document.querySelector(`[name="${panel.getAttribute('data-dropdown-panel')}"]`).value = option.textContent;
-                    panel.classList.add('hidden');
-                });
-            });
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('[data-dropdown-button]') && !e.target.closest('[data-dropdown-panel]')) {
-                dropdownPanels.forEach(panel => panel.classList.add('hidden'));
-            }
-        });
-
-        profileImageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    profileImagePreview.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        document.getElementById('go-back').addEventListener('click', () => {
-            window.location.href = "{{ url_for('profile') }}";
-        });
+    // Go back button
+    document.getElementById('go-back').addEventListener('click', () => {
+        window.location.href = "{{ url_for('profile') }}";
     });
-
 </script>
 
 {% endblock %}

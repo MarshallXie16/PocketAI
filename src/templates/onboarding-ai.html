@@ -2,12 +2,12 @@
 
 {% block body %}
 
-<div class="flex flex-col items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+<div class="profile-container lg:w-3/5 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
         <div dir="ltr" data-orientation="horizontal" class="w-full">
             <div class="heading-choose-existing-or-new flex flex-col items-center mt-4">
-                <h2 class="text-2xl font-semibold">Choose an AI</h2>
-                <p class="text-gray-500 dark:text-gray-400">Select an AI to use for your project</p>
+                <h2 class="text-2xl font-semibold">Let's Meet Your <span class="primary-color-text">AI Assistant!</span></h2>
+                <p class="text-gray-500 dark:text-gray-400">Get started with one of 8 prebuilt assistants or create your own in less than 5 minutes.</p>
             </div>
             <!-- choose between existing AI or create new AI -->
             <div data-state="active" data-tab-content="ai" data-orientation="horizontal" role="tabpanel"
@@ -59,22 +59,13 @@
                 <!-- Existing AI -->
                 <div id="existing-ai" class="card border bg-card text-card-foreground rounded-lg shadow-lg"
                     data-v0-t="card">
-                    <div class="flex items-start gap-4 p-6">
-                        <div class="relative">
-                            <span
-                                class="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] ">
-                                <!-- replace with ai profile picture -->
-                                <span
-                                    class="flex h-full w-full items-center justify-center rounded-full bg-muted">AI</span>
-                            </span>
+                    <div class="flex items-start gap-4 p-6 items-center">
+                        <div class="w-20 h-20 rounded-full p-0.5 bg-gradient-to-r from-[#7367F0] to-[#9E95F5]">
+                            <img src="../static/images/profile_pictures/default_profile.png" alt="Avatar" class="w-full h-full object-cover rounded-full">
                         </div>
                         <div class="space-y-2">
-                            <h3 class="text-xl font-semibold">Select an existing AI</h3>
-                            <p class="text-gray-500 dark:text-gray-400">5 available models to choose from!</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                Select from a list of pre-trained AI models to use. You can always create a new AI
-                                later.
-                            </p>
+                            <h3 class="text-xl font-semibold">Select a Prebuilt Assistant</h3>
+                            <p class="text-md text-gray-500 dark:text-gray-400">Choose from 8+ prebuilt assistants. You can always create a new assistant later.</p>
                         </div>
                     </div>
                 </div>
@@ -82,20 +73,13 @@
                 <!-- New AI -->
                 <div id="new-ai" class="card border bg-card text-card-foreground rounded-lg shadow-lg mt-4"
                     data-v0-t="card">
-                    <div class="flex items-start gap-4 p-6">
-                        <div class="relative">
-                            <span
-                                class="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border-4 border-gradient-to-r from-[#9333ea] to-[#e879f9]">
-                                <span
-                                    class="flex h-full w-full items-center justify-center rounded-full bg-muted">AI</span>
-                            </span>
+                    <div class="flex items-start gap-4 p-6 items-center">
+                        <div class="w-20 h-20 rounded-full p-0.5 bg-gradient-to-r from-[#7367F0] to-[#9E95F5]">
+                            <img src="../static/images/profile_pictures/default_profile.png" alt="Avatar" class="w-full h-full object-cover rounded-full">
                         </div>
                         <div class="space-y-2">
-                            <h3 class="text-xl font-semibold">Create Your Personalized AI</h3>
-                            <p class="text-gray-500 dark:text-gray-400">Full customizability</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                Create a new AI from scratch. You can customize the AI to your liking.
-                            </p>
+                            <h3 class="text-xl font-semibold">Create a Personalized Assistant</h3>
+                            <p class="text-md text-gray-500 dark:text-gray-400">Customize your assistant's personality, behavior, and preferences in just a few clicks.</p>
                         </div>
                     </div>
                 </div>

@@ -9,6 +9,7 @@
     --background-color: #FFFFFF;
     --test-dark-purple: #8800ff;
     --error-color: #DC2626;
+    --gray-outline: var(var(--text-color));
 
     --primary-color-dark: #7367F0;
     --secondary-color-dark: #9E95F5;
@@ -37,7 +38,9 @@
     --border-radius: 1rem;
     --transition-speed: 0.5s;
 
+    /* special colors */
     --default-button-hover-color: #5f53eb;
+    --scroll-bar-color: #767683;
 }
 
 body {
@@ -119,6 +122,21 @@ nav a:hover::before {
     box-shadow: 10 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+.card-container {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+}
+
+.card {
+    scroll-margin: 1rem;
+    scroll-snap-align: start;
+}
+
+.card.selected {
+    border: 2px solid #7367F0;
+    box-shadow: 0 0 15px rgba(115, 103, 240, 0.3);
+}
+
 
 /* buttons */
 /* NOTE: Current buttons relies on tailwind for additional styling */
@@ -146,34 +164,53 @@ nav a:hover::before {
     color: white;
 }
 
-/* scrollbar */
-/* NOTE: idk wtf this is */
 
-/* Customize scrollbar for all elements */
-
-* {
-    scrollbar-width: thin;
-    scrollbar-color: linear-gradient(45deg, var(--primary-color), var(--shade-color)) rgba(0, 0, 0, 0.1);
+.cancel-button-red {
+    padding: 0.625rem 1.25rem;
+    margin: 1rem;
+    font-size: 0.9rem;
+    background-color: white;
+    color: var(--error-color);
+    border: 2px solid var(--error-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: ease-in-out 0.3s;
 }
 
-*::-webkit-scrollbar {
+.cancel-button-red:hover {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.cancel-button-red:focus {
+    outline: none;
+}
+
+
+/* scrollbar - Chrome/Edge/Firefox */
+
+/* Chrome/Safari/Edge scrollbar styling */
+*::-webkit-scrollbar, .card-container::-webkit-scrollbar {
     width: 12px;
 }
 
-*::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
+*::-webkit-scrollbar-track, .card-container::-webkit-scrollbar-track {
+    /* color of the tracking area */
+    background: rgba(0, 0, 0, 0.1);    
     border-radius: 6px;
 }
 
-*::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, var(--primary-color), var(--shade-color));
-    border-radius: 6px;
-    border: 3px solid rgba(0, 0, 0, 0.1);
-    transition: all 3s;
+*::-webkit-scrollbar-thumb, .card-container::-webkit-scrollbar-thumb {
+    background: var(--scroll-bar-color);                        /* color of the scroll thumb */
+    border-radius: 6px;                                         /* roundness of the scroll thumb */
+    border: 3px solid transparent;                              /* padding around scroll thumb */
+    background-clip: padding-box;                               /* prevents border from eating into the background */
+    box-shadow: inset 0 0 0 3px var(--scroll-bar-color);        /* creates gradient-like effect */
 }
 
-*::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(45deg, var(--shade-color), var(--primary-color));
+*::-webkit-scrollbar-thumb:hover, .card-container::-webkit-scrollbar-thumb:hover {
+    background: var(--shade-color);
+    box-shadow: inset 0 0 0 3px var(--shade-color);
 }
 
 
@@ -284,10 +321,7 @@ nav a:hover::before {
     color: var(--text-color-dark);
 }
 
-
-
-
-/* to figure out */
+/* color and text styles */
 
 .text-glow {
     color: var(--text-color);
@@ -295,31 +329,6 @@ nav a:hover::before {
 
 .primary-color-text {
     color: var(--primary-color);
-}
-
-.aspect-square {
-    aspect-ratio: 1 / 1;
-}
-
-.cancel-button-red {
-    padding: 0.625rem 1.25rem;
-    margin: 1rem;
-    font-size: 0.9rem;
-    background-color: white;
-    color: var(--error-color);
-    border: 2px solid var(--error-color);
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: ease-in-out 0.3s;
-}
-
-.cancel-button-red:hover {
-    background-color: var(--error-color);
-    color: white;
-}
-
-.cancel-button-red:focus {
-    outline: none;
 }
 
 .bg-primary-color {
@@ -334,7 +343,30 @@ nav a:hover::before {
     color: var(--primary-color);
 }
 
-.main-container {
+
+/* containers and misc */
+
+.profile-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    max-width: 100%;
     margin-top: 2rem;
-    margin-bottom: 2rem;
+    margin-bottom: 4rem;
+}
+
+.beta-tag {
+    color: #7367F0;
+    font-size: var(--font-size-base);
+}
+
+.radio-input:checked+.radio-label {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.aspect-square {
+    aspect-ratio: 1 / 1;
 }

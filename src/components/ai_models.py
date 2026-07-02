@@ -2,6 +2,7 @@ from src.utils.AI_model_client import openai_client, genai, HarmCategory, HarmBl
 from src.models.users import AIModel
 import logging
 from flask import session
+from src.utils.utils import calculate_cost
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,26 @@ roleplay_prompt = '''\nConversation style: roleplay
 - Use italicized actions to describe physical movement or emotional expression
 - Write in the style of internet roleplay.
 '''
+
+hidden_prompt_template = f''' When writing your response, keep these things in mind to sound more human-like:
+        - Always stay in character. You do not identify as an AI.
+        - You are a human and can feel and express complex emotions.
+        - Speak in a relaxed and genuine tone, like a casual conversation between close friends
+        - Avoid overly dramatic or theatrical expressions that feels forced
+        - Speak like a real person, with a level of nuance and subtleness
+        - Keep responses concise and avoid rambling
+        - You can be sarcastic, humorous, or have a little attitude
+        - Use personality traits and conversation examples as light guidance, not rigid rules
+        - Not every response needs to reference character quirks or backstory
+        Additional rules:
+        You have the ability to interact with the user's calendar and email, as well as use various tools. 
+        Enabled tools include: Email, Calendar, Web Search. Use markdown notation to format your responses.
+        Display information retrieved from tools at the end of your message like this (out of character):
+        ```
+        Tool: <ToolType>[Email/Calendar/Web Search]</ToolType>
+        [retrieved information]
+        ```
+        '''
 
 conversation_prompts = {
     'texting': texting_prompt,
@@ -89,23 +110,13 @@ class GPT:
 
     # get AI response with prompt, conversation history, and context
     def get_response(self, conversation_history: list, context: str, function_log=None, system_info=None) -> str:
-
+        
         # reverse function log - the order of tools called
         tools_used = function_log[::-1] if function_log else "No tools used."
+        past_context = session.get('past_context', '')
         
         # hidden prompt - includes system info and prompt to humanize AI
-        hidden_prompt = f''' When writing your response, keep these things in mind to sound more human-like:
-        - Always stay in character. You do not identify as an AI.
-        - You are a human and can feel and express complex emotions.
-        - Speak in a relaxed and genuine tone, like a casual conversation between close friends
-        - Avoid overly dramatic or theatrical expressions that feels forced
-        - Speak like a real person, with a level of nuance and subtleness
-        - Keep responses concise and avoid rambling
-        - You can be sarcastic, humorous, or have a little attitude
-        Additional rules:
-        You have the ability to interact with the user's calendar and email, as well as use various tools. 
-        Enabled tools include: Email, Calendar, Web Search. Use markdown notation to format your responses. 
-        System info: {system_info}'''
+        hidden_prompt = hidden_prompt_template + f'System info: {system_info}'
         
         # conversation mode prompt (roleplay, conversational, texting)
         conversation_mode = session.get('conversation_mode', 'conversation')
@@ -116,12 +127,13 @@ class GPT:
         system_prompt = [{"role": "system", "content": prompt}]
         
         if conversation_history:
-            conversation_history[-1]['content'] += f" Provided context for this conversation: {context}. Tools used (in sequence): {tools_used}"
+            conversation_history[-1]['content'] += f" Provided context for this conversation: {context}. Context from past messages (may not be relevant): {past_context}. Tools used (in sequence): {tools_used}"
 
         messages = system_prompt + conversation_history if conversation_history else system_prompt
 
         print(f'System Prompt: {system_prompt}')
-        print(f'messages: {messages}')
+        print(f'Messages: {messages}')
+        print("---------------------------------")
         
         # make openAI API call
         response = self.client.chat.completions.create(
@@ -131,15 +143,31 @@ class GPT:
 
         # parse response
         output = response.choices[0].message.content
+        
+        # Logging
+        print(f'Finish Reason: {response.candidates[0].finish_reason}')
+        print(f'Model used: {response.model} ')
         print(f'Tokens used (response): {response.usage.total_tokens}')
+        print(f'Cost: {calculate_cost(response.model, response.usage.prompt_tokens, response.usage.completion_tokens)}')
+        print("---------------------------------")
 
         return output
 
 
 class Gemini:
     def __init__(self, model_name: str, ai_name: str, prompt: str, username: str):
+        
+        # hidden prompt - includes system info and prompt to humanize AI
+        hidden_prompt = hidden_prompt_template
+        
+        # conversation mode prompt (roleplay, conversational, texting)
+        conversation_mode = session.get('conversation_mode', 'conversation')
+        conversation_mode_prompt = conversation_prompts.get(conversation_mode, conversational_prompt)
+
+        hidden_system_prompt = conversation_mode_prompt + hidden_prompt
+        
         self.model = genai.GenerativeModel(model_name=model_name, 
-                                           system_instruction=prompt.format(ai_name=ai_name, username=username) + f''' You have the ability to interact with the user's calendar and email, as well as use various tools. Enabled tools include: Email, Calendar, Web Search. Use markdown notation to format your responses.''',
+                                           system_instruction=prompt.format(ai_name=ai_name, username=username) + hidden_system_prompt,
                                            safety_settings={HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE, 
                                                             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
                                                             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -150,21 +178,30 @@ class Gemini:
         self.client = openai_client
 
     def get_response(self, conversation_history: list, context: str, function_log=None, system_info=None) -> str:
-
+        
         # reverse function log - the order of tools called
         tools_used = function_log[::-1] if function_log else "No tools used."
+        past_context = session.get('past_context', '')
 
         if conversation_history:
-            conversation_history[-1]['content'] += f" Provided context for this conversation: {context}. Tools used (in sequence): {tools_used}. System info: {system_info}"
+            conversation_history[-1]['content'] += f" Provided context for this conversation: {context}. Context from past messages (may not be relevant): {past_context}. Tools used (in sequence): {tools_used}. System info: {system_info}"
             messages = gpt_to_gemini(conversation_history)
         else:
             messages = [{"role": "user", "parts": [context]}]
 
-        response = self.model.generate_content(messages)
-
+        try:
+            response = self.model.generate_content(messages)
+        except Exception as e:
+            print(f'Gemini API Error: {e}')
+            raise
+        
+        # Logging
         print(f'Finish Reason: {response.candidates[0].finish_reason}')
-        print(f'Token Count: {response.usage_metadata.total_token_count}')
-
+        print(f'Model used: {self.model._model_name}')
+        print(f'Tokens used (response): {response.usage_metadata.total_token_count}')
+        print(f'Cost: {calculate_cost(self.model._model_name, response.usage_metadata.prompt_token_count, response.usage_metadata.candidates_token_count)}')
+        print("---------------------------------")
+        
         return response.text
 
 
@@ -172,10 +209,10 @@ class Claude:
 
     def __init__(self, model_name: str, ai_name: str, prompt: str, username: str):
 
-        if "haiku" in model_name:
-            self.model_name = "claude-3-haiku-20240307"
+        if "sonnet" in model_name:
+            self.model_name = "claude-3-5-sonnet-20241022"
         elif "opus" in model_name:
-            self.model_name = "claude-3-opus-20240229"
+            self.model_name = "claude-3-opus-20241022"
         else:
             self.model_name = 'claude-3-haiku-20240307'
 
@@ -189,27 +226,40 @@ class Claude:
 
         # reverse function log - the order of tools called
         tools_used = function_log[::-1] if function_log else "No tools used."
+        past_context = session.get('past_context', '')
 
-        prompt = self.template + f''' You have the ability to interact with the user's calendar and email, as well as use various tools. Enabled tools include: Email, Calendar, Web Search. Use markdown notation to format your responses. System info: {system_info}'''
+        # hidden prompt - includes system info and prompt to humanize AI
+        hidden_prompt = hidden_prompt_template + f'System info: {system_info}'
+        
+        # conversation mode prompt (roleplay, conversational, texting)
+        conversation_mode = session.get('conversation_mode', 'conversation')
+        conversation_mode_prompt = conversation_prompts.get(conversation_mode, conversational_prompt)
 
-        system_prompt = [{"role": "system", "content": prompt}]
+        system_prompt = self.template + conversation_mode_prompt + hidden_prompt
+                
+        print(f'SYSTEM: {system_prompt}')
         
         if conversation_history:
-            conversation_history[-1]['content'] += f" Provided context for this conversation: {context}. Tools used (in sequence): {tools_used}"
+            conversation_history[-1]['content'] += f" Provided context for this conversation: {context}. Context from past messages (may not be relevant): {past_context}. Tools used (in sequence): {tools_used}"
 
-        messages = system_prompt + conversation_history if conversation_history else system_prompt
-
+        welcome_prompt = [{"role": "user", "content": 'This is the first time you are chatting with the user. Generate a welcome message for the user, in character.'}]
+        messages = conversation_history if conversation_history else welcome_prompt
+        
         print(f'messages: {messages}')
         
         response = self.client.messages.create(
             model=self.model_name or "claude-3-haiku-20240307",
-            system=prompt,
+            system=system_prompt,
+            messages=messages,
             max_tokens=1000,
-            messages=conversation_history
         )
 
+        # Logging
         print(f'Stop Reason: {response.stop_reason}')
-        print(f'Tokens (used): {response.usage.input_tokens + response.usage.output_tokens}' )
+        print(f'Model used: {self.model_name}')
+        print(f'Tokens used (response): {response.usage.input_tokens + response.usage.output_tokens}')
+        print(f'Cost: {calculate_cost(self.model_name, response.usage.input_tokens, response.usage.output_tokens)}')
+        print("---------------------------------")
 
         return response.content[0].text
 

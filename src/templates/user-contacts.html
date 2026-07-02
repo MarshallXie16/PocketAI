@@ -1,7 +1,7 @@
 {% extends 'index.html' %}
 
 {% block title %}
-<title>{{ current_user.username }}'s Contacts </title>
+{{ current_user.username }}'s Contacts
 {% endblock %}
 
 {% block css %}
@@ -22,7 +22,7 @@
                     Contacts
                 </h3>
                 <p class="text-gray-600 dark:text-gray-400 mt-2">
-                    Manage your contacts for easy communication with PocketAI.
+                    Contacts allow your assistants to recognize and communicate with people you know.
                 </p>
             </div>
             <!-- Add Contact Button -->
@@ -73,11 +73,19 @@
             </table>
         </div>
 
+        <!-- divider -->
+        <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
+
+        <button id="back-buttom-tmp"
+            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mr-2"
+            onclick="window.location.href='/profile'">
+            <- Back
+        </button>
     </div>
 
     <!-- Add/Edit Contact Modal -->
     <div id="contact-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl px-8 py-4 mx-auto lg:py-16">
+        <div class="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl px-8 py-4 mx-auto py-8">
             <h2 id="modal-title" class="mb-4 text-xl font-bold text-gray-900 dark:text-white">Add Contact</h2>
             <form id="contact-form">
                 <input type="hidden" id="contact-id">

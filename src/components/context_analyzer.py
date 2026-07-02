@@ -179,7 +179,7 @@ class ContextAnalyzer:
         func_args = json.loads(func_info.arguments)
         function_name = func_args.get("operation")
         context = ""
-        function_log = None
+        function_log = []
 
         if function_name == "email":
             context, function_log = context_analyzer.classify_email(

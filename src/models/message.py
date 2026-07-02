@@ -9,12 +9,14 @@ class Message(db.Model):
     sender = db.Column(db.String(50), nullable=False)
     message = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.datetime.now(datetime.UTC))
+    voice_url = db.Column(db.String(2048), nullable=True)
     user = db.relationship('User', back_populates='messages')
     ai_model = db.relationship('AIModel', back_populates='messages')
 
-    def __init__(self, user_id, ai_id, sender, message):
+    def __init__(self, user_id, ai_id, sender, message, voice_url=None):
         self.user_id = user_id
         self.ai_id = ai_id
         self.sender = sender
         self.message = message
         self.timestamp = datetime.datetime.now(datetime.UTC)
+        self.voice_url = voice_url

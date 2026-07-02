@@ -1,10 +1,10 @@
 {% extends 'index.html' %}
 
 {% block body %}
-<div class="flex flex-col items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+<div class="profile-container lg:w-3/5 md:w-2/3 sm:w-4/5">
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
         <div dir="ltr" data-orientation="horizontal" class="w-full">
-            
+
             <!--  user settings -->
             <form action="/onboarding/user" method="POST" id="user-settings-form" data-state="active"
                 data-tab-content="user" data-orientation="horizontal" role="tabpanel"
@@ -15,7 +15,8 @@
                 <!-- heading -->
                 <div class="heading flex flex-col items-center mb-4">
                     <h1 class="text-xl font-semibold">Customize Your Profile</h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Help us get to know you a little!</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Welcome to PocketAI! Let's get to know you a
+                        little! :)</p>
                 </div>
 
                 <!-- profile section; profile picture, name, email -->
@@ -60,7 +61,8 @@
                             <p class="text-gray-500 dark:text-gray-400">Free Plan</p>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <p class="text-gray-500 dark:text-gray-400">Credits: {{ current_user.points }}</p>
+                            <p class="text-gray-500 dark:text-gray-400">Credits: {{ current_user.paid_credits +
+                                current_user.free_credits }}</p>
                             <button type="button" id="upgrade-button" onclick="window.location.href='/pricing'"
                                 class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                                 Upgrade
@@ -105,9 +107,20 @@
 
                     <!-- Timezone -->
                     <div class="space-y-2 dropdown" id="timezone-dropdown">
+                        <div class="tooltip-wrapper flex items-center">
                         <label
-                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                             for="timezone">Timezone</label>
+                            <div
+                                x-data="{ tooltip: 'Pick the closest local timezone. Used for email and calendar functionality.' }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
                         <div class="flex">
                             <div class="relative inline-block w-full max-w-xs">
                                 <!-- Button -->
@@ -160,9 +173,24 @@
 
                     <!-- Messages per Page -->
                     <div class="space-y-2">
-                        <label
-                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            for="messages-per-page">Messages per Page</label>
+
+                        <!-- Heading and ToolTip-->
+                        <div class="tooltip-wrapper flex items-center">
+                            <label
+                                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mr-2"
+                                for="messages-per-page">Context Length</label>
+                            <div
+                                x-data="{ tooltip: 'The number of messages passed as context to the assistant.' }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Dropdown select -->
                         <div class="flex">
                             <div class="relative inline-block w-full max-w-xs">
                                 <!-- Button -->
@@ -195,6 +223,7 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Display flash messages -->

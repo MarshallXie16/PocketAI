@@ -1,7 +1,7 @@
 {% extends 'index.html' %}
 
 {% block title %}
-<title>Chat with {{ ai_model.name }}</title>
+Chat with {{ ai_model.name }}
 {% endblock %}
 
 {% block css %}
@@ -30,7 +30,7 @@
 </div>
 
 <!-- Chat Container -->
-<div class="chat-layer flex justify-center items-center p-4 w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+<div class="chat-layer profile-container lg:w-3/5 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
     <div class="chat-container flex flex-col bg-white rounded-xl shadow-lg overflow-x-hidden">
 
         <!-- Top bar -->
@@ -139,7 +139,7 @@
             {% else %}
 
             <!-- User message -->
-            <div class="message-container user-message">
+            <div class="message-container user-message" data-message-id="{{ message.id }}">
                 <div class="message-wrapper flex items-end gap-2 justify-end">
                     <div class="message-bubble backdrop-blur-sm rounded-t-2xl rounded-bl-2xl p-3 max-w-[70%]"
                         style="background-color:#7367F0;">

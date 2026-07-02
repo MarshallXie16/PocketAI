@@ -59,6 +59,9 @@ class User(UserMixin, db.Model):
     # reset free credits to 1500 for free users (premium users don't have free credits)
     def reset_free_credits(self):
         self.free_credits = 100 if self.plan == 'free' else 0
+        
+    def add_free_credits(self, amount):
+        self.free_credits += amount
 
     # add paid credits to a user's account
     def add_paid_credits(self, amount):
@@ -86,11 +89,12 @@ class AIModel(db.Model):
     settings = db.relationship('AISettings', backref='ai_model', uselist=False, cascade='all, delete-orphan')
     messages = db.relationship('Message', back_populates='ai_model', cascade='all, delete-orphan')
     
-    def __init__(self, name, model_name, prompt, description=""):
+    def __init__(self, name, model_name, prompt, description="", profile_image_url=""):
         self.name = name
         self.model_name = model_name
         self.prompt = prompt
         self.description = description
+        self.profile_image_url = profile_image_url
 
     # assign user to model and vice versa
     def assign_user(self, user):
@@ -103,7 +107,7 @@ class AIModel(db.Model):
 class UserSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timezone = db.Column(db.String(64), nullable=True)
-    context_length = db.Column(db.Integer, default=20)
+    context_length = db.Column(db.Integer, default=10)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     last_active_ai_id = db.Column(db.Integer, nullable=True)
 
@@ -118,6 +122,9 @@ class AISettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     memory_chunk_size = db.Column(db.Integer, default=256)
     conversation_mode = db.Column(db.String(64), default='conversation')
+    voice_enabled = db.Column(db.Boolean, default=False)
+    voice_id = db.Column(db.String(64), default='alloy')
+    voice_model = db.Column(db.String(64), default='tts-1')
     ai_model_id = db.Column('ai_model_id', db.Integer, db.ForeignKey('ai_model.id', ondelete='CASCADE'), nullable=False)
 
     def __init__(self, ai_model_id, memory_chunk_size=6):

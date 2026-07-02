@@ -1,7 +1,7 @@
 {% extends 'index.html' %}
 
 {% block title %}
-<title>Profile for {{ current_user.username }}</title>
+Profile for {{ current_user.username }}
 {% endblock %}
 
 {% block css %}
@@ -38,7 +38,7 @@
 {% endblock %}
 
 {% block body %}
-<div class="items-center justify-center w-full lg:w-1/2 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
+<div class="profile-container lg:w-3/5 md:w-2/3 sm:w-4/5">
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
         <div dir="ltr" data-orientation="horizontal" class="w-full">
 
@@ -282,9 +282,9 @@
                     </div>
                 </div>
 
-                <button id="add-credits-button" type="button" onclick="window.location.href='/add-credits?amount=10'"
+                <button id="contacts-temp-button" type="button" onclick="window.location.href='/user-settings/contacts'"
                     class="mt-6 default-button items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-                    Add 10 credits
+                    Manage contacts
                 </button>
 
                 <!-- divider -->
@@ -308,64 +308,107 @@
                 aria-labelledby="radix-:r2u:-trigger-ai" hidden="" id="radix-:r2u:-content-ai" tabindex="0"
                 class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6">
 
-                <!-- modal for delete confirmation -->
-                <div id="delete-confirmation" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold">Delete AI Model?</h3>
-                        </div>
-                        <div class="mb-6">
-                            <p class="text-gray-600 dark:text-gray-400">
-                                Are you sure you want to permanently delete this AI model and all associated data? This
-                                action cannot be undone.
-                            </p>
-                        </div>
-                        <div class="flex justify-end space-x-2">
-                            <button id="cancel-delete"
-                                class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">
-                                Cancel
-                            </button>
-                            <button id="confirm-delete"
-                                class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors">
-                                Confirm
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Scroll Container -->
+                <div class="card-container h-[500px] overflow-y-auto overflow-x-hidden snap-y snap-mandatory px-5">
 
-                {% for ai_model in available_ais %}
-                <div class="container mx-auto flex flex-col gap-8 mb-6">
-                    <div class="card border bg-card text-card-foreground rounded-lg shadow-lg" data-v0-t="card"
-                        data-ai-id="{{ ai_model.id }}">
-                        <div class="flex items-start gap-4 p-6">
-                            <div class="relative items-center">
-                                <!-- Profile Picture -->
-                                <div class="relative">
-                                    <span
-                                        class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                        <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
-                                            class="w-full h-full object-cover object-center">
-                                    </span>
-                                </div>
+                    <!-- modal for delete confirmation -->
+                    <div id="delete-confirmation" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold">Delete AI Assistant?</h3>
                             </div>
-                            <div class="space-y-2">
-                                <h3 class="text-xl font-semibold">{{ ai_model.name }}</h3>
-                                <p class="text-gray-500 dark:text-gray-400">{{ ai_model.model_name }}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ ai_model.description }}
+                            <div class="mb-6">
+                                <p class="text-gray-600 dark:text-gray-400">
+                                    Are you sure you want to permanently delete this AI assistant and all associated
+                                    data? This
+                                    action cannot be undone.
                                 </p>
                             </div>
-
-                            <!-- Delete AI button -->
-                            <button type="button"
-                                class="delete-button absolute top-2 right-2 text-gray-500 hover:text-red-500"
-                                onclick="deleteAI('{{ ai_model.id }}')" data-ai-id="{{ ai_model.id }}">
-                                &times;
-                            </button>
+                            <div class="flex justify-end space-x-2">
+                                <button id="cancel-delete"
+                                    class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">
+                                    Cancel
+                                </button>
+                                <button id="confirm-delete"
+                                    class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors">
+                                    Confirm
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    {% if available_ais %}
+                    {% for ai_model in available_ais %}
+                    <!-- Display list of available assistants -->
+                    <div class="container mx-auto flex flex-col gap-8 mb-6">
+                        <div class="card border bg-card text-card-foreground rounded-lg shadow-lg" data-v0-t="card"
+                            data-ai-id="{{ ai_model.id }}">
+                            <div class="flex items-start gap-4 p-6">
+                                <div class="relative items-center">
+                                    <!-- Profile Picture -->
+                                    <div class="relative">
+                                        <span
+                                            class="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                            <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
+                                                class="w-full h-full object-cover object-center">
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <h3 class="text-xl font-semibold">{{ ai_model.name }}</h3>
+                                    <p class="text-gray-500 dark:text-gray-400">{{ ai_model.model_name }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ ai_model.description }}
+                                    </p>
+                                </div>
+
+                                <!-- Delete AI button -->
+                                <button type="button"
+                                    class="delete-button absolute top-2 right-2 text-gray-500 hover:text-red-500"
+                                    onclick="deleteAI('{{ ai_model.id }}')" data-ai-id="{{ ai_model.id }}">
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <!-- No available assistants -->
+                    <div class="container mx-auto flex flex-col gap-8 mb-6">
+                        <div class="bg-white w-full p-8 flex flex-col items-center justify-center text-center">
+                            <!-- Icon Container -->
+                            <div class="mb-6 p-4 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                                    fill="none" stroke="white" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="text-white">
+                                    <path d="M12 8V4H8"></path>
+                                    <rect x="4" y="8" width="16" height="12" rx="2"></rect>
+                                    <path d="M2 14h2"></path>
+                                    <path d="M20 14h2"></path>
+                                    <path d="M15 13v2"></path>
+                                    <path d="M9 13v2"></path>
+                                </svg>
+                            </div>
+
+                            <!-- Message -->
+                            <h3 class="text-xl font-semibold text-[#525252] mb-2">
+                                404 Assistant Not Found :(
+                            </h3>
+
+                            <p class="text-[#525252] mb-6 max-w-md">
+                                You haven't created any AI assistants yet. Create your first assistant to get started!
+                            </p>
+
+                            <!-- Create Button - using the same default-button styling seen elsewhere -->
+                            <a href="/onboarding/ai/create"
+                                class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium text-white h-10 px-4 py-2">
+                                Create Your First Assistant
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
                 </div>
-                {% endfor %}
 
             </div>
 
