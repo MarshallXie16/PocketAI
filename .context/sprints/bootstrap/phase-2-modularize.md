@@ -64,4 +64,6 @@ rewrites the AI core anyway. **Reversibility:** parameterize later. **Scope:** s
 - Chat tests patch `src.blueprints.chat.run_ai_response` — keep that seam or update tests.
 - `AI_model_client.py` still live (components import it) — dies in Phase 3.
 
-## Status: REVIEW — awaiting codex findings, then merge
+- External (codex gpt-5.5): **no Critical, no Major.** One Minor accepted & fixed: OAuth registration guard pinned the FIRST create_app's Google client config across app instances — now re-registers from current config each call (pops Authlib private registry/clients caches; no public unregister exists). Clean areas explicitly verified: chat routes, billing/webhook, OAuth route bodies, delete_ai cleanup, security gates, test assertions.
+
+## Status: COMPLETE (2026-07-01) — merged to master

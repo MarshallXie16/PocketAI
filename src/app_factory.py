@@ -69,21 +69,26 @@ def _register_oauth(app):
 
     Use ``oauth.create_client('google')`` to get the client — the old
     module-level ``google`` global was permanently None for importers (BUG-11).
-    Idempotent so repeated ``create_app`` calls (tests) don't double-register.
+
+    Re-registers from the CURRENT app's config on every call: keeping the
+    first registration would pin a stale client id/secret across
+    ``create_app`` calls (tests, CLIs, embedded runners). Authlib has no
+    public unregister, so the registry/client caches are cleared directly.
     """
     oauth.init_app(app)
-    if oauth._registry.get('google') is None:
-        oauth.register(
-            name='google',
-            client_id=app.config['GOOGLE_CLIENT_ID'],
-            client_secret=app.config['GOOGLE_CLIENT_SECRET'],
-            server_metadata_url=app.config['GOOGLE_DISCOVERY_URL'],
-            client_kwargs={
-                'scope': 'openid email profile '
-                         'https://www.googleapis.com/auth/gmail.modify '
-                         'https://www.googleapis.com/auth/calendar'
-            },
-        )
+    oauth._registry.pop('google', None)
+    oauth._clients.pop('google', None)
+    oauth.register(
+        name='google',
+        client_id=app.config['GOOGLE_CLIENT_ID'],
+        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+        server_metadata_url=app.config['GOOGLE_DISCOVERY_URL'],
+        client_kwargs={
+            'scope': 'openid email profile '
+                     'https://www.googleapis.com/auth/gmail.modify '
+                     'https://www.googleapis.com/auth/calendar'
+        },
+    )
 
 
 def _register_blueprints(app):
