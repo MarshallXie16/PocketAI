@@ -1,0 +1,44 @@
+src/static/css/pocket.css
+  s_4c467e2481b592::t_90aaa6661b2073 1-178,181-932
+  s_4c467e2481b592::t_070de869650b40 179-180
+src/templates/_components.html
+  s_4c467e2481b592::t_30f0e3f25c815c 1-56
+src/templates/pricing.html
+  s_4c467e2481b592::t_584420c3ed8c85 1,3,5-10,13-18,20-36,38-61,63-77
+src/templates/index.html
+  s_4c467e2481b592::t_4c8ffd2a953f5f 1-32,34-50,52-53,55-70,72-75,77-82,84-93,95-102,104-114,116-125,127
+src/templates/signup.html
+  s_4c467e2481b592::t_2594e942eee0c6 1,3,5-10,13-30,32-37,39,41-44,46-47,49-50,55-76
+src/templates/error.html
+  s_4c467e2481b592::t_c9aa5336fd1652 1-9,11-16
+src/templates/privacy-policy.html
+  s_4c467e2481b592::t_5100c49000ff90 116
+  s_4c467e2481b592::t_f98e11871fec95 1,7-8
+src/templates/terms-of-service.html
+  s_4c467e2481b592::t_8f4e72a56ad1e2 1,7-8
+  s_4c467e2481b592::t_62e723c1a07d8d 151
+src/templates/login.html
+  s_4c467e2481b592::t_a5c068374b7ea5 1,3,5-10,13,15,17-26,28-30,32-33,35-49
+src/templates/_base.html
+  s_4c467e2481b592::t_d83fca434a55ea 1-72
+src/templates/payment-success.html
+  s_4c467e2481b592::t_c2925accf2df70 1,3,5-10,12-19,23
+src/templates/payment-canceled.html
+  s_4c467e2481b592::t_9f5ec72af4a99f 1,3,5-13,17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "92126de1d7de313c326f6dfdc9384ce2cb320a03",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
