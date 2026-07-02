@@ -8,7 +8,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from flask_login import current_user, login_required
 
 from config import MESSAGE_COST
-from src.components.voice_handler import VoiceHandler
+from src.ai.voice import VoiceHandler
 from src.extensions import db
 from src.models.message import Message
 from src.models.users import AIModel
