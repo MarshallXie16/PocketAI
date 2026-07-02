@@ -1,0 +1,25 @@
+docs/designs/overhaul-roadmap.md
+  s_4c467e2481b592::t_d0a7f4211c5318 1-132
+.context/checkpoints/current.md
+  s_4c467e2481b592::t_261e760deda7bc 3-6,9,12,15,18-20,23
+.context/sprints/bootstrap/sprint.md
+  s_4c467e2481b592::t_0be8387da19479 75-91,94-97
+  s_4c467e2481b592::t_774a0bce59379b 2
+  s_4c467e2481b592::t_54c4990a760530 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "4b0a6581ea7d12b2e81002e47282e9b0d3ad99c4",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
