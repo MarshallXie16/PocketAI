@@ -19,7 +19,10 @@ class RelationshipState(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     ai_id = db.Column(db.Integer, db.ForeignKey('ai_model.id', ondelete='CASCADE'), nullable=False)
     first_met_at = db.Column(db.DateTime, default=_now)
-    last_interaction_at = db.Column(db.DateTime, default=_now)
+    # No default: None means "no interaction recorded yet" — the seed for the
+    # first streak. (A default here made record_interaction's None branch
+    # dead code and left streaks permanently off-by-one.)
+    last_interaction_at = db.Column(db.DateTime, nullable=True)
     streak_days = db.Column(db.Integer, default=0, nullable=False)
     longest_streak = db.Column(db.Integer, default=0, nullable=False)
     total_interactions = db.Column(db.Integer, default=0, nullable=False)
