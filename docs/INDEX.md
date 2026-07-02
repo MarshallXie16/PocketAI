@@ -8,7 +8,7 @@ Table of contents for `docs/`. Quick mental model lives in `../.context/project.
 
 ## Reference
 
-- **[architecture.md](architecture.md)** — Request flow, directory map with one-line purpose per module, app factory pattern, conventions (route paths, service ownership, blueprint discipline), how-to recipes (add a route / service / model / test), known debt (LAUNCH-1..5).
+- **[architecture.md](architecture.md)** — Request flow (including AI-core detail: agent loop, provider adapters, confirmation gate, episodic memory, proactive outreach), directory map with one-line purpose per module, app factory pattern, conventions, how-to recipes (add a route / service / model / tool / provider / model-id / test), known debt (LAUNCH-1..5).
 
 ---
 
@@ -24,6 +24,7 @@ Table of contents for `docs/`. Quick mental model lives in `../.context/project.
 
 - **[../.context/project.md](../.context/project.md)** — Tech stack, directory map, architecture, how to run, known limitations.
 - **[../.context/backlog.md](../.context/backlog.md)** — Prioritized work items (LAUNCH-1..5 are pre-deploy requirements; Phase 3–4 items follow).
+- **[../.context/research/provider-apis-2026-07.md](../.context/research/provider-apis-2026-07.md)** — Internal research: authoritative LLM provider API shapes for Anthropic, OpenAI (Responses API), and Google Gemini (google-genai SDK); extracted from installed SDK source + official docs (July 2026). Reference before touching `src/providers/`.
 
 ---
 

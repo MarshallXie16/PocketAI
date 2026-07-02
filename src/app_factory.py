@@ -40,6 +40,9 @@ def create_app(config_class=None):
         static_folder=config_class.STATIC_FOLDER,
     )
     app.config.from_object(config_class)
+    # global upload cap (audio clips, profile images) — enforced by Werkzeug
+    # before request parsing, unlike a Content-Length check in a route
+    app.config.setdefault('MAX_CONTENT_LENGTH', 20 * 1024 * 1024)
 
     # third-party API config (after config load, unlike the old import-time reads)
     stripe.api_key = os.environ.get('STRIPE_API_KEY')
@@ -101,8 +104,9 @@ def _register_blueprints(app):
     from src.blueprints.contacts import contacts_bp
     from src.blueprints.pages import pages_bp
     from src.blueprints.profile import profile_bp
+    from src.blueprints.tasks import tasks_bp
 
-    for bp in (pages_bp, auth_bp, chat_bp, ai_bp, profile_bp, contacts_bp, billing_bp, admin_bp):
+    for bp in (pages_bp, auth_bp, chat_bp, ai_bp, profile_bp, contacts_bp, billing_bp, admin_bp, tasks_bp):
         app.register_blueprint(bp)
 
 

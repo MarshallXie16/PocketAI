@@ -20,14 +20,16 @@ from src.extensions import db
 from src.models.conversation_state import ConversationState
 from src.models.message import Message
 from src.models.users import AIModel
+from src.services import relationship_service
 
 logger = logging.getLogger(__name__)
 
 
-def run_ai_response(ai_id, user_message):
+def run_ai_response(ai_id, user_message, record_interaction=True):
     """Run a user message (with conversation history) through the selected AI
     model and return the response string. Ownership of ai_id is checked by
-    the calling route."""
+    the calling route. Pass record_interaction=False for regenerations so
+    retries don't inflate relationship streak/interaction counts."""
     ai_model = AIModel.query.get(ai_id)
     if ai_model is None:
         raise ValueError(f'AI model {ai_id} not found')
@@ -63,7 +65,11 @@ def run_ai_response(ai_id, user_message):
         ai_id=ai_id,
         user_timezone=user_timezone,
         extra_context=state.past_context or '',
+        relationship_block=relationship_service.context_block(current_user.id, ai_id, current_user.username),
     )
+
+    if record_interaction:
+        relationship_service.record_interaction(current_user.id, ai_id)
 
     # short-term memory cadence (DB-backed; was a session-cookie queue)
     queue = list(state.memory_queue or [])

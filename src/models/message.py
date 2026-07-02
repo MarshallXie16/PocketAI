@@ -12,13 +12,16 @@ class Message(db.Model):
     # NOTE: default must be a callable — a bare now() would be evaluated once at import.
     timestamp = db.Column(db.DateTime, index=True, default=lambda: datetime.datetime.now(datetime.UTC))
     voice_url = db.Column(db.String(2048), nullable=True)
+    # companion-initiated (proactive) message — rendered with a "reached out" tag
+    initiated = db.Column(db.Boolean, default=False, nullable=False)
     user = db.relationship('User', back_populates='messages')
     ai_model = db.relationship('AIModel', back_populates='messages')
 
-    def __init__(self, user_id, ai_id, sender, message, voice_url=None):
+    def __init__(self, user_id, ai_id, sender, message, voice_url=None, initiated=False):
         self.user_id = user_id
         self.ai_id = ai_id
         self.sender = sender
         self.message = message
         self.timestamp = datetime.datetime.now(datetime.UTC)
         self.voice_url = voice_url
+        self.initiated = initiated

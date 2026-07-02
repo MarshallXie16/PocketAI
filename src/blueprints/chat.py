@@ -26,6 +26,31 @@ logger = logging.getLogger(__name__)
 chat_bp = Blueprint('chat', __name__)
 
 
+@chat_bp.route('/transcribe', methods=['POST'])
+@login_required
+def transcribe():
+    """Voice input: transcribe an uploaded MediaRecorder clip to text.
+
+    Returns {"text": ...} for review-before-send — the frontend drops the
+    transcript into the message box; /send_message is unchanged."""
+    from src.services import transcription_service
+
+    audio = request.files.get('audio')
+    if audio is None:
+        return jsonify({'error': 'No audio file provided', 'code': 'BAD_REQUEST'}), 400
+    # (the app-level MAX_CONTENT_LENGTH rejects oversized bodies before parsing)
+    ext = (audio.filename or '').rsplit('.', 1)[-1].lower()
+    if ext not in transcription_service.ALLOWED_AUDIO_EXTENSIONS:
+        return jsonify({'error': 'Unsupported audio format', 'code': 'BAD_REQUEST'}), 400
+
+    try:
+        text = transcription_service.transcribe(audio)
+        return jsonify({'text': text}), 200
+    except Exception:
+        logger.exception('Transcription failed')
+        return jsonify({'error': 'Transcription failed', 'code': 'SERVER_ERROR'}), 500
+
+
 @chat_bp.route('/chat')
 @login_required
 def chat():
@@ -166,7 +191,7 @@ def regenerate_message():
         if user_message == 'None':
             ai_response = generate_welcome_message(ai_model, current_user)
         else:
-            ai_response = run_ai_response(ai_model_id, user_message)
+            ai_response = run_ai_response(ai_model_id, user_message, record_interaction=False)
 
         if not ai_response:
             raise Exception('Failed to generate AI response')

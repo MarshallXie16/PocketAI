@@ -114,22 +114,36 @@ def _patch_provider(monkeypatch, text):
     monkeypatch.setattr(registry, 'get_provider', lambda model: _FakeProvider(text))
 
 
-def test_consolidate_saves_stamped_row(db, patched_embed, user_ai, monkeypatch):
+def test_consolidate_saves_episode_and_key_facts(db, patched_embed, user_ai, monkeypatch):
     user_id, ai_id = user_ai
-    _patch_provider(monkeypatch, 'Sam adopted a golden retriever named Biscuit.')
+    _patch_provider(monkeypatch, (
+        '{"important": true,'
+        ' "situation": "Sam adopted a golden retriever named Biscuit.",'
+        ' "emotional_tone": "excited", "key_insight": "Sam loves dogs",'
+        ' "importance": 0.7, "entity_tags": ["Biscuit", "dogs"],'
+        ' "key_facts": [{"fact_type": "event", "content": "vet appointment for Biscuit",'
+        ' "due_at": "2026-07-10T17:00:00+00:00"}],'
+        ' "tone_note": null}'))
 
     memory.consolidate_and_save(user_id, ai_id, ['"sam": hi', 'MemAI: hey'], 'MemAI', 'sam')
 
     rows = MemoryEntry.query.filter_by(user_id=user_id, ai_id=ai_id).all()
     assert len(rows) == 1
-    # stamped with an ISO-ish date prefix + the summary text
     assert 'Sam adopted a golden retriever named Biscuit.' in rows[0].content
-    assert rows[0].content[:4].isdigit()  # leading year
+    assert rows[0].content[:4].isdigit()  # leading date stamp
+    assert rows[0].importance == 0.7
+    assert rows[0].key_insight == 'Sam loves dogs'
+
+    from src.models.relationship import KeyFact
+    facts = KeyFact.query.filter_by(user_id=user_id, ai_id=ai_id).all()
+    assert len(facts) == 1
+    assert facts[0].fact_type == 'event'
+    assert facts[0].due_at is not None
 
 
 def test_consolidate_false_saves_nothing(db, patched_embed, user_ai, monkeypatch):
     user_id, ai_id = user_ai
-    _patch_provider(monkeypatch, 'false')
+    _patch_provider(monkeypatch, '{"important": false}')
 
     memory.consolidate_and_save(user_id, ai_id, ['"sam": weather?', 'MemAI: sunny'], 'MemAI', 'sam')
 
