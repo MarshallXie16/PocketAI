@@ -1,0 +1,38 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+# Alembic migration files are auto-generated; do not lint them.
+exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Legacy AI core (components/) — will be replaced wholesale in Phase 3.
+# E501: many long strings/prompts; E722: bare except; F401/F541: unused imports and
+# f-strings without placeholders; I001: unsorted imports.
+"src/components/*" = ["E501", "E722", "F401", "F541", "I001"]
+
+# Integration adapters moved from components/ in Phase 2 — not yet rewritten.
+# Same set plus F402 (loop variable shadowing an import name in email_service.py).
+"src/services/integrations/*" = ["E501", "F401", "F402", "F541", "I001"]
+
+# AI_model_client.py uses conditional top-level imports (after an env-key guard)
+# which trip E402; it also re-exports symbols that callers import by name (F401).
+# utils.py has a few long cost-formula lines.
+"src/utils/*" = ["E402", "E501", "F401", "I001"]
+
+# Test files inherited from pre-Phase-2; contain long inline fixture strings.
+"src/tests/*" = ["E501", "I001"]
+
+# google_user.py has one long column-definition line and unsorted imports.
+"src/models/*" = ["E501", "I001"]
+
+# profile.py has one long Jinja context dict line.
+"src/blueprints/*" = ["E501"]
+
+# conversation_service.py has two long call-site lines (context_analyzer args).
+"src/services/*.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
