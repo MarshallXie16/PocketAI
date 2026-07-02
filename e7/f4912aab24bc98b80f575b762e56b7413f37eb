@@ -1,0 +1,23 @@
+src/blueprints/chat.py
+  s_4c467e2481b592::t_32b69320ef98ba 29-51
+src/services/transcription_service.py
+  s_4c467e2481b592::t_5e72c2c062237a 1-26
+src/ai/voice.py
+  s_4c467e2481b592::t_c1ffe259554425 3-6,10,14,19-26,29,32,35-93,104,107,109,112,114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "e7f4912aab24bc98b80f575b762e56b7413f37eb",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
