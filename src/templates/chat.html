@@ -1,198 +1,445 @@
-{% extends 'index.html' %}
+{% extends '_base.html' %}
+{% from '_components.html' import monogram, draft_card %}
 
-{% block title %}
-Chat with {{ ai_model.name }}
+{% block title %}Chat with {{ ai_model.name }}{% endblock %}
+
+{% block head %}
+<style>
+  /* ---- Chat surface (page-specific; shared tokens live in pocket.css) ---- */
+  main.page { display: flex; min-height: 0; overflow: hidden; }
+
+  .chat-app {
+    flex: 1;
+    height: 100vh;
+    height: 100dvh;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    background: var(--surface);
+    min-height: 0;
+  }
+
+  /* --- Sidebar --- */
+  .chat-sidebar {
+    border-right: 1px solid var(--line-subtle);
+    padding: 22px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 0;
+  }
+  .chat-identity {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+  .chat-identity .chat-name { font-weight: 700; font-size: 15.5px; }
+  .chat-identity:hover { text-decoration: none; }
+  .chat-identity:hover .chat-name { text-decoration: underline; }
+  .chat-sidebar-divider { height: 1px; background: var(--line-subtle); }
+  .chat-nav { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+  .chat-nav a { padding: 8px 12px; color: var(--secondary); border-radius: 8px; }
+  .chat-nav a:hover { color: var(--ink); text-decoration: none; background: var(--line-subtle); }
+  .chat-nav a.is-active { background: var(--bubble); color: var(--ink); font-weight: 600; }
+  .chat-sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+  .chat-pause {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--secondary);
+    text-align: center;
+  }
+  .chat-pause:hover { color: var(--ink); text-decoration: none; border-color: var(--secondary); }
+
+  /* AI switcher dropdown */
+  .chat-switcher { position: relative; }
+  .chat-switch-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(26, 25, 22, 0.10);
+    overflow: hidden;
+    z-index: 20;
+  }
+  .chat-switch-menu[hidden] { display: none; }
+  .chat-switch-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .chat-switch-item:hover { background: var(--bubble); text-decoration: none; }
+
+  /* --- Thread --- */
+  .chat-thread { display: flex; flex-direction: column; min-height: 0; }
+  .chat-mobile-head { display: none; }
+
+  .message-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px 32px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    min-height: 0;
+  }
+
+  .date-divider {
+    align-self: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 4px 0;
+  }
+
+  .msg { display: flex; flex-direction: column; max-width: 560px; }
+  .msg.msg-user { align-self: flex-end; align-items: flex-end; }
+  .msg .bubble-companion,
+  .msg .bubble-user { white-space: pre-wrap; word-break: break-word; }
+
+  /* quiet hover actions */
+  .msg-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 5px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .msg:hover .msg-actions,
+  .msg:focus-within .msg-actions { opacity: 1; }
+  .msg-action {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .msg-action:hover { color: var(--ink); text-decoration: underline; }
+
+  .initiated-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .initiated-row .quiet-link { font-size: 12px; color: var(--muted); }
+  .initiated-row .quiet-link:hover { color: var(--ink); }
+
+  /* inline edit */
+  .msg-edit { display: flex; flex-direction: column; gap: 8px; width: min(560px, 70vw); align-items: flex-end; }
+  .msg-edit textarea {
+    width: 100%;
+    border: 1.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font: inherit;
+    font-size: 15px;
+    resize: vertical;
+    min-height: 60px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .msg-edit-actions { display: flex; gap: 8px; }
+
+  /* typing indicator */
+  .typing {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    width: 74px;
+    justify-content: center;
+  }
+  .typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted);
+    animation: typing-bounce 1.2s infinite ease-in-out both;
+  }
+  .typing span:nth-child(2) { background: #B3A995; animation-delay: 0.15s; }
+  .typing span:nth-child(3) { background: var(--line); animation-delay: 0.3s; }
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.7; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* voice bubble */
+  .voice-bubble {
+    background: var(--bubble);
+    border-radius: 4px 16px 16px 16px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    max-width: 380px;
+    margin-top: 6px;
+  }
+  .voice-play {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--ink);
+    border: none;
+    display: grid; place-items: center;
+    flex: none; cursor: pointer; padding: 0;
+  }
+  .voice-play svg { display: block; }
+  .voice-play svg path,
+  .voice-play svg rect { fill: var(--surface); }
+  .waveform { display: flex; align-items: center; gap: 2.5px; flex: 1; height: 26px; }
+  .waveform span { width: 3px; border-radius: 2px; background: #B3A995; }
+  .voice-bubble.is-playing .waveform span { background: var(--ink); }
+  .voice-time { font-size: 12.5px; font-weight: 600; color: var(--secondary); flex: none; }
+
+  /* --- Composer --- */
+  .composer { padding: 14px 32px 20px; border-top: 1px solid var(--line-subtle); }
+  .composer-notice {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--clay);
+    margin-bottom: 8px;
+  }
+  .composer-notice[hidden] { display: none; }
+  .composer-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 16px;
+    padding: 8px 8px 8px 16px;
+  }
+  .composer-bar:focus-within { border-color: var(--ink); }
+  .composer-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: transparent;
+    max-height: 160px;
+    padding: 6px 0;
+  }
+  .composer-input::placeholder { color: var(--muted); }
+  .voice-hint { font-size: 11.5px; color: var(--muted); flex: none; align-self: center; }
+  .voice-hint[hidden] { display: none; }
+
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: none; flex: none; cursor: pointer;
+    display: grid; place-items: center; padding: 0;
+  }
+  .mic-btn { background: transparent; color: var(--secondary); }
+  .mic-btn:hover { color: var(--ink); }
+  .mic-btn[hidden] { display: none; }
+  .mic-btn.is-recording { background: var(--clay); color: #fff; animation: mic-pulse 1.3s infinite; }
+  @keyframes mic-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(196, 71, 43, 0.45); }
+    70% { box-shadow: 0 0 0 10px rgba(196, 71, 43, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(196, 71, 43, 0); }
+  }
+  .mic-timer { font-size: 12px; font-weight: 600; color: var(--clay); flex: none; align-self: center; }
+  .mic-timer[hidden] { display: none; }
+  .send-btn { background: var(--clay); color: #fff; }
+  .send-btn:hover { filter: brightness(0.94); }
+
+  /* --- Responsive: 360px mobile --- */
+  @media (max-width: 760px) {
+    .chat-app { grid-template-columns: 1fr; }
+    .chat-sidebar { display: none; }
+    .chat-mobile-head {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line-subtle);
+    }
+    .chat-mobile-head .chat-name { font-weight: 700; font-size: 15.5px; }
+    .chat-mobile-head .chat-mobile-settings {
+      margin-left: auto;
+      font-size: 12.5px; font-weight: 600; color: var(--secondary);
+    }
+    .message-area { padding: 18px 16px 12px; }
+    .composer { padding: 12px 14px 16px; }
+    .msg { max-width: 85%; }
+  }
+</style>
 {% endblock %}
 
-{% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
-{% endblock %}
+{# The chat surface is an immersive full-height app shell; drop the marketing
+   header/footer that _base renders on content pages. #}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
 
-{% block body %}
-<!-- Error Message -->
-<!-- Add this HTML at the top of your body tag -->
-<div id="error-alert" class="hidden fixed top-0 left-0 right-0 z-50 p-4">
-    <div class="max-w-md mx-auto bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-md">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                    fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clip-rule="evenodd" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p id="error-message" class="text-sm font-medium"></p>
-            </div>
-        </div>
+{% block content %}
+<div class="chat-app"
+     data-selected-model="{{ ai_model.id }}"
+     data-ai-name="{{ ai_model.name }}"
+     data-voice-enabled="{{ 'true' if ai_model.settings.voice_enabled else 'false' }}"
+     data-settings-url="{{ url_for('settings.settings_page') }}">
+
+  <!-- Sidebar (desktop) -->
+  <aside class="chat-sidebar">
+    <div class="chat-switcher">
+      <button type="button" class="chat-identity" id="ai-switcher"
+              {% if current_user.ai_models|length <= 1 %}disabled aria-disabled="true"{% endif %}
+              aria-haspopup="true" aria-expanded="false">
+        {{ monogram(ai_model.name, 40) }}
+        <span>
+          <span class="chat-name">{{ ai_model.name }}</span>
+          {% if days_together and days_together > 0 %}
+          <span class="relationship-line" style="display:block;">day {{ days_together }} together</span>
+          {% endif %}
+        </span>
+      </button>
+      {% if current_user.ai_models|length > 1 %}
+      <div class="chat-switch-menu" id="ai-switch-menu" hidden>
+        {% for ai in current_user.ai_models %}
+        <a class="chat-switch-item" href="{{ url_for('ai.change_ai', ai_id=ai.id) }}">
+          {{ monogram(ai.name, 30) }}
+          <span>{{ ai.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
-</div>
 
-<!-- Chat Container -->
-<div class="chat-layer profile-container lg:w-3/5 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
-    <div class="chat-container flex flex-col bg-white rounded-xl shadow-lg overflow-x-hidden">
+    <div class="chat-sidebar-divider"></div>
 
-        <!-- Top bar -->
-        <header
-            class="bg-white/20 p-4 flex items-center justify-between backdrop-filter backdrop-blur-lg bg-opacity-20 bg-gradient-to-r from-[#7367F0] to-[#9E95F5]">
-            <div class="relative">
-                <div class="flex items-center gap-3 cursor-pointer" id="ai-selector"
-                    data-selected-model="{{ ai_model.id }}">
-                    <div class="relative">
-                        <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
-                            width="40" height="40" alt="Avatar" class="rounded-full"
-                            style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                        <div
-                            class="chatbot-status absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                            <div class="rounded-full bg-white p-[2px]"></div>
-                        </div>
-                    </div>
-                    <div class="flex items-center">
-                        <div>
-                            <div class="flex ite">
-                                <h2 class="text-white font-semibold">{{ ai_model.name }}</h2>
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 text-white ml-2 transition-transform duration-300 ease-in-out"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                            <p class="text-white/80 text-sm">{{ ai_model.model_name }}</p>
-                        </div>
+    <nav class="chat-nav">
+      <a href="{{ url_for('chat.chat') }}" class="is-active">Chat</a>
+      <a href="{{ url_for('settings.settings_page') }}">Memory</a>
+      <a href="{{ url_for('settings.settings_page') }}">Check-ins</a>
+      <a href="{{ url_for('settings.settings_page') }}">Quiet hours</a>
+    </nav>
 
-                    </div>
-                </div>
-
-                <div id="ai-options"
-                    class="absolute top-full left-0 mt-2 w-full bg-gray-800 rounded-md shadow-lg overflow-hidden z-10 hidden">
-                    {% for ai in current_user.ai_models %}
-                    <div class="ai-option flex items-center gap-3 p-2 hover:bg-gray-700 transition-all duration-300 cursor-pointer"
-                        data-id="{{ ai.id }}" data-name="{{ ai.name }}" data-model-name="{{ ai.model_name }}"
-                        data-image-url="{{ ai.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}">
-                        <img src="{{ ai.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
-                            width="30" height="30" alt="Avatar" class="rounded-full"
-                            style="aspect-ratio: 30 / 30; object-fit: cover;" />
-                        <div>
-                            <h3 class="text-white font-semibold">{{ ai.name }}</h3>
-                            <p class="text-white/80 text-xs">{{ ai.model_name }}</p>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <button
-                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="h-5 w-5">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.3-4.3"></path>
-                    </svg>
-                </button>
-                <button
-                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="h-5 w-5">
-                        <polyline points="8 18 12 22 16 18"></polyline>
-                        <polyline points="8 6 12 2 16 6"></polyline>
-                        <line x1="12" x2="12" y1="2" y2="22"></line>
-                    </svg>
-                </button>
-            </div>
-        </header>
-
-        <!-- Message area -->
-        <div class="message-area overflow-y-auto overflow-x-hidden flex-grow p-6">
-
-
-            {% for message in messages %}
-
-            {% if message.sender == 'assistant' %}
-
-            <!-- Bot message -->
-            <div class="message-container bot-message" data-message-id="{{ message.id }}">
-                <div class="message-wrapper flex items-end gap-2 justify-start">
-                    <div
-                        class="avatar relative relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                        <img src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
-                            width="40" height="40" alt="Avatar" class="rounded-full"
-                            style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                        <div
-                            class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                            <div class="rounded-full bg-white p-[2px]"></div>
-                        </div>
-                    </div>
-                    <div class="message-bubble backdrop-blur-sm rounded-t-2xl rounded-br-2xl p-3 max-w-[70%]"
-                        style="background-color: #525252;">
-                        <p class="invert-text markdown-content" id="message-{{ loop.index }}">{{ message.message }}</p>
-                    </div>
-                </div>
-                <div class="timestamp text-xs text-gray-500 mt-1 l mr-2" data-timestamp="{{ message.timestamp }}">
-                    {{ message.timestamp}}
-                </div>
-            </div>
-
-            {% else %}
-
-            <!-- User message -->
-            <div class="message-container user-message" data-message-id="{{ message.id }}">
-                <div class="message-wrapper flex items-end gap-2 justify-end">
-                    <div class="message-bubble backdrop-blur-sm rounded-t-2xl rounded-bl-2xl p-3 max-w-[70%]"
-                        style="background-color:#7367F0;">
-                        <p class="invert-text markdown-content">{{ message.message }}</p>
-                    </div>
-                    <div
-                        class="avatar relative relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                        <img src="{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_user.png') }}"
-                            width="40" height="40" alt="Avatar" class="rounded-full"
-                            style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                        <div
-                            class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                            <div class="rounded-full bg-white p-[2px]"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="timestamp text-xs text-gray-500 mt-1 l flex justify-end"
-                    data-timestamp="{{ message.timestamp }}">
-                    {{ message.timestamp }}
-                </div>
-            </div>
-
-            {% endif %}
-
-            {% endfor %}
-
-
-        </div>
-
-        <!-- Bottom panel -->
-        <div class="bottom-panel px-4 py-3 flex justify-center items-center">
-            <div class="message-bar flex items-center w-full sm:w-3/5">
-                <button
-                    class="mic-button text-gray-500 relative left-12 w-10 h-10 transition-colors duration-300 hover:text-primary">
-                    <i class="fas fa-microphone text-2xl"></i>
-                </button>
-                <textarea class="message-input flex-grow rounded-lg border overflow-hidden resize-none h-14 px-16 py-4"
-                    placeholder="Type your message..." oninput="autoGrow(this)"></textarea>
-                <button
-                    class="send-button font-bold py-2 px-4 rounded-lg flex items-center justify-center relative right-12 w-10 h-10 border-2 border-primary transition-colors duration-300 hover:bg-primary group">
-                    <i class="bi bi-send text-2xl text-primary" onclick="sendChatMessage()"></i>
-                </button>
-            </div>
-        </div>
+    <div class="chat-sidebar-foot">
+      <a class="chat-pause" href="{{ url_for('settings.settings_page') }}">Pause everything</a>
     </div>
-</div>
+  </aside>
 
-<script>
-    var AI_PROFILE_IMAGE = "{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}";
-    var USER_PROFILE_IMAGE = "{{ current_user.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_user.png') }}";
-</script>
+  <!-- Thread -->
+  <div class="chat-thread">
+    <!-- Mobile header -->
+    <div class="chat-mobile-head">
+      {{ monogram(ai_model.name, 30) }}
+      <span>
+        <span class="chat-name" style="display:block;">{{ ai_model.name }}</span>
+        {% if days_together and days_together > 0 %}
+        <span class="relationship-line">day {{ days_together }} together</span>
+        {% endif %}
+      </span>
+      <a class="chat-mobile-settings" href="{{ url_for('settings.settings_page') }}">Settings</a>
+    </div>
+
+    <div class="message-area" id="message-area">
+      {% set ns = namespace(last_date=None) %}
+      {% for message in messages %}
+        {% if message.timestamp.date() != ns.last_date %}
+          <div class="date-divider" data-date="{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}">{{ message.timestamp.strftime('%B') }} {{ message.timestamp.day }}</div>
+          {% set ns.last_date = message.timestamp.date() %}
+        {% endif %}
+
+        {% if message.sender == 'assistant' %}
+        <div class="msg msg-assistant" data-message-id="{{ message.id }}"
+             data-timestamp="{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}">
+          {% if message.initiated %}
+          <div class="reached-out">
+            <span class="dot"></span>
+            <span>{{ ai_model.name }} reached out</span>
+            <span class="reached-out-meta reached-out-time" data-timestamp="{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}"></span>
+          </div>
+          {% endif %}
+          <div class="bubble-companion">{{ message.message }}</div>
+          {% if message.voice_url %}
+          <div class="voice-bubble" data-voice-url="{{ message.voice_url }}">
+            <button type="button" class="voice-play" aria-label="Play voice message">
+              <svg width="12" height="14" viewBox="0 0 12 14"><path d="M0 0 L12 7 L0 14 Z"/></svg>
+            </button>
+            <span class="waveform" aria-hidden="true">
+              <span style="height:8px"></span><span style="height:16px"></span><span style="height:22px"></span><span style="height:12px"></span><span style="height:19px"></span><span style="height:9px"></span><span style="height:15px"></span><span style="height:24px"></span><span style="height:11px"></span><span style="height:18px"></span><span style="height:7px"></span><span style="height:14px"></span>
+            </span>
+            <span class="voice-time">0:00</span>
+            <audio src="{{ message.voice_url }}" preload="metadata"></audio>
+          </div>
+          {% endif %}
+          {% if message.initiated %}
+          <div class="initiated-row">
+            <a class="quiet-link" href="{{ url_for('settings.settings_page') }}">less often &middot; pause</a>
+          </div>
+          {% endif %}
+          <div class="msg-actions">
+            <button type="button" class="msg-action" data-action="regenerate">Regenerate</button>
+            <button type="button" class="msg-action" data-action="copy">Copy</button>
+          </div>
+        </div>
+        {% else %}
+        <div class="msg msg-user" data-message-id="{{ message.id }}"
+             data-timestamp="{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}">
+          <div class="bubble-user">{{ message.message }}</div>
+          <div class="msg-actions">
+            <button type="button" class="msg-action" data-action="edit">Edit</button>
+            <button type="button" class="msg-action" data-action="copy">Copy</button>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      {% if pending_action %}
+        {% if pending_action.tool == 'email_send' %}
+          {% set _args = pending_action.args %}
+          {% set _draft = {'to': _args.recipient_email or _args.recipient_name, 'subject': _args.subject, 'body': _args.body} %}
+        {% else %}
+          {% set _args = pending_action.args %}
+          {% set _draft = {'to': _args.title, 'subject': (_args.start ~ (' — ' ~ _args.end if _args.end else '')), 'body': _args.description or 'New calendar event'} %}
+        {% endif %}
+      <div class="msg msg-assistant" id="pending-draft">
+        {{ draft_card(_draft) }}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Composer -->
+    <div class="composer">
+      <div class="composer-notice" id="composer-notice" role="status" hidden></div>
+      <div class="composer-bar">
+        <textarea class="composer-input" id="composer-input" rows="1"
+                  placeholder="Message {{ ai_model.name }}…"
+                  aria-label="Message {{ ai_model.name }}"></textarea>
+        <span class="voice-hint" id="voice-hint" hidden>from voice — review, then send</span>
+        <span class="mic-timer" id="mic-timer" hidden>0:00</span>
+        <button type="button" class="icon-btn mic-btn" id="mic-btn" aria-label="Record voice message">
+          <svg width="16" height="20" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="1" width="6" height="10" rx="3"/>
+            <path d="M2 9a6 6 0 0 0 12 0"/>
+            <line x1="8" y1="15" x2="8" y2="19"/>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn send-btn" id="send-btn" aria-label="Send message">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/chat.js')}}"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 {% endblock %}

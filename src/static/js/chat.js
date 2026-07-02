@@ -1,1044 +1,524 @@
-// variables
-let MESSAGE_COST = 1;
-let creditsDisplay = document.querySelector('.credits-display');
-let chatArea = document.querySelector('.message-area');
+/* ==========================================================================
+   PocketAI — chat surface
+   Vanilla JS for the message-first chat UI. Preserves the server fetch
+   contracts exactly:
+     POST /send_message        {message, modelId}        -> {response, voice_url, timestamp, ai_message_id}
+     POST /regenerate_message  {ai_message_id, user_message, modelId} -> {response, timestamp, ai_message_id, deleted_ids}
+     PUT  /edit_message        {message_id, new_content}
+     POST /load-more-messages  {current_message_count}
+     POST /transcribe          multipart 'audio' (clip.webm) -> {text}
+   ========================================================================== */
+(function () {
+  'use strict';
 
-// Dropdown for ai models
-const aiSelector = document.getElementById('ai-selector');
-const aiOptions = document.getElementById('ai-options');
-const nameElement = aiSelector.querySelector('h2');
-const modelElement = aiSelector.querySelector('p');
-const imageElement = aiSelector.querySelector('img');
-const arrowIcon = aiSelector.querySelector('svg');
+  const app = document.querySelector('.chat-app');
+  if (!app) return;
 
-aiSelector.addEventListener('click', function () {
-    aiOptions.classList.toggle('hidden');
-    arrowIcon.classList.toggle('rotate-180');
-});
+  const MODEL_ID = app.dataset.selectedModel;
+  const SETTINGS_URL = app.dataset.settingsUrl || '#';
 
-aiOptions.addEventListener('click', function (e) {
-    const option = e.target.closest('.ai-option');
-    if (option) {
-        const aiId = option.getAttribute('data-id');
-        nameElement.textContent = option.getAttribute('data-name');
-        modelElement.textContent = option.getAttribute('data-model-name');
-        imageElement.src = option.getAttribute('data-image-url');
-        aiOptions.classList.add('hidden');
-        arrowIcon.classList.remove('rotate-180');
+  const messageArea = document.getElementById('message-area');
+  const input = document.getElementById('composer-input');
+  const sendBtn = document.getElementById('send-btn');
+  const micBtn = document.getElementById('mic-btn');
+  const micTimer = document.getElementById('mic-timer');
+  const voiceHint = document.getElementById('voice-hint');
+  const notice = document.getElementById('composer-notice');
 
-        // Redirect to change AI and reload the chat page
-        window.location.href = `/change-ai/${aiId}`;
-    }
-});
+  const ERROR_TEXT = {
+    INSUFFICIENT_CREDITS: "You're out of credits. Add more to keep chatting.",
+    MODEL_NOT_FOUND: "That companion no longer exists.",
+    ACCESS_DENIED: "You don't have access to this companion.",
+    BAD_REQUEST: "Something was off with that request. Try again.",
+    DEFAULT: "Something went wrong. Please try again.",
+  };
 
-// Close dropdown when clicking outside
-document.addEventListener('click', function (e) {
-    if (!aiSelector.contains(e.target) && !aiOptions.contains(e.target)) {
-        aiOptions.classList.add('hidden');
-        arrowIcon.classList.remove('rotate-180');
-    }
-});
+  // ---- utilities ---------------------------------------------------------
 
+  function showNotice(text) {
+    if (!notice) return;
+    notice.textContent = text;
+    notice.hidden = false;
+    clearTimeout(showNotice._t);
+    showNotice._t = setTimeout(() => { notice.hidden = true; }, 6000);
+  }
 
-// CHAT UI FEATURES
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
 
-// handle message regeneration
-function regenerateMessage(messageContainer) {
-    let selectedAIModel = document.querySelector('[data-selected-model]');
-    let modelId = selectedAIModel.getAttribute('data-selected-model');
-    const aiMessageContainer = messageContainer.closest('.bot-message');
-    const aiMessageId = aiMessageContainer.dataset.messageId;
+  function scrollToBottom() {
+    messageArea.scrollTop = messageArea.scrollHeight;
+  }
 
-    // Find the previous user message
-    let previousUserMessage = aiMessageContainer.previousElementSibling;
-    while (previousUserMessage && !previousUserMessage.classList.contains('user-message')) {
-        previousUserMessage = previousUserMessage.previousElementSibling;
-    }
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  }
 
-    let userMessageContent;
+  // ---- timestamp formatting ----------------------------------------------
 
-    try {
-        userMessageContent = previousUserMessage.querySelector('.message-bubble').textContent.trim();
-    } catch (error) {
-        userMessageContent = 'None';
-    }
+  function parseUTC(ts) {
+    // DB timestamps are naive UTC ("YYYY-MM-DD HH:MM:SS").
+    return new Date(ts.replace(' ', 'T') + 'Z');
+  }
 
-    // Remove the current AI message
-    aiMessageContainer.remove();
+  function formatTime(date) {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
 
-    // Show loading indicator
-    const loadingHtml = `
-        <div class="message-container bot-message">
-            <div class="message-wrapper flex items-end gap-2 justify-start">
-                <div class="avatar relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                    <img src="${AI_PROFILE_IMAGE}" width="40" height="40" alt="Avatar" class="rounded-full" style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                    <div class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                        <div class="rounded-full bg-white p-[2px]"></div>
-                    </div>
-                </div>
-                <div class="ai-message-placeholder chat-message-ai backdrop-blur-sm rounded-t-2xl rounded-br-2xl p-3 max-w-[70%]">
-                    <div class="loading-dots"><div></div><div></div><div></div></div>
-                </div>
-            </div>
-            <div class="timestamp text-xs text-gray-500 mt-1">Now</div>
-        </div>`;
-    chatArea.insertAdjacentHTML('beforeend', loadingHtml);
+  function formatDateLabel(date) {
+    const now = new Date();
+    const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffDays = Math.round((startOf(now) - startOf(date)) / 86400000);
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  }
 
-    console.log('we are here');
-    console.log(aiMessageId);
+  function relabelDividers() {
+    messageArea.querySelectorAll('.date-divider[data-date]').forEach((el) => {
+      const d = parseUTC(el.dataset.date);
+      if (!isNaN(d)) el.textContent = formatDateLabel(d);
+    });
+  }
 
-    // Call backend to regenerate message
+  function relabelReachedOut() {
+    messageArea.querySelectorAll('.reached-out-time[data-timestamp]').forEach((el) => {
+      if (el.dataset.done) return;
+      const d = parseUTC(el.dataset.timestamp);
+      if (!isNaN(d)) { el.textContent = '— ' + formatTime(d); el.dataset.done = '1'; }
+    });
+  }
+
+  // ---- rendering ---------------------------------------------------------
+
+  function userBubbleHTML(text, id) {
+    return (
+      '<div class="msg msg-user"' + (id != null ? ' data-message-id="' + id + '"' : '') + '>' +
+        '<div class="bubble-user">' + esc(text) + '</div>' +
+        '<div class="msg-actions">' +
+          '<button type="button" class="msg-action" data-action="edit">Edit</button>' +
+          '<button type="button" class="msg-action" data-action="copy">Copy</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function typingHTML() {
+    return (
+      '<div class="msg msg-assistant" data-typing="1">' +
+        '<div class="bubble-companion typing"><span></span><span></span><span></span></div>' +
+      '</div>'
+    );
+  }
+
+  function voiceBubbleHTML(url) {
+    const bars = [8, 16, 22, 12, 19, 9, 15, 24, 11, 18, 7, 14]
+      .map((h) => '<span style="height:' + h + 'px"></span>').join('');
+    return (
+      '<div class="voice-bubble" data-voice-url="' + esc(url) + '">' +
+        '<button type="button" class="voice-play" aria-label="Play voice message">' +
+          '<svg width="12" height="14" viewBox="0 0 12 14"><path d="M0 0 L12 7 L0 14 Z"/></svg>' +
+        '</button>' +
+        '<span class="waveform" aria-hidden="true">' + bars + '</span>' +
+        '<span class="voice-time">0:00</span>' +
+        '<audio src="' + esc(url) + '" preload="metadata"></audio>' +
+      '</div>'
+    );
+  }
+
+  function assistantMessage(text, id, voiceUrl) {
+    const div = document.createElement('div');
+    div.innerHTML =
+      '<div class="msg msg-assistant" data-message-id="' + id + '">' +
+        '<div class="bubble-companion">' + esc(text) + '</div>' +
+        (voiceUrl ? voiceBubbleHTML(voiceUrl) : '') +
+        '<div class="msg-actions">' +
+          '<button type="button" class="msg-action" data-action="regenerate">Regenerate</button>' +
+          '<button type="button" class="msg-action" data-action="copy">Copy</button>' +
+        '</div>' +
+      '</div>';
+    return div.firstChild;
+  }
+
+  // ---- voice playback (real <audio>) -------------------------------------
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function mmss(secs) {
+    if (!isFinite(secs)) return '0:00';
+    return Math.floor(secs / 60) + ':' + pad(Math.floor(secs % 60));
+  }
+
+  function initVoiceBubble(bubble) {
+    if (!bubble || bubble.dataset.init) return;
+    bubble.dataset.init = '1';
+    const audio = bubble.querySelector('audio');
+    const btn = bubble.querySelector('.voice-play');
+    const time = bubble.querySelector('.voice-time');
+    if (!audio || !btn) return;
+
+    const setIcon = (playing) => {
+      btn.innerHTML = playing
+        ? '<svg width="12" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="4" height="12"/><rect x="9" y="1" width="4" height="12"/></svg>'
+        : '<svg width="12" height="14" viewBox="0 0 12 14"><path d="M0 0 L12 7 L0 14 Z"/></svg>';
+    };
+
+    audio.addEventListener('loadedmetadata', () => { if (time) time.textContent = mmss(audio.duration); });
+    btn.addEventListener('click', () => { audio.paused ? audio.play() : audio.pause(); });
+    audio.addEventListener('play', () => { bubble.classList.add('is-playing'); setIcon(true); });
+    audio.addEventListener('pause', () => { bubble.classList.remove('is-playing'); setIcon(false); });
+    audio.addEventListener('ended', () => {
+      bubble.classList.remove('is-playing'); setIcon(false);
+      if (time) time.textContent = mmss(audio.duration);
+    });
+    audio.addEventListener('timeupdate', () => {
+      if (time) time.textContent = mmss(audio.currentTime);
+    });
+  }
+
+  function initAllVoiceBubbles() {
+    messageArea.querySelectorAll('.voice-bubble').forEach(initVoiceBubble);
+  }
+
+  // ---- send flow ---------------------------------------------------------
+
+  let sending = false;
+
+  function sendMessage(text) {
+    const message = (text != null ? text : input.value).trim();
+    if (!message || sending) return;
+    sending = true;
+
+    messageArea.insertAdjacentHTML('beforeend', userBubbleHTML(message));
+    messageArea.insertAdjacentHTML('beforeend', typingHTML());
+    if (text == null) { input.value = ''; autoGrow(input); }
+    hideVoiceHint();
+    scrollToBottom();
+
+    const typingEl = messageArea.querySelector('[data-typing="1"]');
+
+    fetch('/send_message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message, modelId: MODEL_ID }),
+    })
+      .then((res) => res.ok ? res.json() : res.json().then((e) => Promise.reject(e)))
+      .then((data) => {
+        const node = assistantMessage(data.response, data.ai_message_id, data.voice_url);
+        if (typingEl) typingEl.replaceWith(node); else messageArea.appendChild(node);
+        const vb = node.querySelector('.voice-bubble');
+        if (vb) { initVoiceBubble(vb); const a = vb.querySelector('audio'); if (a) a.play().catch(() => {}); }
+        scrollToBottom();
+      })
+      .catch((err) => {
+        if (typingEl) typingEl.remove();
+        showNotice(ERROR_TEXT[err && err.code] || ERROR_TEXT.DEFAULT);
+      })
+      .finally(() => { sending = false; });
+  }
+
+  // ---- regenerate --------------------------------------------------------
+
+  function regenerate(msgEl) {
+    if (sending) return;
+    const aiMessageId = msgEl.dataset.messageId;
+
+    // preceding user message text (walk backwards over dividers/other nodes)
+    let prev = msgEl.previousElementSibling;
+    while (prev && !prev.classList.contains('msg-user')) prev = prev.previousElementSibling;
+    const userMessage = prev ? (prev.querySelector('.bubble-user')?.textContent.trim() || 'None') : 'None';
+
+    sending = true;
+    const typing = document.createElement('div');
+    typing.innerHTML = typingHTML();
+    const typingNode = typing.firstChild;
+    msgEl.replaceWith(typingNode);
+
     fetch('/regenerate_message', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ai_message_id: aiMessageId, user_message: userMessageContent, modelId: modelId })
-    }).then(response => {
-        if (!response.ok) {
-            return response.json().then(err => { throw err; });
-        }
-        return response.json();
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ai_message_id: aiMessageId, user_message: userMessage, modelId: MODEL_ID }),
     })
-        .then(data => {
-            console.log(data.deleted_ids); // debug
-            // remove all subsequent messages
-            for (let id of data.deleted_ids) {
-                console.log(id); // debug
-                removeMessage(id);
-            }
-            // insert response into placeholder chat message
-            updateChatArea(data.response, data.ai_message_id);
-            // deduct credits from client-side
-            const newCredits = getCurrentCredits() - MESSAGE_COST;
-            updateCreditDisplay(newCredits);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            let errorMessage;
-            switch (error.code) {
-                case 'INSUFFICIENT_CREDITS':
-                    errorMessage = "You don't have enough credits. Please add more to continue.";
-                    break;
-                case 'MODEL_NOT_FOUND':
-                    errorMessage = "The selected AI model doesn't exist. Please choose another.";
-                    break;
-                case 'ACCESS_DENIED':
-                    errorMessage = "You don't have access to this AI model. Please select another.";
-                    break;
-                case 'BAD_REQUEST':
-                    errorMessage = "There was an issue with your request. Please try again.";
-                    break;
-                default:
-                    errorMessage = "An unexpected error occurred. Please try again later.";
-            }
-            displayErrorMessage(errorMessage);
+      .then((res) => res.ok ? res.json() : res.json().then((e) => Promise.reject(e)))
+      .then((data) => {
+        (data.deleted_ids || []).forEach((id) => {
+          const el = messageArea.querySelector('[data-message-id="' + id + '"]');
+          if (el) el.remove();
         });
-}
+        const node = assistantMessage(data.response, data.ai_message_id);
+        typingNode.replaceWith(node);
+        scrollToBottom();
+      })
+      .catch((err) => {
+        typingNode.remove();
+        showNotice(ERROR_TEXT[err && err.code] || ERROR_TEXT.DEFAULT);
+      })
+      .finally(() => { sending = false; });
+  }
 
-// Add these functions at the appropriate place in chat.js
+  // ---- inline edit -------------------------------------------------------
 
-// Function to handle message editing
-function editMessage(messageId, newContent) {
-    fetch('/edit_message', {
+  function startEdit(msgEl) {
+    if (msgEl.querySelector('.msg-edit')) return;
+    const bubble = msgEl.querySelector('.bubble-user');
+    const actions = msgEl.querySelector('.msg-actions');
+    const messageId = msgEl.dataset.messageId;
+    const original = bubble.textContent;
+
+    const form = document.createElement('div');
+    form.className = 'msg-edit';
+    form.innerHTML =
+      '<textarea>' + esc(original) + '</textarea>' +
+      '<div class="msg-edit-actions">' +
+        '<button type="button" class="btn btn-primary-ink" data-edit="save">Save</button>' +
+        '<button type="button" class="btn btn-quiet" data-edit="cancel">Cancel</button>' +
+      '</div>';
+
+    bubble.style.display = 'none';
+    if (actions) actions.style.display = 'none';
+    msgEl.appendChild(form);
+    const ta = form.querySelector('textarea');
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    const close = () => {
+      form.remove();
+      bubble.style.display = '';
+      if (actions) actions.style.display = '';
+    };
+
+    form.querySelector('[data-edit="cancel"]').addEventListener('click', close);
+    form.querySelector('[data-edit="save"]').addEventListener('click', () => {
+      const value = ta.value.trim();
+      if (!value || value === original) { close(); return; }
+      fetch('/edit_message', {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            message_id: messageId,
-            new_content: newContent
-        })
-    })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Update the message content in the UI
-            const messageContainer = document.querySelector(`[data-message-id="${messageId}"]`);
-            const messageContent = messageContainer.querySelector('.message-bubble p');
-            messageContent.innerHTML = convertMarkdownText(newContent);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            displayErrorMessage('Failed to edit message. Please try again.');
-        });
-}
-
-// Modify the createHoverPanel function to handle both user and bot messages
-function createHoverPanel(messageContainer) {
-    let messageWrapper = messageContainer.querySelector('.message-wrapper');
-
-    // Don't create hover panel if it already exists
-    if (messageWrapper.querySelector('.hover-panel')) {
-        return;
-    }
-
-    const isUserMessage = messageContainer.classList.contains('user-message');
-    console.log('Is user message:', isUserMessage);
-
-    let hoverPanelHtml;
-    let position;
-    if (isUserMessage) {
-        hoverPanelHtml = `
-            <div class="hover-panel hide">
-                <button class="hover-panel-btn edit-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-                    </svg>
-                    Edit
-                </button>
-                <button class="hover-panel-btn copy-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-                    </svg>
-                    Copy
-                </button>
-            </div>`;
-        position = 'afterBegin';
-    } else {
-        hoverPanelHtml = `<div class="hover-panel hide">
-                        <button class="hover-panel-btn retry-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
-                            </svg>
-                            Retry
-                        </button>
-                        <button class="hover-panel-btn copy-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-                            </svg>
-                            Copy
-                        </button>
-                    </div>`;
-        position = 'beforeEnd';
-    }
-
-    messageWrapper.insertAdjacentHTML(position, hoverPanelHtml);
-
-    const panel = messageWrapper.querySelector('.hover-panel');
-    const copyBtn = panel.querySelector('.copy-btn');
-
-    if (isUserMessage) {
-        const editBtn = panel.querySelector('.edit-btn');
-        editBtn.addEventListener('click', () => {
-            const messageContent = messageWrapper.querySelector('.message-bubble p').textContent;
-            const messageId = messageContainer.dataset.messageId;
-
-            // Create edit form
-            const editForm = document.createElement('div');
-            // Update this part of the createHoverPanel function where we create the edit form
-            editForm.className = 'edit-form w-[70%] space-y-2 flex-col mb-2';
-            editForm.innerHTML = `
-            <textarea 
-                class="w-full p-3 bg-transparent border-2 border-[#7367F0] rounded-lg focus:ring-2 focus:ring-[#9E95F5] focus:border-[#7367F0] resize-none outline-none transition-all duration-300"
-                style="min-height: 6rem;">${messageContent}</textarea>
-            <div class="flex gap-2 justify-end">
-                <button class="panel-btn-save confirm-edit-btn flex items-center gap-2 px-3 py-1.5 bg-[#7367F0] hover:bg-[#5f53eb] backdrop-blur-sm rounded-md text-sm font-medium text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" style="fill: none; stroke: white;" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 6L9 17L4 12"></path>
-                    </svg>
-                    Save
-                </button>
-                <button class="panel-btn-cancel text-gray-600 border border-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" style="fill: none; stroke: gray;" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                    Cancel
-                </button>
-            </div>`;
-
-            // Replace message content with edit form
-            const messageBubble = messageWrapper.querySelector('.message-bubble');
-            messageBubble.style.display = 'none';
-            messageBubble.insertAdjacentElement('afterend', editForm);
-
-            // Focus textarea
-            const textarea = editForm.querySelector('textarea');
-            textarea.focus();
-
-            // Handle cancel
-            editForm.querySelector('.panel-btn-cancel').addEventListener('click', () => {
-                editForm.remove();
-                messageBubble.style.display = 'block';
-            });
-
-            // Handle confirm
-            editForm.querySelector('.panel-btn-save').addEventListener('click', () => {
-                const newContent = textarea.value.trim();
-                if (newContent) {
-                    editMessage(messageId, newContent);
-                    editForm.remove();
-                    messageBubble.style.display = 'block';
-                }
-            });
-        });
-    } else {
-        const retryBtn = panel.querySelector('.retry-btn');
-        retryBtn.addEventListener('click', () => regenerateMessage(messageWrapper));
-    }
-
-    copyBtn.addEventListener('click', () => copyMessageContent(messageContainer));
-
-
-    // Modify the hover event listeners to check for active edit form
-    messageWrapper.addEventListener('mouseenter', () => {
-        // Only show hover panel if there's no active edit form
-        if (!messageWrapper.querySelector('.edit-form')) {
-            panel.classList.remove('hide');
-            panel.classList.add('show');
-            panel.style.display = 'flex';
-        }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_id: messageId, new_content: value }),
+      })
+        .then((res) => res.ok ? res.json() : res.json().then((e) => Promise.reject(e)))
+        .then(() => { bubble.textContent = value; close(); })
+        .catch((err) => { showNotice(ERROR_TEXT[err && err.code] || ERROR_TEXT.DEFAULT); close(); });
     });
+  }
 
-    messageWrapper.addEventListener('mouseleave', () => {
-        panel.classList.remove('show');
-        panel.classList.add('hide');
-        setTimeout(() => {
-            if (panel.classList.contains('hide')) {
-                panel.style.display = 'none';
-            }
-        }, 300);
-    });
-}
+  // ---- copy --------------------------------------------------------------
 
-
-// initialize hover panels for existing bot messages
-function initializeExistingMessages() {
-    const existingMessages = document.querySelectorAll('.message-container');
-    console.log(existingMessages);
-    existingMessages.forEach(messageContainer => {
-        if (!messageContainer.querySelector('.hover-panel')) {
-            createHoverPanel(messageContainer);
-        }
-    });
-}
-
-// function createHoverPanel(messageContainer) {
-//     let messageWrapper = messageContainer.querySelector('.message-wrapper');
-//     console.log(messageWrapper); // debug
-
-//     if (messageWrapper.querySelector('.hover-panel')) {
-//         return; // Panel already exists, no need to create a new one
-//     }
-
-//     let hoverPanel = `<div class="hover-panel hide">
-//                         <button class="hover-panel-btn retry-btn">
-//                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-//                                 <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
-//                             </svg>
-//                             Retry
-//                         </button>
-//                         <button class="hover-panel-btn copy-btn">
-//                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-//                                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-//                                 <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-//                             </svg>
-//                             Copy
-//                         </button>
-//                     </div>`;
-
-//     messageWrapper.insertAdjacentHTML('beforeend', hoverPanel);
-
-//     const panel = messageContainer.querySelector('.hover-panel');
-//     const retryBtn = panel.querySelector('.retry-btn');
-//     const copyBtn = panel.querySelector('.copy-btn');
-
-//     retryBtn.addEventListener('click', () => regenerateMessage(messageWrapper));
-//     // copyBtn.addEventListener('click', () => copyMessageContent(messageContainer));
-
-//     messageWrapper.addEventListener('mouseenter', () => {
-//         panel.classList.remove('hide');
-//         panel.classList.add('show');
-//         panel.style.display = 'flex';
-//     });
-
-//     messageWrapper.addEventListener('mouseleave', () => {
-//         panel.classList.remove('show');
-//         panel.classList.add('hide');
-
-//         setTimeout(() => {
-//             if (panel.classList.contains('hide')) {
-//                 panel.style.display = 'none';
-//             }
-//         }, 300);
-//     });
-// }
-
-
-// Copy message content to clipboard
-function copyMessageContent(messageContainer) {
-    const messageContent = messageContainer.querySelector('.message-bubble p').textContent;
-
-    // Use the newer clipboard API if available
+  function copyMessage(msgEl) {
+    const text = (msgEl.querySelector('.bubble-companion, .bubble-user') || {}).textContent || '';
     if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(messageContent)
-            .then(() => {
-                // Show success feedback
-                const copyBtn = messageContainer.querySelector('.copy-btn');
-                const originalText = copyBtn.innerHTML;
-
-                // Change button text/icon to show success
-                copyBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    Copied!
-                `;
-
-                // Reset button after 2 seconds
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                }, 2000);
-            })
-            .catch((err) => {
-                console.error('Failed to copy text: ', err);
-                displayErrorMessage('Failed to copy text to clipboard');
-            });
+      navigator.clipboard.writeText(text).catch(() => showNotice('Could not copy.'));
     } else {
-        // Fallback for older browsers
-        try {
-            // Create temporary textarea
-            const textArea = document.createElement('textarea');
-            textArea.value = messageContent;
-            textArea.style.position = 'fixed';  // Avoid scrolling to bottom
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) { showNotice('Could not copy.'); }
+      document.body.removeChild(ta);
+    }
+  }
 
-            // Select and copy
-            textArea.select();
-            document.execCommand('copy');
+  // ---- draft card (preserves the server confirm gate) --------------------
 
-            // Cleanup
-            document.body.removeChild(textArea);
-
-            // Show success feedback
-            const copyBtn = messageContainer.querySelector('.copy-btn');
-            const originalText = copyBtn.innerHTML;
-
-            copyBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                Copied!
-            `;
-
-            setTimeout(() => {
-                copyBtn.innerHTML = originalText;
-            }, 2000);
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-            displayErrorMessage('Failed to copy text to clipboard');
+  function wireDraftCard() {
+    const card = document.querySelector('#pending-draft [data-draft-card]');
+    if (!card) return;
+    const wrapper = document.getElementById('pending-draft');
+    card.querySelectorAll('[data-draft-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.draftAction;
+        if (action === 'send') {
+          if (wrapper) wrapper.remove();
+          sendMessage('Yes — send it.');
+        } else if (action === 'dismiss') {
+          if (wrapper) wrapper.remove();
+          sendMessage("Not now — don't send it.");
+        } else if (action === 'edit') {
+          input.value = 'Change the draft: ';
+          autoGrow(input);
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
         }
-    }
-}
-// SENDING MESSAGES
+      });
+    });
+  }
 
-// Purpose: prevent user from sending message if there are no credits
-function sufficientCredits() {
-    let currentCredits = parseInt(creditsDisplay.textContent, 10);
-    return currentCredits >= MESSAGE_COST;
-}
+  // ---- load more (infinite scroll up) ------------------------------------
 
-// Purpose: send chat message only if the user has enough credits
-function sendChatMessage() {
-    if (!sufficientCredits()) {
-        displayErrorMessage('You do not have enough credits to send a message. Please either upgrade your plan or wait for your credits to refresh. Beta users can also reach out to us at info@pocketai.com for more credits.');
-        return;
-    }
-    sendMessage();
-}
+  let fetchingMore = false;
+  let noMore = false;
 
-// Purpose: Sends message to backend via fetch, waits, and displays bot response
-function sendMessage() {
-    let messageInput = document.querySelector('.message-input');
-    let message = messageInput.value.trim();
-    let chatArea = document.querySelector('.chat-container > .message-area');
-    let selectedAIModel = document.querySelector('[data-selected-model]');
-    let modelId = selectedAIModel.getAttribute('data-selected-model');
-
-    // For empty messages
-    if (!message) {
-        return;
-    }
-
-    // client side validation for credits
-    if (!sufficientCredits()) {
-        displayErrorMessage('You do not have enough credits to send a message. Please either upgrade your plan or wait for your credits to refresh. Beta users can also reach out to us at info@pocketai.com for more credits.');
-        return;
-    }
-
-    // Display user message
-    let userMessageHtml = `
-        <div class="message-container user-message">
-            <div class="message-wrapper flex items-end gap-2 justify-end">
-                <div class="message-bubble chat-message-user backdrop-blur-sm rounded-t-2xl rounded-bl-2xl p-3 max-w-[70%]" style="background-color:#7367F0;">
-                    <p class="invert-text markdown-content">${convertMarkdownText(message)}</p>
-                </div>
-                <div class="avatar relative relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                    <img src="${USER_PROFILE_IMAGE}" width="40" height="40" alt="Avatar" class="rounded-full" style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                    <div class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                        <div class="rounded-full bg-white p-[2px]"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="timestamp text-xs text-gray-500 mt-1 flex justify-end">
-                ${getCurrentFormattedTime()}
-            </div>
-        </div>`;
-    chatArea.insertAdjacentHTML('beforeend', userMessageHtml);
-
-    // Display placeholder AI's response and play loading animation
-    let botMessageHtml = `
-        <div class="message-container bot-message">
-            <div class="message-wrapper flex items-end gap-2 justify-start">
-                <div class="avatar relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                    <img src="${AI_PROFILE_IMAGE}" width="40" height="40" alt="Avatar" class="rounded-full" style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                    <div class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                        <div class="rounded-full bg-white p-[2px]"></div>
-                    </div>
-                </div>
-                <div class="ai-message-placeholder chat-message-ai backdrop-blur-sm rounded-t-2xl rounded-br-2xl p-3 max-w-[70%]">
-                    <div class="loading-dots"><div></div><div></div><div></div></div>
-                </div>
-            </div>
-            <div class="timestamp text-xs text-gray-500 mt-1">Now</div>
-        </div>`;
-    chatArea.insertAdjacentHTML('beforeend', botMessageHtml);
-
-    // Scroll to the latest message
-    chatArea.scrollTop = chatArea.scrollHeight;
-
-    // Clear the message input
-    messageInput.value = '';
-    // Reset the height of the textarea
-    autoGrow(messageInput);
-
-    console.log('model ID', modelId);
-
-    // Check if the message is not empty
-    if (message) {
-        fetch('/send_message', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ "message": message, "modelId": modelId })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw err; });
-                }
-                return response.json();
-            })
-            .then(data => {
-                // insert response into placeholder chat message
-                updateChatArea(
-                    data.response, 
-                    data.user_message_id, 
-                    data.ai_message_id,
-                    data.voice_url
-                );
-
-                // deduct credits from client-side
-                const newCredits = getCurrentCredits() - MESSAGE_COST;
-                updateCreditDisplay(newCredits);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                let errorMessage;
-                switch (error.code) {
-                    case 'INSUFFICIENT_CREDITS':
-                        errorMessage = "You don't have enough credits. Please add more to continue.";
-                        break;
-                    case 'MODEL_NOT_FOUND':
-                        errorMessage = "The selected AI model doesn't exist. Please choose another.";
-                        break;
-                    case 'ACCESS_DENIED':
-                        errorMessage = "You don't have access to this AI model. Please select another.";
-                        break;
-                    case 'BAD_REQUEST':
-                        errorMessage = "There was an issue with your request. Please try again.";
-                        break;
-                    default:
-                        errorMessage = "An unexpected error occurred. Please try again later.";
-                }
-                displayErrorMessage(errorMessage);
-            });
-    }
-}
-
-// Fills in the placeholder bot msg with generated ai response
-function updateChatArea(response, userMessageId, botMessageId, voiceUrl) {
-    let latestBotMessage = chatArea.querySelector('.bot-message:last-child');
-    let allUserMessages = chatArea.querySelectorAll('.user-message');
-    let latestUserMessage = allUserMessages[allUserMessages.length - 1];
-
-    console.log(latestUserMessage);
-
-    if (latestBotMessage && latestUserMessage) {
-        let aiResponsePlaceholder = latestBotMessage.querySelector('.ai-message-placeholder');
-        let timestamp = latestBotMessage.querySelector('.timestamp');
-        if (aiResponsePlaceholder && timestamp) {
-
-            // message content with optional audio player
-            let messageContent = `
-                <div class="message-content">
-                    <p class="invert-text markdown-content">${convertMarkdownText(response)}</p>
-                    ${voiceUrl ? `
-                        <div class="audio-player mt-2 flex items-center gap-2">
-                            <audio src="${voiceUrl}" class="hidden" autoplay></audio>
-                            <button class="play-pause-btn p-1 rounded-full hover:bg-gray-700/20">
-                                <svg class="pause-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="6" y="4" width="4" height="16"/>
-                                    <rect x="14" y="4" width="4" height="16"/>
-                                </svg>
-                                <svg class="play-icon hidden w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="5 3 19 12 5 21"/>
-                                </svg>
-                            </button>
-                            <div class="progress-container flex-1 h-1 bg-gray-700/20 rounded-full">
-                                <div class="progress h-full bg-[#7367F0] rounded-full" style="width: 0%"></div>
-                            </div>
-                            <span class="time text-xs text-gray-500">0:00</span>
-                        </div>
-                    ` : ''}
-                </div>`;
-
-            aiResponsePlaceholder.innerHTML = messageContent;
-            timestamp.innerHTML = getCurrentFormattedTime();
-
-            console.log(latestBotMessage);
-            console.log(botMessageId);
-
-            // Add message ID to the container
-            latestUserMessage.dataset.messageId = userMessageId;
-            latestBotMessage.dataset.messageId = botMessageId;
-
-            // Initialize tool copy buttons
-            initializeToolCopyButtons();
-
-            // Initialize audio player if voice URL exists
-            if (voiceUrl) {
-                initializeAudioPlayer(latestBotMessage.querySelector('.audio-player'));
-            }
-
-            // Add the hover panel to the message container
-            createHoverPanel(latestBotMessage);
-        }
-    }
-
-    chatArea.scrollTop = chatArea.scrollHeight;
-}
-
-
-// UTILITY FUNCTIONS
-
-function displayErrorMessage(message) {
-    const errorAlert = document.getElementById('error-alert');
-    const errorMessage = document.getElementById('error-message');
-
-    errorMessage.textContent = message;
-    errorAlert.classList.remove('hidden');
-    errorAlert.classList.add('show');
-
-    // Hide the alert after 5 seconds
-    setTimeout(() => {
-        errorAlert.classList.remove('show');
-        setTimeout(() => {
-            errorAlert.classList.add('hidden');
-        }, 500);
-    }, 5000);
-}
-
-
-// CHAT UI FUNCTIONALITY
-let messageArea = document.querySelector('.message-area');
-let isFetching = false;
-
-messageArea.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-        if (e.ctrlKey) {
-            // Ctrl+Enter: Insert a new line
-            const start = this.selectionStart;
-            const end = this.selectionEnd;
-            const value = this.value;
-            this.value = value.slice(0, start) + '\n' + value.slice(end);
-            this.selectionStart = this.selectionEnd = start + 1;
-            e.preventDefault();
-        } else {
-            // Enter without Ctrl: Send the message
-            e.preventDefault();
-            sendChatMessage();
-        }
-    }
-});
-
-
-
-// Purpose: Automatically adjust the height of the textarea to fit the content
-function autoGrow(element) {
-    // reset the height to default
-    element.style.height = '1.5em';
-    element.style.height = (element.scrollHeight) + "px";
-
-    // Adjust the bottom panel's height
-    let bottomPanel = document.querySelector('.bottom-panel');
-    if (bottomPanel) {
-        bottomPanel.style.height = 'auto';
-    }
-
-    // Set maximum height and enable scroll
-    if (parseInt(element.style.height, 10) >= 200) {
-        element.style.height = "200px";
-        element.style.overflowY = "scroll";
-    }
-}
-
-// Event listener for up scroll to display more messages
-messageArea.addEventListener('scroll', function () {
-    if (messageArea.scrollTop === 0 && !isFetching) {
-        isFetching = true;
-        console.log('Fetching more messages...');
-        fetchMoreMessages();
-    }
-});
-// Purpose: Fetch more messages from the server and display them in the chat area
-function fetchMoreMessages() {
-    let currentMessageCount = chatArea.querySelectorAll('.message-container').length;
-    let oldScrollHeight = chatArea.scrollHeight;
+  function loadMore() {
+    if (fetchingMore || noMore) return;
+    fetchingMore = true;
+    const count = messageArea.querySelectorAll('.msg[data-message-id]').length;
+    const prevHeight = messageArea.scrollHeight;
+    const firstMsg = messageArea.querySelector('.msg, .date-divider');
 
     fetch('/load-more-messages', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ current_message_count: currentMessageCount })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_message_count: count }),
     })
-        .then(response => {
-            console.log('Response received:', response);
-            return response.json();
-        })
-        .then(data => {
-            console.log('Fetched more messages:', data);
-            if (data.length > 0) {
-                let firstMessageContainer = chatArea.querySelector('.message-container:first-child');
-
-                data.forEach(msg => {
-                    let messageHtml = '';
-                    let formattedMessage = convertMarkdownText(msg.message);
-                    let formattedTimestamp = formatTimestamp(msg.timestamp);
-
-                    if (msg.sender === 'assistant') {
-                        messageHtml = `
-                        <div class="message-container bot-message">
-                            <div class="message-wrapper flex items-end gap-2 justify-start">
-                                <div class="avatar relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                    <img src="${AI_PROFILE_IMAGE}" width="40" height="40" alt="Avatar" class="rounded-full" style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                                    <div class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                                        <div class="rounded-full bg-white p-[2px]"></div>
-                                    </div>
-                                </div>
-                                <div class="message-bubble chat-message-ai backdrop-blur-sm rounded-t-2xl rounded-br-2xl p-3 max-w-[70%]">
-                                    <p class="invert-text markdown-content">${formattedMessage}</p>
-                                </div>
-                            </div>
-                            <div class="timestamp text-xs text-gray-500 mt-1" data-timestamp="${msg.timestamp}">
-                            ${formattedTimestamp}
-                            </div>
-                        </div>`;
-                    } else {
-                        messageHtml = `
-                        <div class="message-container user-message">
-                            <div class="message-wrapper flex items-end gap-2 justify-end">
-                                <div class="message-bubble chat-message-user backdrop-blur-sm rounded-t-2xl rounded-bl-2xl p-3 max-w-[70%]">
-                                    <p class="invert-text markdown-content">${formattedMessage}</p>
-                                </div>
-                                <div class="avatar relative p-[2px] rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5]">
-                                    <img src="${USER_PROFILE_IMAGE}" width="40" height="40" alt="Avatar" class="rounded-full" style="aspect-ratio: 40 / 40; object-fit: cover;" />
-                                    <div class="status-indicator absolute -bottom-0.5 -right-0.5 rounded-full bg-gradient-to-br from-[#7367F0] to-[#9E95F5] p-[2px]">
-                                        <div class="rounded-full bg-white p-[2px]"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="timestamp text-xs text-gray-500 mt-1 flex justify-end" data-timestamp="${msg.timestamp}">
-                            ${formattedTimestamp}
-                            </div>
-                        </div>`;
-                    }
-
-                    let messageNode = document.createElement('div');
-                    messageNode.innerHTML = messageHtml;
-                    while (messageNode.firstChild) {
-                        chatArea.insertBefore(messageNode.firstChild, firstMessageContainer);
-                    }
-                });
-
-                // Calculate the new scroll position to maintain the view
-                let newScrollHeight = chatArea.scrollHeight;
-                chatArea.scrollTop = newScrollHeight - oldScrollHeight;
-            }
-
-            isFetching = false;
-        })
-        .catch(error => {
-            console.error('Error fetching more messages:', error);
-            isFetching = false;
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.length) { noMore = true; return; }
+        const frag = document.createDocumentFragment();
+        data.forEach((msg) => {
+          const wrap = document.createElement('div');
+          if (msg.sender === 'assistant') {
+            wrap.innerHTML =
+              '<div class="msg msg-assistant">' +
+                '<div class="bubble-companion">' + esc(msg.message) + '</div>' +
+                '<div class="msg-actions">' +
+                  '<button type="button" class="msg-action" data-action="regenerate">Regenerate</button>' +
+                  '<button type="button" class="msg-action" data-action="copy">Copy</button>' +
+                '</div>' +
+              '</div>';
+          } else {
+            wrap.innerHTML = userBubbleHTML(msg.message);
+          }
+          frag.appendChild(wrap.firstChild);
         });
-}
-
-
-
-
-// FORMATTING
-
-// Initially converts all messages to markdown format
-function convertAndDisplayAllMarkdown() {
-    const markdownElements = document.querySelectorAll('.markdown-content');
-    markdownElements.forEach(element => {
-        convertAndDisplaySingleMarkdown(element);
-    });
-}
-
-// Converts a message element to markdown format
-function convertAndDisplaySingleMarkdown(element) {
-    const markdown = element.textContent || element.innerText;
-    const html = convertMarkdownText(markdown);
-
-    // Replace the element's content with the parsed HTML
-    element.innerHTML = html;
-}
-
-function convertMarkdownText(markdown) {
-    if (!markdown.trim()) {
-      return '';
-    }
-  
-    const renderer = new marked.Renderer();
-  
-    renderer.code = (code, lang) => {
-
-        const pattern = /<ToolType>\[([^\]]+)]<\/ToolType>/;
-        const match = code.text.match(pattern);
-        console.log(match); // debug
-        const defaultTitle = 'Tool Call';
-  
-        return `
-            <div class="mt-4 rounded-lg overflow-hidden border border-[#7367F0]/20">
-            <div class="bg-[#7367F0]/10 px-4 py-2 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-[#7367F0]"></span>
-                <span class="text-sm font-medium text-[#7367F0]">${match || defaultTitle}</span>
-                </div>
-                <button class="p-1 hover:bg-[#7367F0]/20 rounded transition-colors tool-copy-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="text-[#7367F0]">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                </button>
-            </div>
-            <div class="bg-[#7367F0]/5 p-4">
-                <pre class="text-sm whitespace-pre-wrap font-mono invert-text">${code.text.trim()}</pre>
-            </div>
-            </div>
-        `;
-    };
-  
-    let html;
-    try {
-      html = marked.parse(markdown, { renderer });
-      // Additional post-processing if desired
-      html = html.replace(/(?:^|\s)\*([^\*\n]+)\*(?=$|\s)/g, (match, p1) => ` <em>${p1}</em>`);
-    } catch (error) {
-      console.error('Error parsing markdown:', error);
-      // Fallback to raw markdown if something fails
-      html = markdown;
-    }
-  
-    return html;
+        messageArea.insertBefore(frag, firstMsg);
+        messageArea.scrollTop = messageArea.scrollHeight - prevHeight;
+      })
+      .catch(() => {})
+      .finally(() => { fetchingMore = false; });
   }
-  
 
-// TIMESTAMPS
+  // ---- mic / transcription -----------------------------------------------
 
-// Format current time (based on user's timezone)
-function getCurrentFormattedTime() {
-    let now = new Date();
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
-    let ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    let strTime = hours + ':' + minutes + ' ' + ampm;
-    return strTime;
-}
+  const micSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
 
-// Purpose: Format timestamp for OLD message to a human-readable format
-// Note: these are for messages retrieved from the database
-function formatTimestamp(timestamp) {
-    const utcDate = new Date(timestamp + 'Z');
-    const now = new Date();
+  function showVoiceHint() { if (voiceHint) voiceHint.hidden = false; }
+  function hideVoiceHint() { if (voiceHint) voiceHint.hidden = true; }
 
-    // Compare dates without time
-    const isToday = utcDate.toDateString() === now.toDateString();
+  function setupMic() {
+    if (!micSupported) { if (micBtn) micBtn.hidden = true; return; }
 
-    // Formatting options
-    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-    const dateOptions = { month: 'long', day: 'numeric', ...timeOptions };
+    let recorder = null;
+    let chunks = [];
+    let stream = null;
+    let timerInt = null;
+    let seconds = 0;
 
-    // Format based on whether it's today or another day
-    const formatted = new Intl.DateTimeFormat('en-US', isToday ? timeOptions : dateOptions).format(utcDate);
+    const startTimer = () => {
+      seconds = 0;
+      if (micTimer) { micTimer.hidden = false; micTimer.textContent = '0:00'; }
+      timerInt = setInterval(() => { seconds += 1; if (micTimer) micTimer.textContent = mmss(seconds); }, 1000);
+    };
+    const stopTimer = () => {
+      clearInterval(timerInt);
+      if (micTimer) micTimer.hidden = true;
+    };
+    const cleanup = () => {
+      micBtn.classList.remove('is-recording');
+      stopTimer();
+      if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+      recorder = null;
+    };
 
-    return formatted;
-}
-
-// Format timestamps of old messages
-const timestamps = document.querySelectorAll('[data-timestamp]');
-timestamps.forEach(element => {
-    const rawTimestamp = element.getAttribute('data-timestamp');
-    const formatted = formatTimestamp(rawTimestamp);
-    element.textContent = formatted;
-});
-
-
-
-// HELPER FUNCTIONS
-
-// Purpose: get the current credit amount from the display
-function getCurrentCredits() {
-    const creditsText = document.querySelector('.credits-text').textContent;
-    return parseInt(creditsText, 10);
-}
-
-// Purpose: update the credit display
-function updateCreditDisplay(newCredits) {
-    document.querySelector('.credits-text').textContent = newCredits;
-}
-
-// Purpose: prevent user from sending message if there are no credits
-function sufficientCredits() {
-    let currentCredits = getCurrentCredits();
-    return currentCredits >= MESSAGE_COST;
-}
-
-
-// Purpose: finds and removes a message given a messageID
-function removeMessage(messageId) {
-    // find the message container using the msg id
-    const messageContainer = document.querySelector(`[data-message-id="${messageId}"]`);
-
-    console.log(messageContainer); // debug
-
-    if (messageContainer) {
-        // remove hover panels
-        const hoverPanel = messageContainer.querySelector('.hover-panel');
-        if (hoverPanel) {
-            hoverPanel.remove();
-        }
-
-        // then remove entire message container
-        messageContainer.remove();
-    }
-}
-
-
-// initializes audio player
-function initializeAudioPlayer(playerElement) {
-    const audio = playerElement.querySelector('audio');
-    const playPauseBtn = playerElement.querySelector('.play-pause-btn');
-    const playIcon = playPauseBtn.querySelector('.play-icon');
-    const pauseIcon = playPauseBtn.querySelector('.pause-icon');
-    const progress = playerElement.querySelector('.progress');
-    const timeDisplay = playerElement.querySelector('.time');
-
-    // update the play/pause button
-    function updatePlayButton(playing) {
-        if (playing) {
-            playIcon.classList.add('hidden');
-            pauseIcon.classList.remove('hidden');
-        } else {
-            playIcon.classList.remove('hidden');
-            pauseIcon.classList.add('hidden');
-        }
+    async function start() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        showNotice('Microphone access was blocked. Enable it to record.');
+        return;
+      }
+      chunks = [];
+      try {
+        recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      } catch (e) {
+        recorder = new MediaRecorder(stream);
+      }
+      recorder.addEventListener('dataavailable', (e) => { if (e.data.size) chunks.push(e.data); });
+      recorder.addEventListener('stop', onStop);
+      recorder.start();
+      micBtn.classList.add('is-recording');
+      micBtn.setAttribute('aria-label', 'Stop recording');
+      startTimer();
     }
 
-    // formats time in MM:SS
-    function formatTime(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        seconds = Math.floor(seconds % 60);
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    function onStop() {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      cleanup();
+      micBtn.setAttribute('aria-label', 'Record voice message');
+      if (!blob.size) return;
+      transcribe(blob);
     }
 
-    // handles play/pause buttons
-    playPauseBtn.addEventListener('click', () => {
-        if (audio.paused) {
-            audio.play();
-        } else {
-            audio.pause();
-        }
+    function transcribe(blob) {
+      const fd = new FormData();
+      fd.append('audio', blob, 'clip.webm');
+      showNotice('Transcribing…');
+      fetch('/transcribe', { method: 'POST', body: fd })
+        .then((res) => res.ok ? res.json() : Promise.reject(res))
+        .then((data) => {
+          if (notice) notice.hidden = true;
+          input.value = (input.value ? input.value + ' ' : '') + (data.text || '');
+          autoGrow(input);
+          input.focus();
+          showVoiceHint();
+        })
+        .catch(() => showNotice('Could not transcribe that clip. Try again.'));
+    }
+
+    micBtn.addEventListener('click', () => {
+      if (recorder && recorder.state === 'recording') recorder.stop();
+      else start();
     });
+  }
 
-    // audio event listeners
-    audio.addEventListener('play', () => updatePlayButton(true));
-    audio.addEventListener('pause', () => updatePlayButton(false));
-    audio.addEventListener('ended', () => updatePlayButton(false));
+  // ---- event wiring ------------------------------------------------------
 
-    audio.addEventListener('timeupdate', () => {
-        const percent = (audio.currentTime / audio.duration) * 100;
-        progress.style.width = `${percent}%`;
-        timeDisplay.textContent = formatTime(audio.currentTime);
+  sendBtn.addEventListener('click', () => sendMessage());
+
+  input.addEventListener('input', () => { autoGrow(input); hideVoiceHint(); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  messageArea.addEventListener('click', (e) => {
+    const btn = e.target.closest('.msg-action');
+    if (!btn) return;
+    const msgEl = btn.closest('.msg');
+    const action = btn.dataset.action;
+    if (action === 'regenerate') regenerate(msgEl);
+    else if (action === 'edit') startEdit(msgEl);
+    else if (action === 'copy') copyMessage(msgEl);
+  });
+
+  messageArea.addEventListener('scroll', () => {
+    if (messageArea.scrollTop <= 4) loadMore();
+  });
+
+  // AI switcher dropdown
+  const switcher = document.getElementById('ai-switcher');
+  const switchMenu = document.getElementById('ai-switch-menu');
+  if (switcher && switchMenu) {
+    switcher.addEventListener('click', () => {
+      const open = switchMenu.hidden;
+      switchMenu.hidden = !open;
+      switcher.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
-}
-
-// Add click handler for copy buttons after updating chat area
-function initializeToolCopyButtons() {
-    document.querySelectorAll('.tool-copy-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const toolOutput = this.closest('.rounded-lg').querySelector('pre').textContent;
-            navigator.clipboard.writeText(toolOutput).then(() => {
-                // Show feedback
-                const originalHTML = this.innerHTML;
-                this.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#7367F0]">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                `;
-                setTimeout(() => {
-                    this.innerHTML = originalHTML;
-                }, 2000);
-            });
-        });
+    document.addEventListener('click', (e) => {
+      if (!switcher.contains(e.target) && !switchMenu.contains(e.target)) {
+        switchMenu.hidden = true;
+        switcher.setAttribute('aria-expanded', 'false');
+      }
     });
-}
+  }
 
-// Initialize markdown conversion and UI elements
-function initializeChat() {
-    // Convert all markdown content
-    const markdownElements = document.querySelectorAll('.markdown-content');
-    markdownElements.forEach((element, index) => {
-        const markdown = element.textContent || element.innerText;
-        console.log(`Processing message ${index}:`, {
-            original: markdown,
-            isToolOutput: markdown.includes('<pre><code>Tool:')
-        });
-        const html = convertMarkdownText(markdown);
-        console.log(`Converted message ${index}:`, html);
-        element.innerHTML = html;
-    });
+  // ---- init --------------------------------------------------------------
 
-    // Initialize UI elements
-    initializeToolCopyButtons();
-    initializeExistingMessages();
-}
-
-initializeChat();
+  relabelDividers();
+  relabelReachedOut();
+  initAllVoiceBubbles();
+  wireDraftCard();
+  setupMic();
+  autoGrow(input);
+  scrollToBottom();
+})();

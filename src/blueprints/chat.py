@@ -71,13 +71,16 @@ def chat():
         session.get('context_length', 10)
     ).all()[::-1]
 
-    # if no chat history, generate welcome message
+    # if no chat history, generate welcome message (skip silently if the
+    # provider is unavailable — never store a falsy placeholder as a message)
     if not messages:
         welcome_message = generate_welcome_message(ai_model, current_user)
-        message_obj = Message(user_id=current_user.id, ai_id=ai_model.id, sender='assistant', message=welcome_message)
-        db.session.add(message_obj)
-        db.session.commit()
-        messages = [message_obj]
+        if welcome_message:
+            message_obj = Message(user_id=current_user.id, ai_id=ai_model.id, sender='assistant',
+                                  message=welcome_message)
+            db.session.add(message_obj)
+            db.session.commit()
+            messages = [message_obj]
 
     # relationship line ("day N together") + pending draft card, if any
     import datetime as _dt

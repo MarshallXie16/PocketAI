@@ -1,504 +1,208 @@
-{% extends 'index.html' %}
+{% extends '_base.html' %}
 
-{% block title %}Create AI Assistant{% endblock %}
+{% block title %}Create your companion — PocketAI{% endblock %}
 
-{% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/ai-settings.css') }}">
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block head %}
+<style>
+  .ob-wrap { max-width: 640px; margin: 0 auto; padding: 24px 20px 64px; }
+  .ob-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+  .ob-brand { font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+  .ob-progress { display: flex; align-items: center; gap: 10px; }
+  .ob-bars { display: flex; gap: 5px; }
+  .ob-bars span { width: 22px; height: 4px; border-radius: 2px; background: var(--line); }
+  .ob-bars span.on { background: var(--clay); }
+  .ob-step { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .ob-body { max-width: 520px; margin: 0 auto; }
+  .ob-intro { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; }
+  .ob-intro h1 { font-weight: 700; font-size: 28px; letter-spacing: -0.025em; }
+  .ob-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+  .form-stack { display: flex; flex-direction: column; gap: 24px; }
+
+  .avatar-upload { display: flex; align-items: center; gap: 14px; }
+  .avatar-upload .preview { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: var(--white); }
+  .avatar-upload label { font-size: 13px; font-weight: 600; color: var(--clay); cursor: pointer; }
+  .avatar-upload label:hover { text-decoration: underline; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 9px; }
+  .chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .chip:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .pick-card { position: relative; border: 1.5px solid var(--line); background: var(--white); border-radius: var(--radius-card); padding: 14px 15px; cursor: pointer; }
+  .pick-card:hover { border-color: var(--secondary); }
+  .pick-card.is-selected { border-color: var(--ink); }
+  .pick-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .pick-card .t { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .pick-card .d { font-size: 12px; line-height: 1.45; color: var(--secondary); }
+
+  .voice-block { border: 1px solid var(--line-subtle); border-radius: var(--radius-card); padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .voice-head { display: flex; align-items: center; justify-content: space-between; }
+  .voice-head .t { font-weight: 700; font-size: 15px; }
+  .voice-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 520px) { .card-grid, .voice-selects { grid-template-columns: 1fr; } }
+</style>
 {% endblock %}
 
-{% block body %}
-<div class="profile-container lg:w-3/5 md:w-2/3 sm:w-4/5">
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
-        <div dir="ltr" data-orientation="horizontal" class="w-full">
-
-            <!-- container -->
-            <form action="/onboarding/ai/create" method="POST" id="ai-settings-form" enctype="multipart/form-data"
-                accept=".png, .jpg, .jpeg, .gif" data-tab-content="user" data-orientation="horizontal" role="tabpanel"
-                aria-labelledby="radix-:r2u:-trigger-user" id="radix-:r2u:-content-user" tabindex="0"
-                class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6"
-                style="animation-duration: 0s;">
-
-                <!-- Display flash messages -->
-                {% with messages = get_flashed_messages(with_categories=True) %}
-                {% if messages %}
-                <div>
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        <div class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                class="mr-3 h-5 w-5 flex-shrink-0">
-                                {% if category == 'info' %}
-                                <path fill-rule="evenodd"
-                                    d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
-                                    clip-rule="evenodd" />
-                                {% elif category == 'success' %}
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                    clip-rule="evenodd" />
-                                {% elif category == 'warning' %}
-                                <path fill-rule="evenodd"
-                                    d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                                    clip-rule="evenodd" />
-                                {% elif category == 'error' %}
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                                    clip-rule="evenodd" />
-                                {% endif %}
-                            </svg>
-                            <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
-                        </div>
-                        <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                class="h-5 w-5">
-                                <path
-                                    d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                            </svg>
-                        </button>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% endwith %}
-
-                <!-- profile section; profile picture, name, email -->
-                <div class="flex flex-col items-center space-y-4">
-                    <!-- heading -->
-                    <div class="heading flex flex-col items-center mb-4">
-                        <h1 class="text-xl font-semibold">Customize Your <span class="primary-color-text">AI
-                                Assistant</span></h1>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Build your dream assistant. You can always
-                            make changes later!</p>
-                    </div>
-
-                    <div class="relative">
-                        <img src="{{ url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
-                            alt="Profile Picture" id="profile-image-preview" width="96" height="96" class="rounded-full"
-                            style="aspect-ratio: 96 / 96; object-fit: cover;" />
-                        <input type="file" id="profile-image-input" name="profile-image" class="hidden">
-                        <label for="profile-image-input"
-                            class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 w-10 absolute bottom-0 right-0 bg-white dark:bg-gray-800 p-1 rounded-full cursor-pointer">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="h-5 w-5 text-gray-500 dark:text-gray-400">
-                                <path
-                                    d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z">
-                                </path>
-                                <circle cx="12" cy="13" r="3"></circle>
-                            </svg>
-                            <span class="sr-only">Edit Profile Picture</span>
-                        </label>
-                    </div>
-
-                    <div class="space-y-2 text-center flex justify-center">
-                        <input
-                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-xl font-semibold"
-                            id="ai-name" name="ai-name" required value="Unnamed AI" />
-                    </div>
-                </div>
-
-
-                <!-- divider -->
-                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
-
-                <!-- ai settings container -->
-                <div class="space-y-4">
-
-                    <!-- AI Model -->
-                    <div class="space-y-2 dropdown" id="ai-model-dropdown">
-
-                        <!-- Field Heading -->
-                        <div class="ai-setting-heading flex items-center">
-                            <label
-                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                for="ai-model">Model
-                            </label>
-                            <div
-                                x-data="{ tooltip: 'The underlying AI model that powers the assistant. Each AI model has its own quirks. See documentation for more info!' }">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor"
-                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                            </div>
-                        </div>
-
-
-                        <!-- Field Content -->
-                        <div class="flex">
-                            <div class="relative inline-block w-full max-w-xs">
-                                <!-- Button -->
-                                <button data-dropdown-button="ai-model" type="button"
-                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
-                                    gemini-1.5 pro (default)
-                                    <!-- icon down -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
-                                        viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                                <!-- Panel -->
-                                <div data-dropdown-panel="ai-model"
-                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
-                                    <div class="p-1">
-                                        <input type="hidden" name="ai-model" required value="gemini-3-pro-preview">
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            gpt-5-mini</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            gpt-5.2</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            gemini-3-flash-preview</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            gemini-3-pro-preview</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            claude-haiku-4-5</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            claude-sonnet-4-6</a>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- Personality Text Field -->
-                    <div class="flex flex-col gap-4 text-field" id="prompt-field">
-
-                        <!-- Field Heading -->
-                        <div class="ai-setting-heading flex items-center">
-                            <label
-                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                for="ai-prompt">
-                                Personality
-                            </label>
-                            <div
-                                x-data="{ tooltip: 'Dictates the personality and behavior of your assistant. Try to be as descriptive as possible!' }">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor"
-                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        <!-- Field Content -->
-                        <textarea
-                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            name="ai-prompt" id="ai-prompt" required placeholder="Describe your assistant's personality, appearance, speech behavior, likes/dislikes, and background." rows="4"></textarea>
-
-                    </div>
-
-                    <!-- Description Text Field -->
-                    <div class="flex flex-col gap-4 text-field" id="description-field">
-                        <div class="ai-setting-heading flex items-center">
-                            <label
-                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                for="ai-description">
-                                Description
-                            </label>
-                            <div
-                                x-data="{ tooltip: 'A description of what the assistant does. Currently for your own notes and does not affect AI behavior.' }">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor"
-                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <textarea
-                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            name="ai-description" id="ai-description" placeholder="Write a short description about what your assistant does!"
-                            rows="3"></textarea>
-                    </div>
-
-                    <!-- Memory Chunk Size -->
-                    <div class="space-y-2 dropdown" id="ai-model-dropdown">
-
-                        <!-- Heading -->
-                        <div class="ai-setting-heading flex items-center">
-                            <label
-                                class="mr-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                for="memory-chunk-size">
-                                Memory Chunk Size
-                            </label>
-                            <div
-                                x-data="{ tooltip: 'Number of messages in each long-term memory chunk. Recommended: 6 messages/chunk.' }">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor"
-                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        <!-- Content -->
-                        <div class="flex">
-                            <div class="relative inline-block w-full max-w-xs">
-                                <!-- Button -->
-                                <button data-dropdown-button="memory-chunk-size" type="button"
-                                    class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
-                                    6 (default)
-                                    <!-- icon down -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
-                                        viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                                <!-- Panel -->
-                                <div data-dropdown-panel="memory-chunk-size"
-                                    class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
-                                    <div class="p-1">
-                                        <input type="hidden" name="memory-chunk-size"
-                                            value="6">
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            4</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            6</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            10</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            16</a>
-                                        <a href="#" data-dropdown-option
-                                            class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                            24</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- Conversation Modes (new) -->
-                    <div class="space-y-2 dropdown" id="conversation-mode-wrapper">
-                        <div class="ai-setting-heading flex items-center">
-                            <label class="mr-2" style="font-size: 14px;">Conversation Modes <span
-                                    class="primary-color-text font-semibold">(Beta)</span></label>
-                            <div
-                                x-data="{ tooltip: 'Affects the assistant\'s conversation style. Conversation: balanced in length, mimics a regular conversation. Texting: shorter and more concise, uses texting conventions and emojis. Roleplay: narrative style with longer, more descriptive responses.' }">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor"
-                                    class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="relative flex flex-wrap rounded-md bg-gray-50 p-1 w-[340px] text-sm h-[46px]">
-                            <label class="flex-1 text-center">
-                                <input type="radio" name="conversation-mode" value="conversation"
-                                    class="hidden radio-input" checked>
-                                <span
-                                    class="radio-label flex items-center justify-center rounded-md cursor-pointer p-2 text-slate-700 transition-all">
-                                    Conversation
-                                </span>
-                            </label>
-                            <label class="flex-1 text-center">
-                                <input type="radio" name="conversation-mode" value="texting" class="hidden radio-input">
-                                <span
-                                    class="radio-label flex items-center justify-center rounded-md cursor-pointer p-2 text-slate-700 transition-all">
-                                    Texting
-                                </span>
-                            </label>
-                            <label class="flex-1 text-center">
-                                <input type="radio" name="conversation-mode" value="roleplay" class="hidden radio-input">
-                                <span
-                                    class="radio-label flex items-center justify-center rounded-md cursor-pointer p-2 text-slate-700 transition-all">
-                                    Roleplay
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Voice Settings -->
-                    <div class="space-y-4">
-
-                        <!-- Collapsible header -->
-                        <div class="cursor-pointer" id="voice-settings-header">
-                            <div class="flex items-center justify-between" id="voice-settings-header-wrapper">
-                                <div class="flex items-center">
-                                    <h3 class="text-lg font-semibold mr-2">Voice Settings</h3>
-                                    <span class="text-sm font-semibold text-[#7367F0]">(Beta)</span>
-                                    <div x-data="{ tooltip: 'Enable voice generation for AI responses. Voice messages will automatically play when a message is received.' }"
-                                        class="ml-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor"
-                                            class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <!-- Dropdown Arrow -->
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 transform transition-transform duration-200" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        <!-- Hidden content -->
-                        <div class="space-y-4" id="voice-settings-content">
-                            <!-- Enable Voice Toggle -->
-                            <div class="flex items-center space-x-4">
-                                <label class="text-sm font-medium">Enable Voice Messages: </label>
-                                <label class="switch flex items-center">
-                                    <input type="checkbox" name="voice-enabled">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <!-- Voice Selection -->
-                            <div class="space-y-2 dropdown">
-                                <div class="ai-setting-heading flex items-center">
-                                    <label class="mr-2 text-sm font-medium leading-none" for="voice-id">Voice</label>
-                                    <div x-data="{ tooltip: 'Select the voice style for your AI assistant.' }">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor"
-                                            class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="flex">
-                                    <div class="relative inline-block w-full max-w-xs">
-                                        <button data-dropdown-button="voice-id" type="button"
-                                            class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
-                                            alloy (default)
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
-                                                viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd"
-                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
-                                                    clip-rule="evenodd" />
-                                            </svg>
-                                        </button>
-                                        <div data-dropdown-panel="voice-id"
-                                            class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
-                                            <div class="p-1">
-                                                <input type="hidden" name="voice-id"
-                                                    value="alloy">
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    alloy</a>
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    echo</a>
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    fable</a>
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    onyx</a>
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    nova</a>
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    shimmer</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Voice Model Selection -->
-                            <div class="space-y-2 dropdown">
-                                <div class="ai-setting-heading flex items-center">
-                                    <label class="mr-2 text-sm font-medium leading-none"
-                                        for="voice-model">Quality</label>
-                                    <div
-                                        x-data="{ tooltip: 'tts-1 is optimized for speed, tts-1-hd for higher quality audio.' }">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor"
-                                            class="h-5 w-5 cursor-pointer text-secondary-500" x-tooltip="tooltip">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="flex">
-                                    <div class="relative inline-block w-full max-w-xs">
-                                        <button data-dropdown-button="voice-model" type="button"
-                                            class="dropdown-button inline-flex w-full gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-100 focus:ring focus:ring-gray-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400">
-                                            tts-1 (default)
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400"
-                                                viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd"
-                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
-                                                    clip-rule="evenodd" />
-                                            </svg>
-                                        </button>
-                                        <div data-dropdown-panel="voice-model"
-                                            class="dropdown-panel hidden absolute left-0 z-10 mt-2 w-full rounded-lg border border-gray-100 bg-white text-left text-sm shadow-lg">
-                                            <div class="p-1">
-                                                <input type="hidden" name="voice-model"
-                                                    value="tts-1">
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    tts-1</a>
-                                                <a href="#" data-dropdown-option
-                                                    class="flex w-full items-center rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-                                                    tts-1-hd</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- divider -->
-                <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
-
-                <!-- button group -->
-                <div class="flex justify-end">
-                    <button type="button" id="go-back"
-                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mr-2">
-                        Back
-                    </button>
-                    <button type="submit" id="save-changes-ai-settings"
-                        class="default-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-                        Save Changes
-                    </button>
-                </div>
-            </form>
-
-        </div>
+{% block content %}
+<div class="ob-wrap">
+  <div class="ob-head">
+    <div class="ob-brand">PocketAI</div>
+    <div class="ob-progress">
+      <span class="ob-bars"><span class="on"></span><span class="on"></span><span></span></span>
+      <span class="ob-step">2 of 3</span>
     </div>
+  </div>
+
+  <div class="ob-body">
+    <div class="ob-intro">
+      <span class="monogram monogram-64" id="intro-monogram">M</span>
+      <h1>Now — who's showing up for you?</h1>
+    </div>
+
+    <form action="{{ url_for('ai.onboarding_ai_create') }}" method="POST" enctype="multipart/form-data"
+          accept=".png, .jpg, .jpeg, .gif" id="create-ai-form" class="form-stack">
+
+      <div class="avatar-upload">
+        <img id="avatar-preview" class="preview"
+             src="{{ url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}" alt="Their picture">
+        <input type="file" id="profile-image-input" name="profile-image" hidden accept=".png,.jpg,.jpeg,.gif">
+        <label for="profile-image-input">Add a photo (optional)</label>
+      </div>
+
+      <div class="field" style="margin-bottom: 0;">
+        <label for="ai-name">Their name</label>
+        <input type="text" id="ai-name" name="ai-name" required value="" placeholder="e.g. Mira">
+        <span class="field-hint">Pick anything. It's theirs from now on.</span>
+      </div>
+
+      <div class="field" style="margin-bottom: 0;">
+        <label>Which model powers them</label>
+        <div class="card-grid" id="model-grid">
+          {% set models = [
+            ('claude-sonnet-4-6', 'Claude Sonnet', 'Warm, thoughtful, capable'),
+            ('claude-haiku-4-5', 'Claude Haiku', 'Fast and light on its feet'),
+            ('gemini-3-pro-preview', 'Gemini Pro', 'Broad knowledge, steady'),
+            ('gemini-3-flash-preview', 'Gemini Flash', 'Quick, snappy replies'),
+            ('gpt-5.2', 'GPT-5.2', 'Sharp and expressive'),
+            ('gpt-5-mini', 'GPT-5 mini', 'Efficient everyday chat')
+          ] %}
+          {% for value, name, desc in models %}
+          <label class="pick-card {% if loop.first %}is-selected{% endif %}">
+            <input type="radio" name="ai-model" value="{{ value }}" {% if loop.first %}checked{% endif %} required>
+            <div class="t">{{ name }}</div>
+            <div class="d">{{ desc }}</div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom: 0;">
+        <label for="ai-prompt">How they are with you</label>
+        <textarea id="ai-prompt" name="ai-prompt" rows="4" required
+                  placeholder="Describe their personality, how they speak, what they care about."></textarea>
+      </div>
+
+      <div class="field" style="margin-bottom: 0;">
+        <label for="ai-description">A short description</label>
+        <textarea id="ai-description" name="ai-description" rows="2" required
+                  placeholder="A line for your own notes — who they are to you."></textarea>
+      </div>
+
+      <div class="field" style="margin-bottom: 0;">
+        <label>Conversation style</label>
+        <div class="chip-row" id="mode-chips">
+          {% for value, label in [('conversation', 'Conversation'), ('texting', 'Texting'), ('roleplay', 'Roleplay')] %}
+          <label class="chip {% if loop.first %}is-selected{% endif %}">
+            <input type="radio" name="conversation-mode" value="{{ value }}" {% if loop.first %}checked{% endif %}>
+            {{ label }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom: 0;">
+        <label for="memory-chunk-size">Memory chunk size</label>
+        <select id="memory-chunk-size" name="memory-chunk-size" required style="max-width: 220px;">
+          {% for n in [4, 6, 10, 16, 24] %}
+          <option value="{{ n }}" {% if n == 6 %}selected{% endif %}>{{ n }} messages</option>
+          {% endfor %}
+        </select>
+        <span class="field-hint">How many messages get bundled into each long-term memory.</span>
+      </div>
+
+      <div class="voice-block">
+        <div class="voice-head">
+          <div>
+            <div class="t">Give them a voice <span class="text-clay" style="font-size:12px;font-weight:700;">Beta</span></div>
+            <span class="field-hint">Replies can play out loud automatically.</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" name="voice-enabled" id="voice-enabled">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="voice-selects" id="voice-selects">
+          <div class="field" style="margin-bottom: 0;">
+            <label for="voice-id">Voice</label>
+            <select id="voice-id" name="voice-id">
+              {% for v in ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] %}
+              <option value="{{ v }}">{{ v }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label for="voice-model">Quality</label>
+            <select id="voice-model" name="voice-model">
+              <option value="tts-1">tts-1 (faster)</option>
+              <option value="tts-1-hd">tts-1-hd (higher quality)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-actions">
+        <a class="btn-quiet" href="{{ url_for('ai.onboarding_ai') }}">&larr; Back</a>
+        <button type="submit" class="btn btn-primary-clay" id="meet-btn">Meet them</button>
+      </div>
+    </form>
+  </div>
 </div>
+{% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/ai-settings.js') }}"></script>
-{% endblock %}
-
 <script>
-    // Go back button
-    document.getElementById('go-back').addEventListener('click', () => {
-        window.location.href = "{{ url_for('ai.onboarding_ai') }}";
-    });
-</script>
+  // Avatar preview
+  document.getElementById('profile-image-input').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) { document.getElementById('avatar-preview').src = ev.target.result; };
+    reader.readAsDataURL(file);
+  });
 
+  // Name -> monogram + button label
+  var nameInput = document.getElementById('ai-name');
+  var mono = document.getElementById('intro-monogram');
+  var meetBtn = document.getElementById('meet-btn');
+  nameInput.addEventListener('input', function () {
+    var v = nameInput.value.trim();
+    mono.textContent = (v ? v[0] : 'M').toUpperCase();
+    meetBtn.textContent = v ? ('Meet ' + v) : 'Meet them';
+  });
+
+  // Radio card / chip selection styling
+  function wireRadioGroup(container, selectedClass) {
+    container.querySelectorAll('input[type="radio"]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        container.querySelectorAll('label').forEach(function (l) { l.classList.remove(selectedClass); });
+        if (input.checked) input.closest('label').classList.add(selectedClass);
+      });
+    });
+  }
+  wireRadioGroup(document.getElementById('model-grid'), 'is-selected');
+  wireRadioGroup(document.getElementById('mode-chips'), 'is-selected');
+</script>
 {% endblock %}

@@ -1,0 +1,210 @@
+{% extends '_base.html' %}
+{% from '_components.html' import monogram %}
+
+{% set ai_name = ai_model.name if ai_model else 'your companion' %}
+
+{% block title %}Settings — PocketAI{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block head %}
+<style>
+  .set-wrap { max-width: 1120px; margin: 0 auto; padding: 20px; }
+  .set-shell { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); overflow: hidden; display: grid; grid-template-columns: 230px 1fr; }
+  .set-side { border-right: 1px solid var(--line-subtle); padding: 24px 20px; display: flex; flex-direction: column; gap: 18px; }
+  .set-side .who { display: flex; align-items: center; gap: 11px; }
+  .set-side .who .name { font-weight: 700; font-size: 15.5px; }
+  .set-side .divider { height: 1px; background: var(--line-subtle); }
+  .set-nav { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+  .set-nav a { color: var(--secondary); padding: 8px 12px; border-radius: 8px; }
+  .set-nav a:hover { color: var(--ink); text-decoration: none; }
+  .set-nav a.active { background: var(--bubble); color: var(--ink); font-weight: 600; }
+  .set-main { padding: 28px 36px 36px; display: flex; flex-direction: column; gap: 22px; }
+  .set-main h1 { font-weight: 700; font-size: 28px; letter-spacing: -0.025em; }
+  .s-card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 20px 22px; }
+  .s-card.pause { border: 1.5px solid var(--ink); display: flex; align-items: center; gap: 18px; }
+  .s-card .head { font-weight: 700; font-size: 15.5px; margin-bottom: 3px; }
+  .s-card .sub { font-size: 13.5px; color: var(--secondary); line-height: 1.5; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .sub-label { font-size: 13px; font-weight: 600; color: var(--secondary); margin-bottom: 8px; }
+  .chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .quiet-inputs { display: flex; align-items: center; gap: 10px; }
+  .quiet-inputs input[type="time"] { max-width: 130px; }
+  .quiet-bar { position: relative; height: 34px; background: var(--bubble); border-radius: 8px; overflow: hidden; margin: 12px 0 8px; }
+  .quiet-bar .seg { position: absolute; top: 0; bottom: 0; background: var(--ink); }
+  .quiet-scale { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+
+  /* Big pause toggle */
+  .toggle-lg .toggle-track { width: 48px; height: 28px; }
+  .toggle-lg .toggle-track::after { width: 22px; height: 22px; }
+  .toggle-lg input:checked + .toggle-track::after { transform: translateX(20px); }
+
+  .mem-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+  .mem-note { font-size: 13px; color: var(--secondary); margin-bottom: 12px; }
+  .mem-meta { font-size: 12.5px; color: var(--muted); }
+  .mem-meta a { color: var(--clay); font-weight: 600; cursor: pointer; }
+  .mem-list { display: flex; flex-direction: column; }
+  .memory-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line-subtle); font-size: 14.5px; }
+  .memory-row .content { flex: 1; }
+  .memory-row .content input { width: 100%; }
+  .memory-row .op { font-size: 12.5px; font-weight: 600; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
+  .memory-row .op.edit { color: var(--secondary); }
+  .memory-row .op.forget { color: var(--clay); }
+  .mem-add { display: flex; align-items: center; gap: 10px; padding: 14px 0 2px; border-top: 1px solid var(--line-subtle); }
+  .mem-add input { flex: 1; }
+  .mem-empty { font-size: 13.5px; color: var(--muted); padding: 14px 0; border-top: 1px solid var(--line-subtle); }
+  .conn { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .save-row { display: flex; justify-content: flex-end; }
+  @media (max-width: 780px) {
+    .set-shell { grid-template-columns: 1fr; }
+    .set-side { flex-direction: row; align-items: center; border-right: none; border-bottom: 1px solid var(--line-subtle); }
+    .set-side .divider { display: none; }
+    .set-nav { flex-direction: row; margin-left: auto; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="set-wrap">
+  <div class="set-shell">
+    <aside class="set-side">
+      <div class="who">
+        {{ monogram(ai_name, 40) }}
+        <div>
+          <div class="name">{{ ai_name }}</div>
+          <div class="relationship-line">day {{ days_together }} together</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <nav class="set-nav">
+        <a href="{{ url_for('chat.chat') }}">Chat</a>
+        <a href="{{ url_for('settings.settings_page') }}" class="active">Settings</a>
+      </nav>
+    </aside>
+
+    <div class="set-main">
+      <h1>Settings</h1>
+
+      <!-- Proactive: pause + check-ins + quiet hours (one form so nothing gets wiped) -->
+      <form action="{{ url_for('settings.update_proactive') }}" method="POST" id="proactive-form">
+        {% set checkin = user_settings.daily_checkin_time.strftime('%H:%M') if user_settings and user_settings.daily_checkin_time else 'none' %}
+        {% set freqmap = {1: 'low', 2: 'med', 4: 'high'} %}
+        {% set curfreq = freqmap.get(user_settings.max_proactive_per_day, 'med') if user_settings else 'med' %}
+
+        <div class="s-card pause" style="margin-bottom: 22px;">
+          <div style="flex: 1;">
+            <div class="head">Pause everything</div>
+            <div class="sub">{{ ai_name }} goes quiet and stops all actions until you come back. Nothing is deleted, nothing nags you to return.</div>
+          </div>
+          <label class="toggle toggle-lg">
+            <input type="checkbox" name="paused" id="paused-toggle"
+                   {% if user_settings and user_settings.paused %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="two-col">
+          <div class="s-card">
+            <div class="head" style="margin-bottom: 14px;">Check-ins</div>
+            <div style="margin-bottom: 16px;">
+              <div class="sub-label">Daily check-in</div>
+              <div class="chip-row" data-chip-group="daily_checkin_time">
+                {% for value, label in [('07:30', '7:30'), ('08:00', '8:00 AM'), ('08:30', '8:30'), ('none', 'none')] %}
+                <button type="button" class="chip {% if value == checkin %}is-selected{% endif %}" data-value="{{ value }}">{{ label }}</button>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <div class="sub-label">How often {{ ai_name }} reaches out</div>
+              <div class="chip-row" data-chip-group="frequency">
+                {% for value, label in [('low', 'Only big stuff'), ('med', 'When it matters'), ('high', 'Often')] %}
+                <button type="button" class="chip {% if value == curfreq %}is-selected{% endif %}" data-value="{{ value }}">{{ label }}</button>
+                {% endfor %}
+              </div>
+            </div>
+            <input type="hidden" name="daily_checkin_time" id="daily_checkin_time" value="{{ checkin }}">
+            <input type="hidden" name="frequency" id="frequency" value="{{ curfreq }}">
+          </div>
+
+          <div class="s-card">
+            <div class="head" style="margin-bottom: 12px;">Quiet hours</div>
+            <div class="quiet-inputs">
+              <input type="time" name="quiet_start"
+                     value="{{ user_settings.quiet_hours_start.strftime('%H:%M') if user_settings and user_settings.quiet_hours_start else '23:00' }}">
+              <span class="text-muted">to</span>
+              <input type="time" name="quiet_end"
+                     value="{{ user_settings.quiet_hours_end.strftime('%H:%M') if user_settings and user_settings.quiet_hours_end else '07:30' }}">
+            </div>
+            <div class="quiet-bar" aria-hidden="true">
+              <span class="seg" style="left:0; width:31%; border-radius:8px 0 0 8px;"></span>
+              <span class="seg" style="right:0; width:4%; border-radius:0 8px 8px 0;"></span>
+            </div>
+            <div class="quiet-scale"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>
+            <div class="sub" style="margin-top: 12px;">No messages, no actions in the dark hours — urgent or not.</div>
+          </div>
+        </div>
+
+        <div class="save-row" style="margin-top: 16px;">
+          <button type="submit" class="btn btn-primary-ink">Save changes</button>
+        </div>
+      </form>
+
+      <!-- Memory -->
+      <div class="s-card" id="memory-card" data-forget-all-url="{{ url_for('settings.forget_everything') }}"
+           data-add-url="{{ url_for('settings.add_memory') }}">
+        <div class="mem-head">
+          <div class="head">What {{ ai_name }} remembers about you</div>
+          <span class="mem-meta">
+            <span id="mem-count">{{ (memories|length) + (facts|length) }}</span> memories ·
+            <a id="forget-all">forget everything</a>
+          </span>
+        </div>
+        <div class="mem-note">Everything here is editable. Forgetting is instant and permanent.</div>
+        <div class="mem-list" id="mem-list">
+          {% for fact in facts %}
+          <div class="memory-row" data-type="fact" data-id="{{ fact.id }}">
+            <span class="content">{{ fact.content }}</span>
+            <button type="button" class="op edit">edit</button>
+            <button type="button" class="op forget">forget</button>
+          </div>
+          {% endfor %}
+          {% for entry in memories %}
+          <div class="memory-row" data-type="memory" data-id="{{ entry.id }}">
+            <span class="content">{{ entry.content }}</span>
+            <button type="button" class="op forget">forget</button>
+          </div>
+          {% endfor %}
+          {% if not facts and not memories %}
+          <div class="mem-empty" id="mem-empty">Nothing yet — {{ ai_name }} will remember as you talk. Or add something below.</div>
+          {% endif %}
+        </div>
+        <div class="mem-add">
+          <input type="text" id="mem-add-input" placeholder="Add something {{ ai_name }} should know…" maxlength="300">
+          <button type="button" class="btn btn-tertiary" id="mem-add-btn">Add</button>
+        </div>
+      </div>
+
+      <!-- Connections -->
+      <div class="s-card conn">
+        <div>
+          <div class="head">Connections</div>
+          <div class="sub">
+            {% if google_linked %}
+            Google connected — calendar read &amp; write, email drafts only.
+            {% else %}
+            Google not connected yet.
+            {% endif %}
+          </div>
+        </div>
+        <a class="btn btn-tertiary" href="{{ url_for('profile.profile') }}">Manage access</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

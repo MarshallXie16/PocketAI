@@ -1,162 +1,127 @@
-{% extends 'index.html' %}
+{% extends '_base.html' %}
 
-{% block title %}
-{{ current_user.username }}'s Contacts
+{% block title %}Contacts — PocketAI{% endblock %}
+
+{% block head %}
+<style>
+  .contacts-wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 72px; }
+  .contacts-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .contacts-head h1 { font-weight: 700; font-size: 28px; letter-spacing: -0.025em; margin-bottom: 6px; }
+  .contacts-head p { color: var(--secondary); font-size: 14.5px; max-width: 48ch; }
+  .contacts-table-card { border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface); overflow: hidden; }
+  table.contacts { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.contacts th { text-align: left; padding: 12px 18px; font-size: 12.5px; font-weight: 700; color: var(--muted); border-bottom: 1px solid var(--line-subtle); }
+  table.contacts td { padding: 14px 18px; border-bottom: 1px solid var(--line-subtle); }
+  table.contacts tr:last-child td { border-bottom: none; }
+  table.contacts .ops { text-align: right; white-space: nowrap; }
+  .op-btn { background: none; border: none; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px; }
+  .op-btn.edit-contact { color: var(--secondary); }
+  .op-btn.delete-contact { color: var(--clay); }
+  .contacts-empty { padding: 40px; text-align: center; color: var(--secondary); }
+  .back-link { display: inline-block; margin-top: 20px; }
+
+  .modal { position: fixed; inset: 0; background: rgba(26,25,22,0.5); display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .modal.open { display: flex; }
+  .modal-box { background: var(--surface); border-radius: 16px; padding: 28px; max-width: 520px; width: 100%; }
+  .modal-box h2 { font-weight: 700; font-size: 20px; margin-bottom: 18px; }
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .modal-grid .full { grid-column: 1 / -1; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+  @media (max-width: 520px) { .modal-grid { grid-template-columns: 1fr; } }
+</style>
 {% endblock %}
 
-{% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user-contacts.css') }}">
-{% endblock %}
-
-{% block body %}
-<div class="contacts-component bg-white dark:bg-gray-900 shadow-lg rounded-lg w-full max-w-[1440px] p-6">
-    <div class="max-w-screen-xl mx-auto px-4 md:px-8">
-
-
-
-        <!-- Head Section -->
-        <div class="flex flex-col md:flex-row items-start justify-between items-center">
-            <!-- Heading -->
-            <div class="max-w-lg text-center md:text-left">
-                <h3 class="text-gray-800 dark:text-white text-xl font-bold sm:text-2xl">
-                    Contacts
-                </h3>
-                <p class="text-gray-600 dark:text-gray-400 mt-2">
-                    Contacts allow your assistants to recognize and communicate with people you know.
-                </p>
-            </div>
-            <!-- Add Contact Button -->
-            <div class="mt-3 md:mt-0">
-                <button id="add-contact-btn"
-                    class="default-button inline-block px-4 py-2 text-white duration-150 font-medium rounded-lg hover:bg-primary-500 active:bg-primary-700 md:text-sm">
-                    <span style="font-size: 20px;">+</span> Add Contact
-                </button>
-            </div>
-        </div>
-
-        <!-- contacts list -->
-        <div class="mt-12 shadow-sm border rounded-lg overflow-x-auto">
-            <table class="w-full table-auto text-sm text-left">
-                <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200 font-medium border-b">
-                    <tr>
-                        <th class="py-3 px-6">Name</th>
-                        <th class="py-3 px-6">Email</th>
-                        <th class="py-3 px-6">Relationship</th>
-                        <th class="py-3 px-6">Phone</th>
-                        <th class="py-3 px-6"></th>
-                    </tr>
-                </thead>
-                <tbody id="contacts-list" class="text-gray-600 dark:text-gray-300 divide-y">
-
-                    {% for contact in contacts %}
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ contact.name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ contact.email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ contact.relationship or 'N/A' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ contact.phone or 'N/A' }}</td>
-                        <td class="text-right px-6 whitespace-nowrap">
-                            <button
-                                class="edit-contact py-2 px-3 font-medium text-primary hover:text-[var(--primary-color)] duration-150 hover:bg-gray-50 rounded-lg"
-                                data-contact-id="{{ contact.id }}">
-                                Edit
-                            </button>
-                            <button
-                                class="delete-contact py-2 leading-none px-3 font-medium text-red-600 hover:text-red-500 duration-150 hover:bg-gray-50 rounded-lg"
-                                data-contact-id="{{ contact.id }}">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-
-                </tbody>
-            </table>
-        </div>
-
-        <!-- divider -->
-        <div data-orientation="horizontal" role="none" class="shrink-0 bg-gray-100 h-[1px] w-full my-6"></div>
-
-        <button id="back-buttom-tmp"
-            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mr-2"
-            onclick="window.location.href='/profile'">
-            <- Back
-        </button>
+{% block content %}
+<div class="contacts-wrap">
+  <div class="contacts-head">
+    <div>
+      <h1>Contacts</h1>
+      <p>Contacts let your companion recognize and reach the people you know.</p>
     </div>
+    <button type="button" class="btn btn-primary-clay" id="add-contact-btn">+ Add contact</button>
+  </div>
 
-    <!-- Add/Edit Contact Modal -->
-    <div id="contact-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl px-8 py-4 mx-auto py-8">
-            <h2 id="modal-title" class="mb-4 text-xl font-bold text-gray-900 dark:text-white">Add Contact</h2>
-            <form id="contact-form">
-                <input type="hidden" id="contact-id">
-                <div class="grid gap-4 mb-4 sm:grid-cols-2 sm:gap-6 sm:mb-5">
-                    <div class="sm:col-span-2">
-                        <label for="name"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label>
-                        <input type="text" name="name" id="name"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                            placeholder="Enter contact name" required>
-                    </div>
-                    <div class="w-full">
-                        <label for="email"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                        <input type="email" name="email" id="email"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                            placeholder="Enter email address" required>
-                    </div>
-                    <div class="w-full">
-                        <label for="relationship"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Relationship</label>
-                        <input type="text" name="relationship" id="relationship"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                            placeholder="e.g., Friend, Colleague">
-                    </div>
-                    <div class="w-full">
-                        <label for="phone"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phone</label>
-                        <input type="tel" name="phone" id="phone"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                            placeholder="Enter phone number">
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label for="notes"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Notes</label>
-                        <textarea id="notes" name="notes" rows="4"
-                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                            placeholder="Add any additional notes here..."></textarea>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button type="submit"
-                        class="hollow-button text-primary hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                        Save Contact
-                    </button>
-                    <button type="button" id="cancel-contact"
-                        class="cancel-button-red inline-flex items-center focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+  <div class="contacts-table-card">
+    <table class="contacts">
+      <thead>
+        <tr>
+          <th>Name</th><th>Email</th><th>Relationship</th><th>Phone</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="contacts-list">
+        {% for contact in contacts %}
+        <tr data-contact-id="{{ contact.id }}"
+            data-name="{{ contact.name }}" data-email="{{ contact.email }}"
+            data-relationship="{{ contact.relationship or '' }}" data-phone="{{ contact.phone or '' }}"
+            data-notes="{{ contact.notes or '' }}">
+          <td class="c-name">{{ contact.name }}</td>
+          <td class="c-email">{{ contact.email }}</td>
+          <td class="c-relationship">{{ contact.relationship or '—' }}</td>
+          <td class="c-phone">{{ contact.phone or '—' }}</td>
+          <td class="ops">
+            <button type="button" class="op-btn edit-contact" data-contact-id="{{ contact.id }}">Edit</button>
+            <button type="button" class="op-btn delete-contact" data-contact-id="{{ contact.id }}">Delete</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not contacts %}
+    <div class="contacts-empty" id="contacts-empty">No contacts yet. Add the people your companion should know.</div>
+    {% endif %}
+  </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-confirmation" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md">
-            <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Delete Contact</h3>
-            <p class="mb-6 text-gray-600 dark:text-gray-400">Are you sure you want to delete this contact? This action
-                cannot be undone.</p>
-            <div class="flex justify-end space-x-3">
-                <button id="cancel-delete"
-                    class="py-2 px-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
-                <button id="confirm-delete"
-                    class="py-2 px-3 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
-            </div>
+  <a class="btn btn-tertiary back-link" href="{{ url_for('profile.profile') }}">&larr; Back</a>
+</div>
+
+<!-- Add / Edit modal -->
+<div class="modal" id="contact-modal">
+  <div class="modal-box">
+    <h2 id="modal-title">Add contact</h2>
+    <form id="contact-form">
+      <input type="hidden" id="contact-id">
+      <div class="modal-grid">
+        <div class="field full" style="margin-bottom:0;">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" placeholder="Contact name" required>
         </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="name@example.com" required>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="relationship">Relationship</label>
+          <input type="text" id="relationship" name="relationship" placeholder="e.g. Friend, Colleague">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="phone">Phone</label>
+          <input type="tel" id="phone" name="phone" placeholder="Phone number">
+        </div>
+        <div class="field full" style="margin-bottom:0;">
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Anything worth remembering…"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary-clay">Save contact</button>
+        <button type="button" class="btn btn-tertiary" id="cancel-contact">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal" id="delete-confirmation">
+  <div class="modal-box">
+    <h2>Delete contact</h2>
+    <p class="text-secondary">Are you sure? This cannot be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary-clay" id="confirm-delete">Delete</button>
+      <button type="button" class="btn btn-tertiary" id="cancel-delete">Cancel</button>
     </div>
+  </div>
 </div>
 {% endblock %}
-
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/user-contacts.js') }}"></script>

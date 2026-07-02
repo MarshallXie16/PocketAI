@@ -232,9 +232,11 @@ def onboarding_ai_existing():
 
         # redirect to chat
         flash('Welcome to pocketAI', 'success')
-        return redirect('/chat')
+        return redirect(url_for('profile.onboarding_world'))
 
-    return render_template('onboarding-ai-existing.html')
+    # prebuilt roster (empty until re-seeded — LAUNCH-4); template renders an empty state
+    roster = AIModel.query.filter_by(is_template=True).all()
+    return render_template('onboarding-ai-existing.html', roster=roster)
 
 
 @ai_bp.route('/onboarding/ai/create', methods=['GET', 'POST'])
@@ -284,7 +286,7 @@ def onboarding_ai_create():
 
             # redirect to chat
             flash('Welcome to pocketAI', 'success')
-            return redirect('/chat')
+            return redirect(url_for('profile.onboarding_world'))
         except Exception as e:
             db.session.rollback()
             logger.error(f'Error creating new AI model: {e}')

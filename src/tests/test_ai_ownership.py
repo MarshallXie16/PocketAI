@@ -69,9 +69,9 @@ def test_onboarding_existing_allows_template(client, make_user, make_ai, login):
     login('intruder', 'pw')
     resp = client.post('/onboarding/ai/existing', data={'ai-id': template.id})
 
-    # cloning a template is allowed; user ends up with a fresh copy
+    # cloning a template is allowed; the flow continues to onboarding step 3
     assert resp.status_code == 302
-    assert '/chat' in resp.headers['Location']
+    assert '/onboarding/world' in resp.headers['Location']
     assert len(intruder.ai_models) == 1
     clone = intruder.ai_models[0]
     assert clone.id != template.id

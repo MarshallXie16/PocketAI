@@ -1,0 +1,174 @@
+{% extends '_base.html' %}
+{% from '_components.html' import monogram %}
+
+{% set ai_name = ai_model.name if ai_model else 'your companion' %}
+
+{% block title %}Let them in — PocketAI{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block head %}
+<style>
+  .ob-wrap { max-width: 640px; margin: 0 auto; padding: 24px 20px 64px; }
+  .ob-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+  .ob-brand { font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+  .ob-progress { display: flex; align-items: center; gap: 10px; }
+  .ob-bars { display: flex; gap: 5px; }
+  .ob-bars span { width: 22px; height: 4px; border-radius: 2px; background: var(--line); }
+  .ob-bars span.on { background: var(--clay); }
+  .ob-step { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .ob-body { max-width: 500px; margin: 0 auto; }
+  .intro-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 28px; }
+  .cards { display: flex; flex-direction: column; gap: 12px; }
+  .w-card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 18px 20px; }
+  .w-card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .w-card-head .t { font-weight: 700; font-size: 15px; }
+  .w-card-head .s { font-size: 12.5px; color: var(--secondary); }
+  .scopes { display: flex; flex-direction: column; border-top: 1px solid var(--line-subtle); margin-top: 14px; }
+  .scope-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line-subtle); font-size: 14px; }
+  .scope-row:last-child { border-bottom: none; }
+  .scope-row .muted { color: var(--muted); }
+  /* Static (informational) toggle pips — not form fields */
+  .pip { width: 40px; height: 24px; border-radius: 999px; background: var(--line); position: relative; flex: none; }
+  .pip::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: none; }
+  .pip.on { background: var(--clay); }
+  .pip.on::after { left: auto; right: 3px; }
+  .connected-pill { font-size: 12.5px; font-weight: 700; color: var(--clay); }
+  .chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .quiet-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .quiet-row .field { margin-bottom: 0; }
+  .quiet-row input[type="time"] { max-width: 130px; }
+  .ob-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+  .ob-caption { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ob-wrap">
+  <div class="ob-head">
+    <div class="ob-brand">PocketAI</div>
+    <div class="ob-progress">
+      <span class="ob-bars"><span class="on"></span><span class="on"></span><span class="on"></span></span>
+      <span class="ob-step">3 of 3</span>
+    </div>
+  </div>
+
+  <div class="ob-body">
+    <div class="intro-row">
+      {{ monogram(ai_name, 40) }}
+      <div class="bubble-companion">
+        Hi. I'm {{ ai_name }}. Here's the honest version: if I can see your calendar, I can show up before the
+        things that matter. You choose exactly what I get — and you can take any of it back in one tap.
+      </div>
+    </div>
+
+    <form action="{{ url_for('profile.onboarding_world') }}" method="POST" id="world-form">
+      <div class="cards">
+
+        <!-- Google connection -->
+        <div class="w-card">
+          <div class="w-card-head">
+            <div>
+              <div class="t">Google Calendar &amp; Gmail</div>
+              <div class="s">So {{ ai_name }} knows what's coming and can help with it.</div>
+            </div>
+            {% if google_linked %}
+            <span class="connected-pill">Connected</span>
+            {% else %}
+            <a class="btn btn-secondary" style="min-height:auto;padding:9px 18px;font-size:13.5px;"
+               href="{{ url_for('auth.link_google') }}">Connect Google</a>
+            {% endif %}
+          </div>
+          <div class="scopes">
+            <div class="scope-row">
+              <span>Read my calendar</span>
+              <span class="pip {% if google_linked %}on{% endif %}" aria-hidden="true"></span>
+            </div>
+            <div class="scope-row">
+              <span>Move &amp; create events</span>
+              <span class="pip {% if google_linked %}on{% endif %}" aria-hidden="true"></span>
+            </div>
+            <div class="scope-row">
+              <span>Draft emails <span class="muted">— you confirm every send</span></span>
+              <span class="pip {% if google_linked %}on{% endif %}" aria-hidden="true"></span>
+            </div>
+            <div class="scope-row">
+              <span class="muted">Send email without asking</span>
+              <span class="pip" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Can text first -->
+        <div class="w-card">
+          <div class="w-card-head">
+            <div>
+              <div class="t">{{ ai_name }} can text first</div>
+              <div class="s">Only when it matters. Every message has "less often" built in.</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" name="proactive_enabled"
+                     {% if user_settings and user_settings.proactive_consent_at %}checked{% endif %}>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Daily check-in + quiet hours -->
+        <div class="w-card">
+          {% set checkin = user_settings.daily_checkin_time.strftime('%H:%M') if user_settings and user_settings.daily_checkin_time else 'none' %}
+          <div class="w-card-head" style="align-items: flex-start;">
+            <div class="t">Daily check-in</div>
+            <div class="chip-row" id="checkin-chips">
+              {% for value, label in [('07:30', '7:30'), ('08:00', '8:00 AM'), ('08:30', '8:30'), ('none', 'none')] %}
+              <button type="button" class="chip {% if value == checkin %}is-selected{% endif %}"
+                      data-value="{{ value }}">{{ label }}</button>
+              {% endfor %}
+            </div>
+          </div>
+          <input type="hidden" name="daily_checkin_time" id="daily_checkin_time" value="{{ checkin }}">
+
+          <div class="scopes" style="padding-top: 4px;">
+            <div class="quiet-row" style="padding-top: 14px;">
+              <div class="t" style="font-weight:700;font-size:15px;flex:1;">Quiet hours</div>
+              <div class="field">
+                <input type="time" name="quiet_start"
+                       value="{{ user_settings.quiet_hours_start.strftime('%H:%M') if user_settings and user_settings.quiet_hours_start else '23:00' }}">
+              </div>
+              <span class="text-muted">to</span>
+              <div class="field">
+                <input type="time" name="quiet_end"
+                       value="{{ user_settings.quiet_hours_end.strftime('%H:%M') if user_settings and user_settings.quiet_hours_end else '07:30' }}">
+              </div>
+            </div>
+            <div class="s" style="font-size:12.5px;color:var(--secondary);padding:10px 0 2px;">
+              No messages, no actions in the dark hours — urgent or not.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-actions">
+        <a class="btn-quiet" href="{{ url_for('chat.chat') }}">Skip for now</a>
+        <button type="submit" class="btn btn-primary-clay">Let {{ ai_name }} in</button>
+      </div>
+      <div class="ob-caption">Pause or revoke any of this in one tap, anytime.</div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var chips = document.querySelectorAll('#checkin-chips .chip');
+  var hidden = document.getElementById('daily_checkin_time');
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (c) { c.classList.remove('is-selected'); });
+      chip.classList.add('is-selected');
+      hidden.value = chip.getAttribute('data-value');
+    });
+  });
+</script>
+{% endblock %}
