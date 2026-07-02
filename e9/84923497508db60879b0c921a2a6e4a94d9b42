@@ -1,0 +1,38 @@
+docs/architecture.md
+  s_4c467e2481b592::t_e6d39b7bd99b45 3,22,28-150,164,170-197,207-210,219,234,236-238,274-275,299-325
+src/tests/test_proactive_service.py
+  s_4c467e2481b592::t_8fce77b7f849cb 17
+  s_4c467e2481b592::t_531c8216b7db8a 1-16,18-303
+src/tests/test_memory_episodic.py
+  s_4c467e2481b592::t_4e54b8fb4a797a 1-166
+src/tests/test_transcribe_route.py
+  s_4c467e2481b592::t_ec547e04be037d 1-54
+src/tests/test_relationship_service.py
+  s_4c467e2481b592::t_2a6dd950787df1 35-49
+  s_4c467e2481b592::t_c2f452417f1b6b 1-34,50-179
+README.md
+  s_4c467e2481b592::t_c8564cfdf4401d 3,5-11,38,67-79,87,96-97,99,111
+docs/INDEX.md
+  s_4c467e2481b592::t_8eea274f2daf45 27
+  s_4c467e2481b592::t_713220de3088f5 11
+src/models/relationship.py
+  s_4c467e2481b592::t_a071f0ead2f892 22-25
+src/tests/test_voice.py
+  s_4c467e2481b592::t_5ba3f9f424bbdb 1-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "e984923497508db60879b0c921a2a6e4a94d9b42",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
