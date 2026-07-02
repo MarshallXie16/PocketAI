@@ -108,8 +108,11 @@ def add_memory():
 @settings_bp.route('/settings/fact/<int:fact_id>', methods=['PUT', 'DELETE'])
 @login_required
 def modify_fact(fact_id):
+    # scoped to the ACTIVE companion — the page presents "this companion's"
+    # memory, so ids from another of the user's companions are rejected too
+    ai_model = get_active_ai(current_user)
     fact = KeyFact.query.get_or_404(fact_id)
-    if fact.user_id != current_user.id:
+    if fact.user_id != current_user.id or not ai_model or fact.ai_id != ai_model.id:
         return jsonify({'error': 'Not found'}), 404
     if request.method == 'DELETE':
         db.session.delete(fact)
@@ -126,8 +129,9 @@ def modify_fact(fact_id):
 @settings_bp.route('/settings/memory/<int:memory_id>', methods=['DELETE'])
 @login_required
 def forget_memory(memory_id):
+    ai_model = get_active_ai(current_user)
     entry = MemoryEntry.query.get_or_404(memory_id)
-    if entry.user_id != current_user.id:
+    if entry.user_id != current_user.id or not ai_model or entry.ai_id != ai_model.id:
         return jsonify({'error': 'Not found'}), 404
     db.session.delete(entry)
     db.session.commit()

@@ -149,11 +149,17 @@ def onboarding_world():
             flash('Invalid time format.', 'error')
             return redirect(url_for('profile.onboarding_world'))
 
-        if form_get('proactive_enabled') == 'on':
+        # the form pairs a hidden proactive_enabled=off with a checkbox
+        # value=on so both states actually POST (review finding)
+        consent = form_get('proactive_enabled')
+        if consent == 'on':
             if settings.proactive_consent_at is None:
                 settings.proactive_consent_at = _dt.datetime.now(_dt.UTC)
             if current_user.google_id:
                 settings.calendar_experiment = True
+        elif consent == 'off':
+            settings.proactive_consent_at = None
+            settings.calendar_experiment = False
         db.session.commit()
         return redirect(url_for('chat.chat'))
 

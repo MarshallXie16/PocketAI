@@ -120,7 +120,7 @@ def send_message():
             return jsonify({'error': 'AI model not found', 'code': 'MODEL_NOT_FOUND'}), 404
 
         # add user message to the database
-        update_conversation_history(current_user.id, ai_model.id, sender='user', message=user_message)
+        user_message_id = update_conversation_history(current_user.id, ai_model.id, sender='user', message=user_message)
 
         # Get AI response
         ai_response = run_ai_response(ai_model.id, user_message)
@@ -145,11 +145,17 @@ def send_message():
         current_user.use_credits(MESSAGE_COST)
         db.session.commit()
 
+        # current pending-draft state so the client can render/clear the card
+        from src.models.conversation_state import ConversationState
+        conv_state = ConversationState.query.filter_by(user_id=current_user.id, ai_id=ai_model.id).first()
+
         return jsonify({
             'response': ai_response,
             'voice_url': voice_url,
             'timestamp': datetime.datetime.now().isoformat(),
             'ai_message_id': ai_message_id,
+            'user_message_id': user_message_id,
+            'pending_action': conv_state.pending_action if conv_state else None,
         }), 200
 
     except Exception:
@@ -286,10 +292,30 @@ def load_more_messages():
     # get the next set of messages
     messages = Message.query.filter_by(user_id=current_user.id, ai_id=ai_id).order_by(
         Message.timestamp.desc()).offset(current_message_count).limit(10).all()[::-1]
-    # Format messages to be sent back
+    # Format messages to be sent back (ids let the client target edit/regenerate
+    # on loaded rows and keep an accurate count — review finding)
     formatted_messages = [
-        {'sender': msg.sender, 'message': msg.message, 'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')}
+        {'id': msg.id, 'sender': msg.sender, 'message': msg.message,
+         'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+         'voice_url': msg.voice_url, 'initiated': msg.initiated}
         for msg in messages
     ]
-    logger.info(formatted_messages)
     return jsonify(formatted_messages)
+
+
+@chat_bp.route('/dismiss-draft', methods=['POST'])
+@login_required
+def dismiss_draft():
+    """Explicitly clear the pending consequential-action draft for the active
+    AI. Without this, a dismissed draft lingered server-side and a later
+    'confirm' could execute a stale action (review finding)."""
+    from src.models.conversation_state import ConversationState
+
+    ai_id = session.get('ai_id')
+    if not ai_id:
+        return jsonify({'error': 'No active companion', 'code': 'BAD_REQUEST'}), 400
+    state = ConversationState.query.filter_by(user_id=current_user.id, ai_id=ai_id).first()
+    if state and state.pending_action:
+        state.pending_action = None
+        db.session.commit()
+    return jsonify({'success': True}), 200
