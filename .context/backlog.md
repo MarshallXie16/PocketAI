@@ -16,11 +16,15 @@ SEC-2 (purge + history rewrite), SEC-3 (Fernet-encrypted tokens), BUG-1..12 (all
 - **LAUNCH-5 — Alembic baseline**: all Phase-4 tables have landed — generate the single clean baseline now (delete 2 stale revisions in migrations/versions/, `flask db revision --autogenerate -m baseline` against an empty DB, review SQLite→Postgres types).
 - **LAUNCH-6 — Live-key verification**: whole pipeline is tested with mocks only. With a populated .env: one real chat turn per provider, calendar/email tool round-trip incl. draft→confirm, proactive tick end-to-end, TTS (Gemini + fallback) + /transcribe. Also verify `gpt-5-mini`/`gemini-3-pro-preview` pricing in MODEL_REGISTRY (flagged unverified).
 
-## 🎨 Waiting on Cloud Design (frontend integration once the new UI returns)
-- **UI-1** — mic button → MediaRecorder → POST /transcribe → textarea (review-before-send). Backend live.
-- **UI-2** — render Message.initiated with the "reached out" tag + one-tap "less often / pause" (maps to UserSettings.max_proactive_per_day / clearing daily_checkin_time).
-- **UI-3** — onboarding "let them into your world" step: Google connect + proactive consent (`proactive_consent_at`) + daily check-in time + quiet hours + calendar_experiment opt-in. No UI sets these columns yet — proactive features are dormant until this ships.
-- **UI-4** — "what I remember about you" view (MemoryEntry + KeyFact list, editable/deletable) + "day N together" header line.
+## ✅ Frontend overhaul — DONE 2026-07-03 (Phase 5, merged to master, tag `phase-5-frontend-complete`)
+Server-rendered Flask/Jinja rebuild on the new design system (`pocket.css` + `_base`/`_components` macros). Dual-reviewed (codex+opus), all findings fixed, 177 tests green. All four UI items landed:
+- **UI-1 ✅** — mic → MediaRecorder → POST /transcribe → textarea (double-start guarded).
+- **UI-2 ✅** — Message.initiated "reached out" tag + one-tap "less often / pause".
+- **UI-3 ✅** — onboarding "let them into your world" consent step (Google connect + `proactive_consent_at` + daily check-in + quiet hours + calendar_experiment). Consent is now settable (hidden+checkbox pattern), so proactive features are no longer dormant on the UI side.
+- **UI-4 ✅** — settings "what {ai} remembers about you" (MemoryEntry + KeyFact, editable/deletable/forget-all) + "day N together" header line.
+
+## 🎯 Frontend framework (maintainer-directed, 2026-07-03)
+- **FE-REACT** — migrate the Flask/Jinja frontend to React (eventual, not now). Proposal in progress: `docs/designs/react-migration-proposal.md` (Tier 3 — investigation + proposal only, no implementation until signed off). Stay Jinja meanwhile.
 
 ## 🔧 Tech debt (post-overhaul)
 - **DEBT-5** — proactive tick: real job queue + per-user fairness (currently bounded batch of 10/tick, FIFO by scheduled_for); DST-ambiguous daily-checkin times (zoneinfo fold).
