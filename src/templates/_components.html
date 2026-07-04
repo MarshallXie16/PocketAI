@@ -1,0 +1,56 @@
+{# ============================================================================
+   PocketAI reusable Jinja macros — built on pocket.css component classes.
+   Import with:  {% from '_components.html' import monogram, companion_bubble, ... %}
+   ============================================================================ #}
+
+{# Monogram avatar: first letter of a name on a clay circle. size in {64,40,30}. #}
+{% macro monogram(name, size=40) -%}
+  <span class="monogram monogram-{{ size }}" aria-hidden="true">{{ (name or '?')[:1]|upper }}</span>
+{%- endmacro %}
+
+{# Companion (AI-initiated / reply) bubble. Content passed via caller block. #}
+{% macro companion_bubble() -%}
+  <div class="bubble-companion">{{ caller() }}</div>
+{%- endmacro %}
+
+{# User bubble. Content passed via caller block. #}
+{% macro user_bubble() -%}
+  <div class="bubble-user">{{ caller() }}</div>
+{%- endmacro %}
+
+{# "Companion reached out" header: clay dot + name + time. #}
+{% macro reached_out_header(name, time) -%}
+  <div class="reached-out">
+    <span class="dot"></span>
+    <span>{{ name }} reached out</span>
+    {% if time %}<span class="reached-out-meta">— {{ time }}</span>{% endif %}
+  </div>
+{%- endmacro %}
+
+{# Action chip: evidence the companion acted (e.g. "Reminder moved to 2:45 PM"). #}
+{% macro action_chip(text, meta=None) -%}
+  <span class="action-chip"><span class="check">&#10003;</span> {{ text }}
+    {% if meta %}<span class="action-chip-meta">&middot; {{ meta }}</span>{% endif %}
+  </span>
+{%- endmacro %}
+
+{# Draft -> confirm card. `pending` is a dict/obj with .to, .subject, .body.
+   Buttons carry data-draft-action; chat JS wires them (they send plain chat
+   messages so the server-side confirm gate stays intact). #}
+{% macro draft_card(pending) -%}
+  <div class="draft-card" data-draft-card>
+    <div class="draft-card-head">
+      <div class="draft-card-meta">To: <strong>{{ pending.to }}</strong></div>
+      {% if pending.subject %}
+      <div class="draft-card-meta">Subject: <strong>{{ pending.subject }}</strong></div>
+      {% endif %}
+    </div>
+    <p class="draft-card-body">{{ pending.body }}</p>
+    <div class="draft-card-actions">
+      <button type="button" class="btn btn-primary-ink" data-draft-action="send">Send it</button>
+      <button type="button" class="btn btn-tertiary" data-draft-action="edit">Edit first</button>
+      <button type="button" class="btn btn-quiet" data-draft-action="dismiss">Not now</button>
+    </div>
+  </div>
+  <div class="draft-caption">Nothing sends without your okay.</div>
+{%- endmacro %}

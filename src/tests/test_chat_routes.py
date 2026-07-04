@@ -79,5 +79,5 @@ def test_load_more_messages_shape(client, make_user, make_ai, login):
     # 12 total, offset 10 -> 2 remaining, returned oldest-first
     assert len(data) == 2
     for item in data:
-        assert set(item.keys()) == {'sender', 'message', 'timestamp'}
+        assert set(item.keys()) == {'id', 'sender', 'message', 'timestamp', 'voice_url', 'initiated'}
     assert [d['message'] for d in data] == ['msg 0', 'msg 1']

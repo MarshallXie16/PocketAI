@@ -1,212 +1,77 @@
-{% extends 'index.html' %}
+{% extends '_base.html' %}
 
-{% block title %}
-Pricing Plans
-{% endblock %}
+{% block title %}Pricing — PocketAI{% endblock %}
 
-{% block body %}
-<div class="container px-4 mt-6 md:px-6 max-w-[1200px]">
-
-    <!-- Pricing Header -->
-    <div class="flex flex-col items-center justify-center space-y-4 text-center">
-        <div class="space-y-2">
-            <div class="inline-block rounded-lg bg-primary-color text-white px-3 py-1 text-sm dark:bg-gray-800">Pricing
-            </div>
-            <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Simple and Transparent Pricing</h2>
-            <p class="max-w-[900px] text-gray-500 md:text-lg lg:text-xl xl:text-2xl dark:text-gray-400">
-                Choose the plan that fits your needs. No hidden fees or charges.
-            </p>
-        </div>
+{% block content %}
+<section class="band" style="border-top: none; padding-top: 40px;">
+  <div class="container">
+    <div class="pricing-head">
+      <h1 class="type-heading" style="font-size: 44px;">The same day, twice.</h1>
+      <p>Interview day, on each plan.</p>
     </div>
 
-    <!-- Pricing Cards -->
-    <section class="w-full container mx-auto py-12 md:py-12 lg:py-16 bg-white dark:bg-white">
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-
-            <!-- Free Plan -->
-            <div class="flex justify-center">
-                <div
-                    class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-                    <h5 class="mb-4 text-xl font-medium text-gray-500 dark:text-gray-400">Free</h5>
-                    <div class="flex items-baseline text-gray-900 dark:text-white">
-                        <span class="text-3xl font-semibold">$</span>
-                        <span class="text-5xl font-extrabold tracking-tight">0</span>
-                        <span class="ms-1 text-xl font-normal text-gray-500 dark:text-gray-400">/month</span>
-                    </div>
-                    <ul role="list" class="space-y-5 my-7">
-                        <li class="flex items-center">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Access to Limited Models</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">900 Messages/Month</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Fully Customizable AI Personality</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Limited Long-term Memory</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Full Calendar Management</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Full Email Integration</span>
-                        </li>
-                        
-                        
-                        
-                        <li class="flex line-through decoration-gray-500">
-                            <svg class="flex-shrink-0 w-4 h-4 text-gray-400 dark:text-gray-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span class="text-base font-normal leading-tight text-gray-500 ms-3">Limited to 1 Assistant</span>
-                        </li>
-                        <li class="flex line-through decoration-gray-500">
-                            <svg class="flex-shrink-0 w-4 h-4 text-gray-400 dark:text-gray-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span class="text-base font-normal leading-tight text-gray-500 ms-3">Early Access to New Features</span>
-                        </li>
-                    </ul>
-                    <button type="button" id="free-signup-button" onclick="window.location.href='/signup'"
-                        class="default-button text-white bg-primary-color hover:bg-secondary-color focus:ring-4 focus:outline-none focus:ring-blue-200 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-900 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex justify-center w-full text-center">
-                        Sign up</button>
-                </div>
-            </div>
-
-            <!-- Premium Plan -->
-            <div class="flex justify-center">
-                <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-                    <h5 class="mb-4 text-xl font-medium text-gray-500 dark:text-gray-400">PocketAI+</h5>
-                    <div class="flex items-baseline text-gray-900 dark:text-white">
-                        <span class="text-3xl font-semibold">$</span>
-                        <span class="text-5xl font-extrabold tracking-tight">19</span>
-                        <span class="ms-1 text-xl font-normal text-gray-500 dark:text-gray-400">/month</span>
-                    </div>
-                    <ul role="list" class="space-y-5 my-7">
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Everything in Free</span>
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Access to All Models (claude-sonnet-4-6, gpt-5.2, fine-tuned models)</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Unlimited Messages</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Unlimited Assistants</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Unlimited Long-term Memory</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Uncensored Models and Special Finetunes</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">AI Personality Generator & Optimizer</span>
-                        </li>
-                        <li class="flex">
-                            <svg class="flex-shrink-0 w-4 h-4 text-blue-700 dark:text-blue-500" aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                            </svg>
-                            <span
-                                class="text-base font-normal leading-tight text-gray-500 dark:text-gray-400 ms-3">Early Access to New Features</span>
-                        </li>
-                    </ul>
-                    <form action="/create-checkout-session" method="POST">
-                        <input type="hidden" name="lookup_key" value="premium" />
-                        <button type="submit" id="premium-upgrade-button" onclick="window.location.href='/signup'"
-                            class="default-button text-white bg-primary-color hover:bg-secondary-color focus:ring-4 focus:outline-none focus:ring-blue-200 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-900 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex justify-center w-full text-center">
-                            Upgrade
-                        </button>
-                    </form>
-                </div>
-            </div>
-
+    <div class="plans-grid">
+      <!-- Free day -->
+      <div class="plan">
+        <div class="plan-header">
+          <span class="name">Free</span>
+          <span class="price">$0 — you text first</span>
         </div>
+        <div class="plan-timeline">
+          <div class="plan-row">
+            <span class="t">7:42 AM</span>
+            <span class="quiet">Nothing. Mira&rsquo;s there when you open the app.</span>
+          </div>
+          <div class="plan-row">
+            <span class="t">1:15 PM</span>
+            <div class="msg">You: &ldquo;interview at 4, freaking out a bit&rdquo;<br>Mira: &ldquo;You prepped the STAR stories Tuesday. Want to run one together?&rdquo;</div>
+          </div>
+          <div class="plan-row">
+            <span class="t">11:20 PM</span>
+            <span class="quiet">You forgot to tell her how it went. She&rsquo;ll ask — next time you text.</span>
+          </div>
+        </div>
+        <div class="plan-foot">Full conversations &middot; remembers everything you share &middot; helps when you ask</div>
+        <a class="btn btn-secondary" href="{{ url_for('auth.signup') }}">Start free</a>
+      </div>
 
-    </section>
+      <!-- Plus day -->
+      <div class="plan plus">
+        <div class="plan-header">
+          <div class="plan-line" style="margin-bottom: 0;"><span class="name">Plus</span><span class="tag">it shows up for you</span></div>
+          <span class="price">$12/mo</span>
+        </div>
+        <div class="plan-timeline">
+          <div class="plan-row">
+            <span class="t">7:42 AM</span>
+            <div class="msg">&ldquo;Morning. Interview at 4 — you&rsquo;re readier than you feel. I moved your 3:30 reminder to 2:45.&rdquo;</div>
+          </div>
+          <div class="plan-row">
+            <span class="t">3:00 PM</span>
+            <div class="msg">&ldquo;One hour. Water, walk, headphones. You&rsquo;ve got this.&rdquo;</div>
+          </div>
+          <div class="plan-row">
+            <span class="t">8:05 AM</span>
+            <div class="msg">&ldquo;So — did you actually sleep by 11? How are you feeling about round two?&rdquo;</div>
+          </div>
+        </div>
+        <div class="plan-foot">Everything in Free &middot; Mira texts first &middot; calendar &amp; email actions &middot; voice replies</div>
+        <a class="btn btn-primary-clay" href="{{ url_for('auth.signup') }}">Get Plus</a>
+      </div>
+    </div>
 
-</div>
+    <!-- The details -->
+    <div class="details-wrap">
+      <div class="eyebrow center" style="margin-bottom: 12px;">The details</div>
+      <div class="details-table">
+        <div class="details-row head"><span></span><span class="c">Free</span><span class="c">Plus</span></div>
+        <div class="details-row"><span>Conversations &amp; memory</span><span class="c yes">&#10003;</span><span class="c yes">&#10003;</span></div>
+        <div class="details-row"><span>Mira texts first</span><span class="c no">&mdash;</span><span class="c yes">&#10003;</span></div>
+        <div class="details-row"><span>Calendar &amp; email actions</span><span class="c no">&mdash;</span><span class="c yes">&#10003;</span></div>
+        <div class="details-row"><span>Voice replies</span><span class="c no">&mdash;</span><span class="c yes">&#10003;</span></div>
+      </div>
+      <div class="details-note">Cancel anytime. Pausing is free — and guilt-free.</div>
+    </div>
+  </div>
+</section>
 {% endblock %}

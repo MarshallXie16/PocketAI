@@ -1,103 +1,62 @@
-{% extends 'index.html' %}
+{% extends '_base.html' %}
 
-{% block body %}
+{% block title %}Meet your companion — PocketAI{% endblock %}
 
-<div class="profile-container lg:w-3/5 md:w-2/3 sm:w-4/5" style="max-width: 90vw;">
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-[1440px]">
-        <div dir="ltr" data-orientation="horizontal" class="w-full">
-            <div class="heading-choose-existing-or-new flex flex-col items-center mt-4">
-                <h2 class="text-2xl font-semibold">Let's Meet Your <span class="primary-color-text">AI Assistant!</span></h2>
-                <p class="text-gray-500 dark:text-gray-400">Get started with one of 8 prebuilt assistants or create your own in less than 5 minutes.</p>
-            </div>
-            <!-- choose between existing AI or create new AI -->
-            <div data-state="active" data-tab-content="ai" data-orientation="horizontal" role="tabpanel"
-                aria-labelledby="radix-:r2u:-trigger-ai" id="radix-:r2u:-content-ai" tabindex="0"
-                class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-6">
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
 
-                <!-- Display flash messages -->
-                {% with messages = get_flashed_messages(with_categories=True) %}
-                {% if messages %}
-                <div>
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        <div class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                class="mr-3 h-5 w-5 flex-shrink-0">
-                                {% if category == 'info' %}
-                                <path fill-rule="evenodd"
-                                    d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
-                                    clip-rule="evenodd" />
-                                {% elif category == 'success' %}
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                    clip-rule="evenodd" />
-                                {% elif category == 'warning' %}
-                                <path fill-rule="evenodd"
-                                    d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                                    clip-rule="evenodd" />
-                                {% elif category == 'error' %}
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                                    clip-rule="evenodd" />
-                                {% endif %}
-                            </svg>
-                            <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
-                        </div>
-                        <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                class="h-5 w-5">
-                                <path
-                                    d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                            </svg>
-                        </button>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% endwith %}
+{% block head %}
+<style>
+  .ob-wrap { max-width: 640px; margin: 0 auto; padding: 24px 20px 64px; }
+  .ob-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 44px; }
+  .ob-brand { font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+  .ob-progress { display: flex; align-items: center; gap: 10px; }
+  .ob-bars { display: flex; gap: 5px; }
+  .ob-bars span { width: 22px; height: 4px; border-radius: 2px; background: var(--line); }
+  .ob-bars span.on { background: var(--clay); }
+  .ob-step { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .ob-title { font-weight: 700; font-size: 32px; letter-spacing: -0.025em; margin-bottom: 10px; }
+  .ob-sub { font-size: 15.5px; line-height: 1.55; color: var(--secondary); margin-bottom: 32px; }
+  .ob-body { max-width: 500px; margin: 0 auto; }
+  .choose-grid { display: flex; flex-direction: column; gap: 14px; }
+  .choose-card { display: flex; align-items: center; gap: 18px; text-align: left; }
+  .choose-card:hover { border-color: var(--ink); }
+  .choose-card .type-title { margin-bottom: 4px; }
+  .choose-card p { font-size: 13.5px; color: var(--secondary); line-height: 1.5; }
+  .choose-card .chevron { margin-left: auto; color: var(--muted); font-size: 22px; flex: none; }
+</style>
+{% endblock %}
 
-                <!-- Existing AI -->
-                <div id="existing-ai" class="card border bg-card text-card-foreground rounded-lg shadow-lg"
-                    data-v0-t="card">
-                    <div class="flex items-start gap-4 p-6 items-center">
-                        <div class="w-20 h-20 rounded-full p-0.5 bg-gradient-to-r from-[#7367F0] to-[#9E95F5]">
-                            <img src="../static/images/profile_pictures/default_profile.png" alt="Avatar" class="w-full h-full object-cover rounded-full">
-                        </div>
-                        <div class="space-y-2">
-                            <h3 class="text-xl font-semibold">Select a Prebuilt Assistant</h3>
-                            <p class="text-md text-gray-500 dark:text-gray-400">Choose from 8+ prebuilt assistants. You can always create a new assistant later.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- New AI -->
-                <div id="new-ai" class="card border bg-card text-card-foreground rounded-lg shadow-lg mt-4"
-                    data-v0-t="card">
-                    <div class="flex items-start gap-4 p-6 items-center">
-                        <div class="w-20 h-20 rounded-full p-0.5 bg-gradient-to-r from-[#7367F0] to-[#9E95F5]">
-                            <img src="../static/images/profile_pictures/default_profile.png" alt="Avatar" class="w-full h-full object-cover rounded-full">
-                        </div>
-                        <div class="space-y-2">
-                            <h3 class="text-xl font-semibold">Create a Personalized Assistant</h3>
-                            <p class="text-md text-gray-500 dark:text-gray-400">Customize your assistant's personality, behavior, and preferences in just a few clicks.</p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+{% block content %}
+<div class="ob-wrap">
+  <div class="ob-head">
+    <div class="ob-brand">PocketAI</div>
+    <div class="ob-progress">
+      <span class="ob-bars"><span class="on"></span><span class="on"></span><span></span></span>
+      <span class="ob-step">2 of 3</span>
     </div>
+  </div>
+
+  <div class="ob-body">
+    <h1 class="ob-title">Who's showing up for you?</h1>
+    <p class="ob-sub">Create someone new, or start from one of our companions. Either way, they're yours from here.</p>
+
+    <div class="choose-grid">
+      <a class="card card-selectable choose-card" href="{{ url_for('ai.onboarding_ai_create') }}">
+        <div>
+          <div class="type-title">Create your own</div>
+          <p>Choose their name, how they talk to you, and their voice. A few clicks.</p>
+        </div>
+        <span class="chevron">&rsaquo;</span>
+      </a>
+      <a class="card card-selectable choose-card" href="{{ url_for('ai.onboarding_ai_existing') }}">
+        <div>
+          <div class="type-title">Start from a companion</div>
+          <p>Pick a ready-made personality and make them your own later.</p>
+        </div>
+        <span class="chevron">&rsaquo;</span>
+      </a>
+    </div>
+  </div>
 </div>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('existing-ai').addEventListener('click', function () {
-            window.location.href = '/onboarding/ai/existing';
-        });
-
-        document.getElementById('new-ai').addEventListener('click', function () {
-            window.location.href = '/onboarding/ai/create';
-        });
-    });
-</script>
-
 {% endblock %}

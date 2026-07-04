@@ -68,10 +68,13 @@ def _sched(user_id, ai_id, *, scheduled_for=None, trigger='commitment', status='
 
 def test_schedule_checkin_stores_utc_naive(db, consented):
     user, ai, _ = consented
-    # 09:00 at -07:00 == 16:00 UTC
-    row = proactive_service.schedule_checkin(user.id, ai.id, '2026-07-02T09:00:00-07:00', 'good luck')
+    # a future day so the "no scheduling in the past" guard never fires as the
+    # clock advances; 09:00 at -07:00 == 16:00 UTC (9 + 7 = 16, same calendar day)
+    day = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=2)).date()
+    row = proactive_service.schedule_checkin(
+        user.id, ai.id, f'{day.isoformat()}T09:00:00-07:00', 'good luck')
 
-    assert row.scheduled_for == datetime.datetime(2026, 7, 2, 16, 0, 0)
+    assert row.scheduled_for == datetime.datetime(day.year, day.month, day.day, 16, 0, 0)
     assert row.scheduled_for.tzinfo is None
     assert row.trigger == 'commitment'
 

@@ -1,132 +1,49 @@
-{% extends 'index.html' %}
+{% extends '_base.html' %}
 
-{% block title %}
-Sign in to PocketAI
-{% endblock %}
+{% block title %}Sign in — PocketAI{% endblock %}
 
-{% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/signup.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/google-button.css') }}">
-{% endblock %}
-
-{% block body %}
-<div class="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full">
-
-    <!-- Login header -->
-    <div class="text-center mb-4">
-        <h1 class="text-2xl font-semibold mb-2">Sign in</h1>
-        <p class="text-gray-600">to continue to PocketAI</p>
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-head">
+      <h1>Welcome back</h1>
+      <p>Sign in to continue to PocketAI</p>
     </div>
 
-    <!-- Login form -->
-    <div class="mb-6">
+    <a class="btn btn-secondary btn-block" href="{{ url_for('auth.google_login') }}">Continue with Google</a>
 
-        <!-- Google sign in -->
-        <div class="google-button-wrapper flex justify-center mb-4">
-            <button class="gsi-material-button" onclick="location.href='/login/google';">
-                <div class="gsi-material-button-state"></div>
-                <div class="gsi-material-button-content-wrapper">
-                  <div class="gsi-material-button-icon">
-                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display: block;">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                      <path fill="none" d="M0 0h48v48H0z"></path>
-                    </svg>
-                  </div>
-                  <span class="gsi-material-button-contents">Sign in with Google</span>
-                  <span style="display: none;">Sign in with Google</span>
-                </div>
-              </button>
+    <div class="auth-divider">or</div>
+
+    <form action="{{ url_for('auth.login') }}" method="post">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="pw-field">
+          <input type="password" id="password" name="password" placeholder="Password" autocomplete="current-password">
+          <button type="button" class="pw-toggle" data-pw-toggle="password">Show</button>
         </div>
-        <!-- <button class="hollow-button font-bold py-2 px-4 rounded w-full flex items-center justify-center mb-4"
-            onclick="location.href='/login/google';">
-            <svg style="width: 20px; height: auto; margin-right: 10px;" enable-background="new 0 0 128 128"
-                id="Social_Icons" version="1.1" viewBox="0 0 128 128" xml:space="preserve"
-                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                <g id="_x31__stroke">
-                    <g id="Google">
-                        <rect clip-rule="evenodd" fill="none" fill-rule="evenodd" height="128" width="128" />
-                        <path clip-rule="evenodd"
-                            d="M27.585,64c0-4.157,0.69-8.143,1.923-11.881L7.938,35.648    C3.734,44.183,1.366,53.801,1.366,64c0,10.191,2.366,19.802,6.563,28.332l21.558-16.503C28.266,72.108,27.585,68.137,27.585,64"
-                            fill="#FBBC05" fill-rule="evenodd" />
-                        <path clip-rule="evenodd"
-                            d="M65.457,26.182c9.031,0,17.188,3.2,23.597,8.436L107.698,16    C96.337,6.109,81.771,0,65.457,0C40.129,0,18.361,14.484,7.938,35.648l21.569,16.471C34.477,37.033,48.644,26.182,65.457,26.182"
-                            fill="#EA4335" fill-rule="evenodd" />
-                        <path clip-rule="evenodd"
-                            d="M65.457,101.818c-16.812,0-30.979-10.851-35.949-25.937    L7.938,92.349C18.361,113.516,40.129,128,65.457,128c15.632,0,30.557-5.551,41.758-15.951L86.741,96.221    C80.964,99.86,73.689,101.818,65.457,101.818"
-                            fill="#34A853" fill-rule="evenodd" />
-                        <path clip-rule="evenodd"
-                            d="M126.634,64c0-3.782-0.583-7.855-1.457-11.636H65.457v24.727    h34.376c-1.719,8.431-6.397,14.912-13.092,19.13l20.474,15.828C118.981,101.129,126.634,84.861,126.634,64"
-                            fill="#4285F4" fill-rule="evenodd" />
-                    </g>
-                </g>
-            </svg> Continue with Google
-        </button> -->
+      </div>
+      <button type="submit" class="btn btn-primary-clay btn-block">Sign in</button>
+    </form>
 
-        <!-- Divider -->
-        <div class="flex items-center justify-between mb-4">
-            <span class="bg-gray-300 h-px flex-grow t-2 relative top-2"></span>
-            <span class="flex-none uppercase text-xs text-gray-400 font-semibold mx-4"
-                style="position:relative; top:8px;">or</span>
-            <span class="bg-gray-300 h-px flex-grow t-2 relative top-2"></span>
-        </div>
-
-        <!-- Regular login form -->
-        <form action="/login" method="post" class="signup-form">
-            <input type="text" placeholder="Username" name="username" class="border rounded px-4 py-2 w-full mb-4">
-            <input type="password" placeholder="********" name="password" class="border rounded px-4 py-2 w-full mb-4">
-
-            <!-- Display flash messages -->
-            {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-            <div>
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                    <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                            class="mr-3 h-5 w-5 flex-shrink-0">
-                            {% if category == 'info' %}
-                            <path fill-rule="evenodd"
-                                d="M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z"
-                                clip-rule="evenodd" />
-                            {% elif category == 'success' %}
-                            <path fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                clip-rule="evenodd" />
-                            {% elif category == 'warning' %}
-                            <path fill-rule="evenodd"
-                                d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                                clip-rule="evenodd" />
-                            {% elif category == 'error' %}
-                            <path fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                                clip-rule="evenodd" />
-                            {% endif %}
-                        </svg>
-                        <div><b>{{ category|capitalize }}:</b> {{ message }}</div>
-                    </div>
-                    <button type="button" class="ml-auto" onclick="this.parentElement.style.display='none';">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
-                            <path
-                                d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                        </svg>
-                    </button>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            {% endwith %}
-
-            <button type="submit" class="default-button text-white font-bold py-2 px-4 rounded w-full">Login</button>
-        </form>
-    </div>
-
-    <!-- No account, sign up -->
-    <div class="text-center">
-        <p class="text-sm">No account? <a href="/signup" class="text-blue-600 hover:underline">Sign up</a></p>
-    </div>
-    
+    <div class="auth-alt">No account? <a href="{{ url_for('auth.signup') }}">Meet your companion</a></div>
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-pw-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.getAttribute('data-pw-toggle'));
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? 'Hide' : 'Show';
+    });
+  });
+</script>
 {% endblock %}

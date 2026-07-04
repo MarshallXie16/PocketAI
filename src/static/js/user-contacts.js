@@ -1,3 +1,6 @@
+// Contacts CRUD — same-origin fetch to /add-contact, /edit-contact/<id> (PUT),
+// /delete-contact/<id> (DELETE). No CSRF tokens wired yet.
+
 const contactsList = document.getElementById('contacts-list');
 const addContactBtn = document.getElementById('add-contact-btn');
 const contactModal = document.getElementById('contact-modal');
@@ -8,220 +11,143 @@ const cancelDeleteBtn = document.getElementById('cancel-delete');
 const confirmDeleteBtn = document.getElementById('confirm-delete');
 let currentContactId = null;
 
-
-
-// ADD CONTACTS
-
-// Add contact -> show modal
-addContactBtn.addEventListener('click', () => {
-    showModal('Add Contact');
-});
-
-// Show modal
-function showModal(title = 'Add Contact') {
-    document.getElementById('modal-title').textContent = title;
-    contactModal.classList.remove('hidden');
-    contactModal.classList.add('flex');
+// --- Modal helpers ----------------------------------------------------------
+function showModal(title) {
+  document.getElementById('modal-title').textContent = title || 'Add contact';
+  contactModal.classList.add('open');
+}
+function hideModal() {
+  contactModal.classList.remove('open');
+  contactForm.reset();
+  currentContactId = null;
+}
+function hideDelete() {
+  deleteConfirmation.classList.remove('open');
+  currentContactId = null;
 }
 
-// Cancel contact -> hide modal
+// --- Add --------------------------------------------------------------------
+addContactBtn.addEventListener('click', function () {
+  currentContactId = null;
+  contactForm.reset();
+  document.getElementById('contact-id').value = '';
+  showModal('Add contact');
+});
 cancelContactBtn.addEventListener('click', hideModal);
 
-// Hide modal
-function hideModal() {
-    contactModal.classList.add('hidden');
-    contactModal.classList.remove('flex');
-    contactForm.reset();
+// --- Submit (create or edit) ------------------------------------------------
+contactForm.addEventListener('submit', function (e) {
+  e.preventDefault();
+  const formData = new FormData(contactForm);
+  const url = currentContactId ? `/edit-contact/${currentContactId}` : '/add-contact';
+  const method = currentContactId ? 'PUT' : 'POST';
+
+  fetch(url, { method: method, body: formData })
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data.success) { showAlert(data.error || 'An error occurred', 'error'); return; }
+      if (currentContactId) {
+        const existing = contactsList.querySelector(`tr[data-contact-id="${currentContactId}"]`);
+        if (existing) existing.replaceWith(createContactRow(data.contact));
+        showAlert('Contact updated', 'success');
+      } else {
+        removeEmpty();
+        contactsList.appendChild(createContactRow(data.contact));
+        showAlert('Contact added', 'success');
+      }
+      hideModal();
+    })
+    .catch((err) => { console.error(err); showAlert('An error occurred', 'error'); });
+});
+
+// --- Edit / delete (delegated) ---------------------------------------------
+contactsList.addEventListener('click', function (e) {
+  const target = e.target;
+  const row = target.closest('tr');
+  if (!row) return;
+
+  if (target.classList.contains('edit-contact')) {
+    currentContactId = row.getAttribute('data-contact-id');
+    document.getElementById('contact-id').value = currentContactId;
+    document.getElementById('name').value = row.getAttribute('data-name') || '';
+    document.getElementById('email').value = row.getAttribute('data-email') || '';
+    document.getElementById('relationship').value = row.getAttribute('data-relationship') || '';
+    document.getElementById('phone').value = row.getAttribute('data-phone') || '';
+    document.getElementById('notes').value = row.getAttribute('data-notes') || '';
+    showModal('Edit contact');
+  } else if (target.classList.contains('delete-contact')) {
+    currentContactId = row.getAttribute('data-contact-id');
+    deleteConfirmation.classList.add('open');
+  }
+});
+
+// --- Delete confirm ---------------------------------------------------------
+confirmDeleteBtn.addEventListener('click', function () {
+  if (!currentContactId) return;
+  fetch(`/delete-contact/${currentContactId}`, { method: 'DELETE' })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        const row = contactsList.querySelector(`tr[data-contact-id="${currentContactId}"]`);
+        if (row) row.remove();
+        showAlert('Contact deleted', 'success');
+      } else {
+        showAlert(data.error || 'An error occurred', 'error');
+      }
+      hideDelete();
+    })
+    .catch((err) => { console.error(err); showAlert('An error occurred', 'error'); hideDelete(); });
+});
+cancelDeleteBtn.addEventListener('click', hideDelete);
+
+// Close modals on backdrop click
+window.addEventListener('click', function (e) {
+  if (e.target === contactModal) hideModal();
+  if (e.target === deleteConfirmation) hideDelete();
+});
+
+// --- Helpers ----------------------------------------------------------------
+function removeEmpty() {
+  const empty = document.getElementById('contacts-empty');
+  if (empty) empty.remove();
 }
 
+function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
-// submit contacts modal form
-contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(contactForm);
-
-    // if modal appears with selected contact, then it's an edit
-    const url = currentContactId ? `/edit-contact/${currentContactId}` : '/add-contact';
-    const method = currentContactId ? 'PUT' : 'POST';
-
-    // For PUT requests, we need to explicitly set the method as PUT
-    const fetchOptions = {
-        method: method,
-        body: formData,
-    };
-
-    // if (method === 'PUT') {
-    //     fetchOptions.headers = {
-    //         'X-HTTP-Method-Override': 'PUT'
-    //     };
-    // }
-
-    fetch(url, fetchOptions)
-        .then(response => response.json())
-        .then(data => {
-            // if request is succesful
-            if (data.success) {
-                hideModal();
-                console.log(currentContactId);
-                if (currentContactId) {
-                    console.log('Edit:', data.contact);
-                    // An edit; update the contact in the contact list
-                    const existingRow = contactsList.querySelector(`[data-contact-id="${currentContactId}"]`).closest('tr');
-                    console.log('existingRow:', existingRow);
-                    existingRow.replaceWith(createContactRow(data.contact));
-                    showAlert('Contact updated successfully', 'success');
-                    // unselect the current contact
-                    currentContactId = null;
-                } else {
-                    // Add new contact to the list
-                    contactsList.appendChild(createContactRow(data.contact));
-                    showAlert('Contact added successfully', 'success');
-                }
-            } else {
-                showAlert(data.error || 'An error occurred', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('An error occurred', 'error');
-        });
-});
-
-
-
-// EDIT CONTACTS
-
-// Edit and delete contact for each contact
-contactsList.addEventListener('click', (e) => {
-    // click on edit contact
-    if (e.target.classList.contains('edit-contact')) {
-        // fetch the current row
-        const contactRow = e.target.closest('tr');
-        const contactId = e.target.getAttribute('data-contact-id');
-        currentContactId = contactId;
-
-        console.log('Edit:', contactId);
-
-        // Populate the form with data from the selected row
-        const [name, email, relationship, phone] = contactRow.querySelectorAll('td');
-        document.getElementById('name').value = name.textContent.trim();
-        document.getElementById('email').value = email.textContent.trim();
-        document.getElementById('relationship').value = relationship.textContent.trim() !== 'N/A' ? relationship.textContent.trim() : '';
-        document.getElementById('phone').value = phone.textContent.trim() !== 'N/A' ? phone.textContent.trim() : '';
-
-        // Note: We don't have the 'notes' field in the table, so it will be left blank when editing
-        document.getElementById('notes').value = '';
-
-        showModal('Edit Contact');
-    // click on delete contact
-    } else if (e.target.classList.contains('delete-contact')) {
-        // set the modal to be deleted
-        currentContactId = e.target.getAttribute('data-contact-id');
-        // show delete-confirmation modal
-        deleteConfirmation.classList.remove('hidden');
-        deleteConfirmation.classList.add('flex');
-    }
-});
-
-// DELETE CONTACTS
-
-
-// Confirm delete
-confirmDeleteBtn.addEventListener('click', () => {
-    if (currentContactId) {
-        fetch(`/delete-contact/${currentContactId}`, { method: 'DELETE' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    deleteConfirmation.classList.add('hidden');
-                    deleteConfirmation.classList.remove('flex');
-                    const contactRow = contactsList.querySelector(`[data-contact-id="${currentContactId}"]`).closest('tr');
-                    contactRow.remove();
-                    currentContactId = null;
-                    showAlert('Contact deleted successfully', 'success');
-                } else {
-                    showAlert(data.error || 'An error occurred while deleting the contact', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showAlert('An error occurred while deleting the contact', 'error');
-            });
-    }
-});
-
-// Cancel delete
-cancelDeleteBtn.addEventListener('click', () => {
-    deleteConfirmation.classList.add('hidden');
-    deleteConfirmation.classList.remove('flex');
-    currentContactId = null;
-});
-
-
-// HELPER FUNCTIONS
-
-// Create contact row
 function createContactRow(contact) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap">${contact.name}</td>
-        <td class="px-6 py-4 whitespace-nowrap">${contact.email}</td>
-        <td class="px-6 py-4 whitespace-nowrap">${contact.relationship || 'N/A'}</td>
-        <td class="px-6 py-4 whitespace-nowrap">${contact.phone || 'N/A'}</td>
-        <td class="text-right px-6 whitespace-nowrap">
-            <button class="edit-contact py-2 px-3 font-medium text-primary-600 hover:text-primary-500 duration-150 hover:bg-gray-50 rounded-lg" data-contact-id="${contact.id}">
-                Edit
-            </button>
-            <button class="delete-contact py-2 leading-none px-3 font-medium text-red-600 hover:text-red-500 duration-150 hover:bg-gray-50 rounded-lg" data-contact-id="${contact.id}">
-                Delete
-            </button>
-        </td>
-    `;
-    return tr;
+  const tr = document.createElement('tr');
+  tr.setAttribute('data-contact-id', contact.id);
+  tr.setAttribute('data-name', contact.name || '');
+  tr.setAttribute('data-email', contact.email || '');
+  tr.setAttribute('data-relationship', contact.relationship || '');
+  tr.setAttribute('data-phone', contact.phone || '');
+  tr.setAttribute('data-notes', contact.notes || '');
+  tr.innerHTML = `
+    <td class="c-name">${esc(contact.name)}</td>
+    <td class="c-email">${esc(contact.email)}</td>
+    <td class="c-relationship">${esc(contact.relationship) || '—'}</td>
+    <td class="c-phone">${esc(contact.phone) || '—'}</td>
+    <td class="ops">
+      <button type="button" class="op-btn edit-contact" data-contact-id="${contact.id}">Edit</button>
+      <button type="button" class="op-btn delete-contact" data-contact-id="${contact.id}">Delete</button>
+    </td>`;
+  return tr;
 }
 
-// Close modals when clicking outside
-window.addEventListener('click', (e) => {
-    if (e.target === contactModal) {
-        hideModal();
-    }
-    if (e.target === deleteConfirmation) {
-        deleteConfirmation.classList.add('hidden');
-        deleteConfirmation.classList.remove('flex');
-        currentContactId = null;
-    }
-});
-
-// ALERTS
-function showAlert(message, type = 'success') {
-    const alertContainer = document.createElement('div');
-    alertContainer.className = 'fixed top-4 right-4 z-50';
-    alertContainer.innerHTML = `
-    <div class="flex rounded-md ${type === 'success' ? 'bg-green-50 text-green-500' : 'bg-primary-50 text-primary-500'} p-4 text-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="mr-3 h-5 w-5 flex-shrink-0">
-            <path fill-rule="evenodd" d="${type === 'success' ? 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z' : 'M19 10.5a8.5 8.5 0 11-17 0 8.5 8.5 0 0117 0zM8.25 9.75A.75.75 0 019 9h.253a1.75 1.75 0 011.709 2.13l-.46 2.066a.25.25 0 00.245.304H11a.75.75 0 010 1.5h-.253a1.75 1.75 0 01-1.709-2.13l.46-2.066a.25.25 0 00-.245-.304H9a.75.75 0 01-.75-.75zM10 7a1 1 0 100-2 1 1 0 000 2z'}" clip-rule="evenodd" />
-        </svg>
-        <div>
-            <h4 class="font-bold">${type === 'success' ? 'Success' : 'Info'}</h4>
-            <div class="mt-1">${message}</div>
-        </div>
-        <button class="ml-auto close-alert">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
-                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-            </svg>
-        </button>
-    </div>
-`;
-
-    document.body.appendChild(alertContainer);
-
-    const closeButton = alertContainer.querySelector('.close-alert');
-    closeButton.addEventListener('click', () => {
-        alertContainer.remove();
-    });
-
-    setTimeout(() => {
-        alertContainer.remove();
-    }, 5000);
+// --- Alerts (self-contained toast) -----------------------------------------
+function showAlert(message, type) {
+  const el = document.createElement('div');
+  el.textContent = message;
+  el.style.cssText =
+    'position:fixed;top:16px;right:16px;z-index:100;padding:12px 16px;border-radius:10px;' +
+    'font-size:13.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);' +
+    'box-shadow:0 6px 20px -8px rgba(50,40,20,0.35);' +
+    (type === 'error' ? 'color:var(--clay);border-left:3px solid var(--clay);'
+                      : 'color:var(--ink-soft);border-left:3px solid var(--clay);');
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
 }
-
