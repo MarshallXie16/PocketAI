@@ -1,0 +1,50 @@
+src/static/css/pocket.css
+  s_4c467e2481b592::t_6395b421baf97b 140-154
+src/templates/chat.html
+  s_4c467e2481b592::t_13984b14aea82c 369-382
+  s_4c467e2481b592::t_4eb53c808d1e3b 301-303
+  s_4c467e2481b592::t_1549dc275b14f2 348-350
+  s_4c467e2481b592::t_e4d082173b1e05 62-76
+src/templates/ai_settings.html
+  s_4c467e2481b592::t_1339ae1b062f3e 99
+src/static/js/chat.js
+  s_4c467e2481b592::t_82a1807b5a95f6 524-526,528-530,534-536
+  s_4c467e2481b592::t_f720df68488a33 19
+  s_4c467e2481b592::t_5a11d6f647ecdd 686
+  s_4c467e2481b592::t_b4455a69eedacb 577-579,583,588-589,591-598,600-603,608
+  s_4c467e2481b592::t_db69fb7be14d6e 397-399,401-473,478,481-484,495-499
+  s_4c467e2481b592::t_10e693ec5cf735 258-261,276-279,284-286
+  s_4c467e2481b592::t_d681dc30a4956a 558
+  s_4c467e2481b592::t_45a6a259cd60be 119-153,156-207
+  s_4c467e2481b592::t_a1a51ceac63462 500
+src/templates/onboarding-world.html
+  s_4c467e2481b592::t_84a942448ea5d4 142
+  s_4c467e2481b592::t_6f64d350755078 110-114,116,119
+  s_4c467e2481b592::t_5b9f9fa4901068 147
+src/templates/onboarding-ai-create.html
+  s_4c467e2481b592::t_b9d370e3ac7608 139
+src/tests/test_proactive_service.py
+  s_4c467e2481b592::t_5c9d2629cc9b25 71-75,77
+src/templates/settings.html
+  s_4c467e2481b592::t_8ff8ee1cbff72e 108-109
+  s_4c467e2481b592::t_80d7b66545b12d 151,154
+  s_4c467e2481b592::t_5b6ea8f662b2e5 98-107,110-112
+  s_4c467e2481b592::t_9c6fe582ae8e7f 201
+  s_4c467e2481b592::t_c2adf1d94a8987 96-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a33ae092efb2621324e60cc446838832d4b2fa99",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
