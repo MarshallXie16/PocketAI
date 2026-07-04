@@ -1,0 +1,19 @@
+.context/checkpoints/current.md
+  s_4c467e2481b592::t_1c4895523fde0e 19-22,24,27-29,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "648aa0fcf14cc091aadbc6570ed94196db20c81f",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
