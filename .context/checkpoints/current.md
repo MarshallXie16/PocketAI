@@ -16,13 +16,17 @@ Verified: `node --check` on all JS; 177 pytest green; GET /chat //settings //onb
 ## Last Decision
 Fixed the dead spend-limited agent's broken partial: `wireDraftCard()` init call referenced a renamed function (ReferenceError aborting the init IIFE) → `wireInitialDraftCard()`. Mic guard + consent toggles + aria + contrast were never applied by that agent; done this session in the main loop.
 
+## Resolved this session
+- Maintainer chose: **stay Flask/Jinja now, migrate to React eventually.** Phase 5 MERGED to master (`--no-ff`, tag `phase-5-frontend-complete`) + pushed. Tasks #9 (Phase 5) and #10 (React proposal) both COMPLETE.
+- React migration proposal written: `docs/designs/react-migration-proposal.md` (Tier 3, DRAFT — awaiting sign-off). Recommends **Option A: Vite + React islands served by Flask, cookie session retained**, strangler R0→R1(chat)→R2→R3. Grounded in a read-only frontend inventory (Explore agent). Backlog item FE-REACT.
+
 ## Blockers
-- **OPEN QUESTION FOR MAINTAINER (asked this session):** the design export (`~/Downloads/pocket-ai-design/PocketAI Explorations.dc.html`) is a Claude Design HTML canvas, NOT React source. This project is server-rendered Flask/Jinja with no build step; I translated the component sheet into Jinja macros + pocket.css. Maintainer asked about "converting to React components" — awaiting decision on whether to (a) stay Flask/Jinja [current, done] or (b) migrate to React [Tier 3+, out of current plan scope]. **Do not merge `phase-5-frontend` until resolved.**
+None active. React implementation is gated on maintainer sign-off of the proposal (do NOT start the build without it).
 
 ## What's Next
-1. Resolve the React vs Flask/Jinja question with the maintainer.
-2. If staying Jinja: merge `phase-5-frontend` → master via SSH remote, tag, update backlog (UI-1..4 now largely done), retro note.
-3. If React: write a Tier-3 proposal (build toolchain, API-ify routes, SPA rewrite) to backlog — large new sprint.
+1. If maintainer approves the React proposal: open a `react-frontend` sprint, R0 (Vite/React island toolchain + `vite_asset()` helper + one trivial island) as the first ticket.
+2. Independent of React: delete 5 orphaned JS files (§2.2 of the proposal — dead code); CSRF (PROD-2) still pending pre-launch.
+3. Still open from before: `launch-prep` sprint (LAUNCH-1..6), live-key verification (LAUNCH-6) gates deploy.
 
 ## Uncommitted State
-Clean. All frontend fixes committed on `phase-5-frontend` (HEAD). Merge to master pending the React decision.
+Clean. master pushed to `c6de7b4`. (CLAUDE.local.md updated locally — not tracked.)
