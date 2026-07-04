@@ -16,6 +16,7 @@
 
   const MODEL_ID = app.dataset.selectedModel;
   const SETTINGS_URL = app.dataset.settingsUrl || '#';
+  const AI_NAME = app.dataset.aiName || '';
 
   const messageArea = document.getElementById('message-area');
   const input = document.getElementById('composer-input');
@@ -115,33 +116,95 @@
     );
   }
 
-  function voiceBubbleHTML(url) {
-    const bars = [8, 16, 22, 12, 19, 9, 15, 24, 11, 18, 7, 14]
-      .map((h) => '<span style="height:' + h + 'px"></span>').join('');
-    return (
-      '<div class="voice-bubble" data-voice-url="' + esc(url) + '">' +
-        '<button type="button" class="voice-play" aria-label="Play voice message">' +
-          '<svg width="12" height="14" viewBox="0 0 12 14"><path d="M0 0 L12 7 L0 14 Z"/></svg>' +
-        '</button>' +
-        '<span class="waveform" aria-hidden="true">' + bars + '</span>' +
-        '<span class="voice-time">0:00</span>' +
-        '<audio src="' + esc(url) + '" preload="metadata"></audio>' +
-      '</div>'
-    );
+  // Voice bubble built with DOM APIs — the URL goes through setAttribute /
+  // .src, never string-interpolated into an HTML attribute context.
+  function voiceBubbleEl(url) {
+    const bubble = document.createElement('div');
+    bubble.className = 'voice-bubble';
+    bubble.setAttribute('data-voice-url', url);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'voice-play';
+    btn.setAttribute('aria-label', 'Play voice message');
+    btn.innerHTML = '<svg width="12" height="14" viewBox="0 0 12 14"><path d="M0 0 L12 7 L0 14 Z"/></svg>';
+    bubble.appendChild(btn);
+
+    const wave = document.createElement('span');
+    wave.className = 'waveform';
+    wave.setAttribute('aria-hidden', 'true');
+    [8, 16, 22, 12, 19, 9, 15, 24, 11, 18, 7, 14].forEach((h) => {
+      const s = document.createElement('span');
+      s.style.height = h + 'px';
+      wave.appendChild(s);
+    });
+    bubble.appendChild(wave);
+
+    const time = document.createElement('span');
+    time.className = 'voice-time';
+    time.textContent = '0:00';
+    bubble.appendChild(time);
+
+    const audio = document.createElement('audio');
+    audio.src = url;
+    audio.preload = 'metadata';
+    bubble.appendChild(audio);
+
+    return bubble;
   }
 
-  function assistantMessage(text, id, voiceUrl) {
-    const div = document.createElement('div');
-    div.innerHTML =
-      '<div class="msg msg-assistant" data-message-id="' + id + '">' +
-        '<div class="bubble-companion">' + esc(text) + '</div>' +
-        (voiceUrl ? voiceBubbleHTML(voiceUrl) : '') +
-        '<div class="msg-actions">' +
-          '<button type="button" class="msg-action" data-action="regenerate">Regenerate</button>' +
-          '<button type="button" class="msg-action" data-action="copy">Copy</button>' +
-        '</div>' +
-      '</div>';
-    return div.firstChild;
+  // Assistant message built entirely with DOM APIs. opts: {initiated, timestamp}.
+  // Mirrors the initial server render (reached-out header + initiated-row when
+  // the message was companion-initiated).
+  function assistantMessage(text, id, voiceUrl, opts) {
+    opts = opts || {};
+    const node = document.createElement('div');
+    node.className = 'msg msg-assistant';
+    if (id != null) node.setAttribute('data-message-id', id);
+    if (opts.timestamp) node.setAttribute('data-timestamp', opts.timestamp);
+
+    if (opts.initiated) {
+      const reached = document.createElement('div');
+      reached.className = 'reached-out';
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      reached.appendChild(dot);
+      const label = document.createElement('span');
+      label.textContent = AI_NAME + ' reached out';
+      reached.appendChild(label);
+      const meta = document.createElement('span');
+      meta.className = 'reached-out-meta reached-out-time';
+      if (opts.timestamp) meta.setAttribute('data-timestamp', opts.timestamp);
+      reached.appendChild(meta);
+      node.appendChild(reached);
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble-companion';
+    bubble.textContent = text == null ? '' : String(text);
+    node.appendChild(bubble);
+
+    if (voiceUrl) node.appendChild(voiceBubbleEl(voiceUrl));
+
+    if (opts.initiated) {
+      const row = document.createElement('div');
+      row.className = 'initiated-row';
+      const link = document.createElement('a');
+      link.className = 'quiet-link';
+      link.href = SETTINGS_URL;
+      link.innerHTML = 'less often &middot; pause';
+      row.appendChild(link);
+      node.appendChild(row);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+    actions.innerHTML =
+      '<button type="button" class="msg-action" data-action="regenerate">Regenerate</button>' +
+      '<button type="button" class="msg-action" data-action="copy">Copy</button>';
+    node.appendChild(actions);
+
+    return node;
   }
 
   // ---- voice playback (real <audio>) -------------------------------------
@@ -192,7 +255,10 @@
     if (!message || sending) return;
     sending = true;
 
-    messageArea.insertAdjacentHTML('beforeend', userBubbleHTML(message));
+    const userWrap = document.createElement('div');
+    userWrap.innerHTML = userBubbleHTML(message);
+    const userNode = userWrap.firstChild;
+    messageArea.appendChild(userNode);
     messageArea.insertAdjacentHTML('beforeend', typingHTML());
     if (text == null) { input.value = ''; autoGrow(input); }
     hideVoiceHint();
@@ -207,10 +273,17 @@
     })
       .then((res) => res.ok ? res.json() : res.json().then((e) => Promise.reject(e)))
       .then((data) => {
+        // stamp the optimistic user bubble with its real id so edit/count work
+        if (userNode && data.user_message_id != null) {
+          userNode.setAttribute('data-message-id', data.user_message_id);
+        }
         const node = assistantMessage(data.response, data.ai_message_id, data.voice_url);
         if (typingEl) typingEl.replaceWith(node); else messageArea.appendChild(node);
         const vb = node.querySelector('.voice-bubble');
         if (vb) { initVoiceBubble(vb); const a = vb.querySelector('audio'); if (a) a.play().catch(() => {}); }
+        // reconcile the pending-draft card with the server's authoritative state
+        if (data.pending_action) renderDraftCard(data.pending_action);
+        else removeDraftCard();
         scrollToBottom();
       })
       .catch((err) => {
@@ -321,20 +394,94 @@
   }
 
   // ---- draft card (preserves the server confirm gate) --------------------
+  // The card reflects the server's pending_action. Buttons send plain chat
+  // messages so the server-side confirm gate stays intact; 'dismiss' also
+  // clears the server-side draft first so a stale action can't later fire.
 
-  function wireDraftCard() {
-    const card = document.querySelector('#pending-draft [data-draft-card]');
-    if (!card) return;
-    const wrapper = document.getElementById('pending-draft');
+  function removeDraftCard() {
+    const w = document.getElementById('pending-draft');
+    if (w) w.remove();
+  }
+
+  // Map a pending_action {tool, args, message_id} to the {to, subject, body}
+  // the draft_card macro renders — mirrors the Jinja mapping in chat.html.
+  function draftFromAction(pa) {
+    const a = (pa && pa.args) || {};
+    if (pa && pa.tool === 'email_send') {
+      return { to: a.recipient_email || a.recipient_name || '', subject: a.subject || '', body: a.body || '' };
+    }
+    const range = (a.start || '') + (a.end ? ' — ' + a.end : '');
+    return { to: a.title || '', subject: range, body: a.description || 'New calendar event' };
+  }
+
+  function renderDraftCard(pa) {
+    removeDraftCard();
+    const draft = draftFromAction(pa);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg msg-assistant';
+    wrapper.id = 'pending-draft';
+
+    const card = document.createElement('div');
+    card.className = 'draft-card';
+    card.setAttribute('data-draft-card', '');
+
+    const head = document.createElement('div');
+    head.className = 'draft-card-head';
+    const toMeta = document.createElement('div');
+    toMeta.className = 'draft-card-meta';
+    toMeta.appendChild(document.createTextNode('To: '));
+    const toStrong = document.createElement('strong');
+    toStrong.textContent = draft.to;
+    toMeta.appendChild(toStrong);
+    head.appendChild(toMeta);
+    if (draft.subject) {
+      const subMeta = document.createElement('div');
+      subMeta.className = 'draft-card-meta';
+      subMeta.appendChild(document.createTextNode('Subject: '));
+      const subStrong = document.createElement('strong');
+      subStrong.textContent = draft.subject;
+      subMeta.appendChild(subStrong);
+      head.appendChild(subMeta);
+    }
+    card.appendChild(head);
+
+    const body = document.createElement('p');
+    body.className = 'draft-card-body';
+    body.textContent = draft.body;
+    card.appendChild(body);
+
+    const actions = document.createElement('div');
+    actions.className = 'draft-card-actions';
+    actions.innerHTML =
+      '<button type="button" class="btn btn-primary-ink" data-draft-action="send">Send it</button>' +
+      '<button type="button" class="btn btn-tertiary" data-draft-action="edit">Edit first</button>' +
+      '<button type="button" class="btn btn-quiet" data-draft-action="dismiss">Not now</button>';
+    card.appendChild(actions);
+    wrapper.appendChild(card);
+
+    const caption = document.createElement('div');
+    caption.className = 'draft-caption';
+    caption.textContent = 'Nothing sends without your okay.';
+    wrapper.appendChild(caption);
+
+    messageArea.appendChild(wrapper);
+    wireDraftActions(card);
+    scrollToBottom();
+  }
+
+  function wireDraftActions(card) {
     card.querySelectorAll('[data-draft-action]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const action = btn.dataset.draftAction;
         if (action === 'send') {
-          if (wrapper) wrapper.remove();
+          // card is cleared by the next response's pending_action (null)
           sendMessage('Yes — send it.');
         } else if (action === 'dismiss') {
-          if (wrapper) wrapper.remove();
-          sendMessage("Not now — don't send it.");
+          fetch('/dismiss-draft', { method: 'POST' })
+            .then((res) => res.ok ? res.json() : Promise.reject(res))
+            .then(() => { removeDraftCard(); sendMessage("Not now — don't send it."); })
+            .catch(() => showNotice(ERROR_TEXT.DEFAULT));
         } else if (action === 'edit') {
           input.value = 'Change the draft: ';
           autoGrow(input);
@@ -343,6 +490,12 @@
         }
       });
     });
+  }
+
+  // Wire the server-rendered card present on initial page load, if any.
+  function wireInitialDraftCard() {
+    const card = document.querySelector('#pending-draft [data-draft-card]');
+    if (card) wireDraftActions(card);
   }
 
   // ---- load more (infinite scroll up) ------------------------------------
@@ -367,22 +520,20 @@
         if (!data.length) { noMore = true; return; }
         const frag = document.createDocumentFragment();
         data.forEach((msg) => {
-          const wrap = document.createElement('div');
           if (msg.sender === 'assistant') {
-            wrap.innerHTML =
-              '<div class="msg msg-assistant">' +
-                '<div class="bubble-companion">' + esc(msg.message) + '</div>' +
-                '<div class="msg-actions">' +
-                  '<button type="button" class="msg-action" data-action="regenerate">Regenerate</button>' +
-                  '<button type="button" class="msg-action" data-action="copy">Copy</button>' +
-                '</div>' +
-              '</div>';
+            frag.appendChild(assistantMessage(msg.message, msg.id, msg.voice_url, {
+              initiated: msg.initiated, timestamp: msg.timestamp,
+            }));
           } else {
-            wrap.innerHTML = userBubbleHTML(msg.message);
+            const wrap = document.createElement('div');
+            wrap.innerHTML = userBubbleHTML(msg.message, msg.id);
+            frag.appendChild(wrap.firstChild);
           }
-          frag.appendChild(wrap.firstChild);
         });
         messageArea.insertBefore(frag, firstMsg);
+        // hydrate the newly prepended rows the same way the initial render does
+        relabelReachedOut();
+        initAllVoiceBubbles();
         messageArea.scrollTop = messageArea.scrollHeight - prevHeight;
       })
       .catch(() => {})
@@ -404,6 +555,7 @@
     let stream = null;
     let timerInt = null;
     let seconds = 0;
+    let starting = false;  // getUserMedia is pending — guards against double-start
 
     const startTimer = () => {
       seconds = 0;
@@ -422,24 +574,38 @@
     };
 
     async function start() {
+      // bail if a recorder is already live or one is being spun up
+      if (recorder || starting) return;
+      starting = true;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (e) {
+        starting = false;
         showNotice('Microphone access was blocked. Enable it to record.');
         return;
       }
       chunks = [];
+      // permission is granted and the stream is live; from here any failure
+      // must release the tracks so the mic indicator doesn't stay on
       try {
-        recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        try {
+          recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        } catch (e) {
+          recorder = new MediaRecorder(stream);
+        }
+        recorder.addEventListener('dataavailable', (e) => { if (e.data.size) chunks.push(e.data); });
+        recorder.addEventListener('stop', onStop);
+        recorder.start();
       } catch (e) {
-        recorder = new MediaRecorder(stream);
+        cleanup();
+        starting = false;
+        showNotice('Could not start recording. Try again.');
+        return;
       }
-      recorder.addEventListener('dataavailable', (e) => { if (e.data.size) chunks.push(e.data); });
-      recorder.addEventListener('stop', onStop);
-      recorder.start();
       micBtn.classList.add('is-recording');
       micBtn.setAttribute('aria-label', 'Stop recording');
       startTimer();
+      starting = false;
     }
 
     function onStop() {
@@ -517,7 +683,7 @@
   relabelDividers();
   relabelReachedOut();
   initAllVoiceBubbles();
-  wireDraftCard();
+  wireInitialDraftCard();
   setupMic();
   autoGrow(input);
   scrollToBottom();

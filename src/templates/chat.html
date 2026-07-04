@@ -59,6 +59,21 @@
     text-align: center;
   }
   .chat-pause:hover { color: var(--ink); text-decoration: none; border-color: var(--secondary); }
+  .chat-quiet-status { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* In-shell flash toast (chat is a 100dvh shell; the base flash-stack is
+     suppressed so it can't push the shell below the fold) */
+  .chat-flash-stack { display: flex; flex-direction: column; gap: 8px; padding: 10px 32px 0; }
+  .chat-flash {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px; font-weight: 500; color: var(--ink-soft);
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--secondary);
+    border-radius: 8px; padding: 8px 12px;
+  }
+  .chat-flash-error { border-left-color: var(--clay); color: var(--clay); }
+  .chat-flash-success { border-left-color: var(--clay); }
 
   /* AI switcher dropdown */
   .chat-switcher { position: relative; }
@@ -283,6 +298,9 @@
    header/footer that _base renders on content pages. #}
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
+{# Suppress the base flash-stack — it renders before <main> and would push the
+   100dvh chat shell below the fold. Flashes are shown as an in-shell toast. #}
+{% block flash %}{% endblock %}
 
 {% block content %}
 <div class="chat-app"
@@ -327,6 +345,9 @@
     </nav>
 
     <div class="chat-sidebar-foot">
+      {% if current_user.settings and current_user.settings.quiet_hours_start and current_user.settings.quiet_hours_end %}
+      <div class="chat-quiet-status">Quiet hours on<br>{{ current_user.settings.quiet_hours_start.strftime('%I:%M %p').lstrip('0') }} &ndash; {{ current_user.settings.quiet_hours_end.strftime('%I:%M %p').lstrip('0') }}</div>
+      {% endif %}
       <a class="chat-pause" href="{{ url_for('settings.settings_page') }}">Pause everything</a>
     </div>
   </aside>
@@ -344,6 +365,20 @@
       </span>
       <a class="chat-mobile-settings" href="{{ url_for('settings.settings_page') }}">Settings</a>
     </div>
+
+    {% with flashes = get_flashed_messages(with_categories=True) %}
+      {% if flashes %}
+      <div class="chat-flash-stack">
+        {% for category, message in flashes %}
+        <div class="chat-flash chat-flash-{{ category }}" role="status">
+          <span>{{ message }}</span>
+          <button type="button" class="flash-dismiss" aria-label="Dismiss"
+                  onclick="this.parentElement.remove();">&times;</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
 
     <div class="message-area" id="message-area">
       {% set ns = namespace(last_date=None) %}

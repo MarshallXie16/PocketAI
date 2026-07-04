@@ -95,6 +95,23 @@
 
         <div class="s-card pause" style="margin-bottom: 22px;">
           <div style="flex: 1;">
+            <div class="head">Let {{ ai_name }} reach out</div>
+            <div class="sub">Proactive check-ins and nudges — only when they matter. Turn this off and {{ ai_name }} only ever replies to you.</div>
+          </div>
+          {# checkbox (value=on) MUST precede the hidden fallback: form_get reads
+             the first value, so a checked box wins and an unchecked one falls
+             through to 'off' — the only way an unchecked box posts anything. #}
+          <label class="toggle toggle-lg">
+            <input type="checkbox" name="proactive_enabled" value="on" id="proactive-toggle"
+                   {% if user_settings and user_settings.proactive_consent_at %}checked{% endif %}>
+            <span class="toggle-track"></span>
+            {# after the track so the checkbox stays adjacent to it for the CSS #}
+            <input type="hidden" name="proactive_enabled" value="off">
+          </label>
+        </div>
+
+        <div class="s-card pause" style="margin-bottom: 22px;">
+          <div style="flex: 1;">
             <div class="head">Pause everything</div>
             <div class="sub">{{ ai_name }} goes quiet and stops all actions until you come back. Nothing is deleted, nothing nags you to return.</div>
           </div>
@@ -131,10 +148,10 @@
           <div class="s-card">
             <div class="head" style="margin-bottom: 12px;">Quiet hours</div>
             <div class="quiet-inputs">
-              <input type="time" name="quiet_start"
+              <input type="time" name="quiet_start" aria-label="Quiet hours start"
                      value="{{ user_settings.quiet_hours_start.strftime('%H:%M') if user_settings and user_settings.quiet_hours_start else '23:00' }}">
               <span class="text-muted">to</span>
-              <input type="time" name="quiet_end"
+              <input type="time" name="quiet_end" aria-label="Quiet hours end"
                      value="{{ user_settings.quiet_hours_end.strftime('%H:%M') if user_settings and user_settings.quiet_hours_end else '07:30' }}">
             </div>
             <div class="quiet-bar" aria-hidden="true">
@@ -181,7 +198,7 @@
           {% endif %}
         </div>
         <div class="mem-add">
-          <input type="text" id="mem-add-input" placeholder="Add something {{ ai_name }} should know…" maxlength="300">
+          <input type="text" id="mem-add-input" aria-label="Add something {{ ai_name }} should know" placeholder="Add something {{ ai_name }} should know…" maxlength="300">
           <button type="button" class="btn btn-tertiary" id="mem-add-btn">Add</button>
         </div>
       </div>

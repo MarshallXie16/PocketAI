@@ -137,6 +137,21 @@ h1, h2, h3, h4, p { margin: 0; }
 .text-muted { color: var(--muted); }
 .text-clay { color: var(--clay); }
 
+/* "Beta" pill — clay on white (4.9:1, AA) so it stays legible even when the
+   surrounding block sits directly on the bone page (clay-on-bone is 4.2:1). */
+.beta-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--clay);
+  background: var(--white);
+  border: 1px solid var(--line-subtle);
+  border-radius: 6px;
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
 /* --- Buttons ------------------------------------------------------------- */
 .btn {
   display: inline-flex;

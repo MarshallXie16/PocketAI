@@ -107,10 +107,16 @@
               <div class="t">{{ ai_name }} can text first</div>
               <div class="s">Only when it matters. Every message has "less often" built in.</div>
             </div>
+            {# checkbox (value=on) precedes the hidden fallback: form_get reads
+               the first posted value, so a checked box wins and an unchecked
+               one falls through to 'off' (an unchecked box posts nothing). The
+               hidden sits after the track so the checkbox stays adjacent to it
+               for the toggle CSS. #}
             <label class="toggle">
-              <input type="checkbox" name="proactive_enabled"
+              <input type="checkbox" name="proactive_enabled" value="on"
                      {% if user_settings and user_settings.proactive_consent_at %}checked{% endif %}>
               <span class="toggle-track"></span>
+              <input type="hidden" name="proactive_enabled" value="off">
             </label>
           </div>
         </div>
@@ -133,12 +139,12 @@
             <div class="quiet-row" style="padding-top: 14px;">
               <div class="t" style="font-weight:700;font-size:15px;flex:1;">Quiet hours</div>
               <div class="field">
-                <input type="time" name="quiet_start"
+                <input type="time" name="quiet_start" aria-label="Quiet hours start"
                        value="{{ user_settings.quiet_hours_start.strftime('%H:%M') if user_settings and user_settings.quiet_hours_start else '23:00' }}">
               </div>
               <span class="text-muted">to</span>
               <div class="field">
-                <input type="time" name="quiet_end"
+                <input type="time" name="quiet_end" aria-label="Quiet hours end"
                        value="{{ user_settings.quiet_hours_end.strftime('%H:%M') if user_settings and user_settings.quiet_hours_end else '07:30' }}">
               </div>
             </div>
