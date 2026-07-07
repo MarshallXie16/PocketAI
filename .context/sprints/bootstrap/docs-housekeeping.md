@@ -19,7 +19,10 @@
 - No route names in architecture.md that don't exist in a blueprint.
 
 ## Status
-IN PROGRESS — branch created, orphans verified (0 refs). Docstring subagent launched. Next: architecture.md + frontend.md.
+COMPLETE (2026-07-06). Merged to master (`--no-ff`, b118338) + pushed; branch deleted. 177 tests green, ruff clean.
+All 6 items done: architecture.md refreshed (route table rebuilt from actual decorators, settings blueprint added); frontend.md written; 10 module docstrings (delegated to opus subagent, verified); backlog consolidated 163→~90 lines (full audit archived to `.context/archive/backlog-audit-2026-07-01.md`); 5 orphan JS deleted (0 refs); INDEX.md updated.
 
 ## Decisions
-- (none yet)
+- Archived the full pre-overhaul audit rather than deleting it (historical value: what was fixed + where). Backlog now carries only genuinely-open work.
+- Kept SEC-1 (credential rotation) as a maintainer-action note under pre-launch — history was scrubbed but rotation/revocation is a separate manual step.
+- Merged straight to master (Tier-1, no behavior change, tests green) without a full dual review — docs/dead-code only; route tables + tokens were built from actual source, not memory.

@@ -23,10 +23,13 @@ Fixed the dead spend-limited agent's broken partial: `wireDraftCard()` init call
 ## Blockers
 None active. React implementation is gated on maintainer sign-off of the proposal (do NOT start the build without it).
 
-## What's Next
-1. If maintainer approves the React proposal: open a `react-frontend` sprint, R0 (Vite/React island toolchain + `vite_asset()` helper + one trivial island) as the first ticket.
-2. Independent of React: delete 5 orphaned JS files (§2.2 of the proposal — dead code); CSRF (PROD-2) still pending pre-launch.
-3. Still open from before: `launch-prep` sprint (LAUNCH-1..6), live-key verification (LAUNCH-6) gates deploy.
+## Docs-housekeeping pass — DONE 2026-07-06 (merged to master b118338)
+Maintainer chose a docs/housekeeping pass over launch-prep. All 6 items shipped: architecture.md refreshed for Phase 5 (route table rebuilt from actual decorators, settings blueprint added); new `docs/frontend.md` (client architecture + fetch contracts + key patterns); module docstrings on the 10 bare modules; backlog consolidated (full audit archived to `.context/archive/backlog-audit-2026-07-01.md`); 5 orphan JS files removed; INDEX.md updated. 177 tests green, ruff clean. Notepad: `.context/sprints/bootstrap/docs-housekeeping.md`.
+
+## What's Next (nothing in progress — awaiting maintainer direction)
+1. **Agent-doable now (no secrets):** LAUNCH-1 (Flask-WTF CSRF across forms + 3 fetch modules, exempt webhook) and LAUNCH-5 (single clean Alembic baseline). Either is a good next autonomous track.
+2. **React (gated):** if the proposal (`docs/designs/react-migration-proposal.md`) is approved, open a `react-frontend` sprint — R0 (Vite/React island toolchain + `vite_asset()` helper + one trivial island) first.
+3. **Maintainer-gated:** LAUNCH-3 (deploy target), LAUNCH-4 (IP roster/uncensored), LAUNCH-6 (live-key verification — needs `.env`, gates deploy), SEC-1 (credential rotation — manual).
 
 ## Uncommitted State
-Clean. master pushed to `c6de7b4`. (CLAUDE.local.md updated locally — not tracked.)
+Clean. master pushed to `b118338`. (CLAUDE.local.md updated locally — not tracked.)
