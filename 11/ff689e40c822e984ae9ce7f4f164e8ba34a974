@@ -1,0 +1,52 @@
+src/models/users.py
+  s_4c467e2481b592::t_6b4ac7771757ab 1-8
+docs/INDEX.md
+  s_4c467e2481b592::t_4f1c52219d4455 3,11-12,21
+.context/sprints/bootstrap/docs-housekeeping.md
+  s_4c467e2481b592::t_5d6f21b70554fa 1-25
+src/models/message.py
+  s_4c467e2481b592::t_fdf0f29b698677 1-6
+src/services/integrations/calendar_service.py
+  s_4c467e2481b592::t_0d20bbf462e98f 1-7
+src/models/billing.py
+  s_4c467e2481b592::t_231f79404bfff2 1-6
+src/models/relationship.py
+  s_4c467e2481b592::t_0cf74dfcad2949 1-7
+.context/backlog.md
+  s_4c467e2481b592::t_c2ba037989fc60 3-4,6,10-16,20-26,28,32-33,37-41,46
+.context/archive/backlog-audit-2026-07-01.md
+  s_4c467e2481b592::t_05ab7e828b95e1 1-163
+src/models/google_user.py
+  s_4c467e2481b592::t_1b4da896a42625 1-7
+src/utils/utils.py
+  s_4c467e2481b592::t_860f9ffade6b51 1-7
+src/models/memory_entry.py
+  s_4c467e2481b592::t_45f7f52309364c 1-6
+docs/architecture.md
+  s_4c467e2481b592::t_bc4ee16045b1a3 158,162-170,173
+  s_4c467e2481b592::t_d931fd2557fe99 250
+  s_4c467e2481b592::t_16efef7cd61dda 3
+  s_4c467e2481b592::t_05f08f083a5318 174
+src/models/conversation_state.py
+  s_4c467e2481b592::t_14f8f3a0867ebb 1-7
+docs/frontend.md
+  s_4c467e2481b592::t_62ec5d15264a4c 1-123
+src/services/integrations/email_service.py
+  s_4c467e2481b592::t_7bf91fd2481e65 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "11ff689e40c822e984ae9ce7f4f164e8ba34a974",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
