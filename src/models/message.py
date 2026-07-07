@@ -1,3 +1,9 @@
+"""Chat message model.
+
+One row per turn in a (user, ai) conversation; `sender` distinguishes user
+from companion, and `initiated=True` marks a proactive, companion-sent message.
+"""
+
 import datetime
 
 from src.extensions import db

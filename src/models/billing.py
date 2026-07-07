@@ -1,3 +1,9 @@
+"""Billing models.
+
+Defines StripeEvent, a record of processed Stripe webhook event ids used to make
+credit fulfillment idempotent across Stripe's delivery retries.
+"""
+
 import datetime
 
 from src.extensions import db

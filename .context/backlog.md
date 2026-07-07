@@ -1,163 +1,46 @@
 # Backlog
 
-**Last updated:** 2026-07-01 (post Phase-1)
-**Size cap:** ~200 lines
+**Last updated:** 2026-07-06 (post Phase-5 + docs-housekeeping)
+**Size cap:** ~120 lines. Full pre-overhaul audit (every original SEC/BUG/PROD/AI/DEBT/STRAT item with line refs) is archived at `.context/archive/backlog-audit-2026-07-01.md`.
 
-Prioritized, actionable work for the PocketAI overhaul. Roadmap: `docs/designs/overhaul-roadmap.md`. Severity: **S1 critical → S4 minor**.
-
-## ✅ Absorbed by Phase 0–1 (2026-07-01, branch `phase-1-stabilize`)
-SEC-2 (purge + history rewrite), SEC-3 (Fernet-encrypted tokens), BUG-1..12 (all fixed; BUG-9 fixed by removing the dead cache), PROD-1 (env-driven config, fail-closed prod), DEBT-1 (deps pinned/pruned). Also fixed beyond the audit: `strip_customer_id`/`token_expires_at` column typos, template-clone prompt leak (`AIModel.is_template` gate), Stripe webhook secret in history (scrubbed), import-time client crashes (lazy clients), stale `Message.timestamp` default.
-
-## 🚀 Pre-launch requirements (deferred from Phase 1 by maintainer priority — MUST land before public deploy)
-- **LAUNCH-1 — CSRF protection**: Flask-WTF CSRFProtect + `{{ csrf_token() }}` in forms + `X-CSRFToken` header in the ~8 fetch() sites (`chat.js`, `chat-improved.js`, `user-contacts.js`, `profile.html`); exempt the Stripe webhook. Must land atomically with template updates.
-- **LAUNCH-2 — Cookie/transport hardening**: Secure/HttpOnly/SameSite cookies (already in ProductionConfig), ProxyFix, HTTPS enforcement + security headers (Talisman), rate limiting (Flask-Limiter) on login/signup/AI calls/webhook.
-- **LAUNCH-3 — Deploy target**: Dockerfile (python-slim + gunicorn) → managed Postgres + S3; delete Heroku (`Procfile`, `.slugignore`, `runtime.txt`) and EB (`.ebextensions/`, `.ebignore`) artifacts once chosen. `/health` endpoint + uptime monitoring (maintainer: no Sentry).
-- **LAUNCH-4 — IP character roster + "uncensored" tier** (STRAT-2): replace copyrighted roster with original characters; drop "Uncensored Models" pricing bullet (`pricing.html:176`); restore Gemini safety settings (`ai_models.py` BLOCK_NONE). Roster must be re-seeded as `is_template=True` rows regardless (old template rows were discarded with the DB).
-- **LAUNCH-5 — Alembic baseline**: all Phase-4 tables have landed — generate the single clean baseline now (delete 2 stale revisions in migrations/versions/, `flask db revision --autogenerate -m baseline` against an empty DB, review SQLite→Postgres types).
-- **LAUNCH-6 — Live-key verification**: whole pipeline is tested with mocks only. With a populated .env: one real chat turn per provider, calendar/email tool round-trip incl. draft→confirm, proactive tick end-to-end, TTS (Gemini + fallback) + /transcribe. Also verify `gpt-5-mini`/`gemini-3-pro-preview` pricing in MODEL_REGISTRY (flagged unverified).
-
-## ✅ Frontend overhaul — DONE 2026-07-03 (Phase 5, merged to master, tag `phase-5-frontend-complete`)
-Server-rendered Flask/Jinja rebuild on the new design system (`pocket.css` + `_base`/`_components` macros). Dual-reviewed (codex+opus), all findings fixed, 177 tests green. All four UI items landed:
-- **UI-1 ✅** — mic → MediaRecorder → POST /transcribe → textarea (double-start guarded).
-- **UI-2 ✅** — Message.initiated "reached out" tag + one-tap "less often / pause".
-- **UI-3 ✅** — onboarding "let them into your world" consent step (Google connect + `proactive_consent_at` + daily check-in + quiet hours + calendar_experiment). Consent is now settable (hidden+checkbox pattern), so proactive features are no longer dormant on the UI side.
-- **UI-4 ✅** — settings "what {ai} remembers about you" (MemoryEntry + KeyFact, editable/deletable/forget-all) + "day N together" header line.
-
-## 🎯 Frontend framework (maintainer-directed, 2026-07-03)
-- **FE-REACT** — migrate the Flask/Jinja frontend to React (eventual, not now). Proposal in progress: `docs/designs/react-migration-proposal.md` (Tier 3 — investigation + proposal only, no implementation until signed off). Stay Jinja meanwhile.
-
-## 🔧 Tech debt (post-overhaul)
-- **DEBT-5** — proactive tick: real job queue + per-user fairness (currently bounded batch of 10/tick, FIFO by scheduled_for); DST-ambiguous daily-checkin times (zoneinfo fold).
-- **DEBT-6** — integrations cleanup: email/calendar services still carry legacy enum-date methods (unused by the tool layer) + ruff per-file-ignores; rewrite when Phase-4b features stabilize.
-- **DEBT-7** — pgvector ranking swap once managed Postgres exists (MemoryStore interface ready; in-Python cosine fine at current scale).
+Roadmap: `docs/designs/overhaul-roadmap.md`. Severity: **S1 critical → S4 minor**.
 
 ---
 
-## 🔴 Security (Phase 0 — do first; several are Tier 4 / human action)
-
-### SEC-1 — Rotate exposed credentials committed to git
-- **What:** `src/instance/users.db` (tracked) holds 2 real users + **2 Google OAuth rows with plaintext access & refresh tokens**. `text_to_speech.py:29` (Azure key) and `:108` (ElevenLabs key) are hardcoded, even though the file is commented out. All are in git history.
-- **Action:** Revoke/rotate the Google tokens and both API keys now. Audit for any other committed keys.
-- **Severity:** S1. **Blocks:** any deploy, SEC-2.
-
-### SEC-2 — Purge committed databases from tree + history
-- **Where:** `src/instance/users.db`, `src/db/chroma.sqlite3`, Chroma HNSW `*.bin`.
-- **What:** Decide keep-vs-discard the data (2 users / 125 messages / 17 embeddings). Then `git rm --cached` + scrub history (`git filter-repo`/BFG). `.gitignore` already lists these but they were committed earlier, so still tracked.
-- **Severity:** S1. **Depends on:** SEC-1.
-
-### SEC-3 — Encrypt OAuth tokens at rest
-- **Where:** `src/models/google_user.py:8-9` (plain `String`).
-- **What:** Encrypt token columns (Fernet/KMS) so a future DB leak doesn't expose live Google sessions.
-- **Severity:** S2.
+## ✅ Done (Phases 0–5, merged to master)
+- **Phase 0–1** — secrets purged from history + `.gitignore` hardened (SEC-2); Fernet-encrypted OAuth tokens (SEC-3); all 12 audited bugs fixed (BUG-1..12); env-driven fail-closed config (PROD-1); deps pinned/pruned (DEBT-1).
+- **Phase 2** — app-factory + blueprints + services (DEBT-3); dead code deleted (DEBT-2); `docs/architecture.md`, `README`, test suite (177 tests).
+- **Phase 3** — model registry / current IDs (AI-1); `LLMProvider` protocol + adapters (AI-2); hand-rolled native tool-use loop (AI-3); DB `ConversationState` short-term memory off the cookie (DEBT-4); background thread pool.
+- **Phase 4** — episodic memory (pgvector-ready), relationship model, proactive outreach, voice I/O (STT + Gemini/OpenAI TTS) (STRAT-3/4). Identity confirmed: "a companion that acts" (STRAT-1).
+- **Phase 5 (2026-07-03)** — Flask/Jinja frontend rebuild on the `pocket.css` design system; UI-1..4 all landed; dual-reviewed. Tag `phase-5-frontend-complete`.
+- **Docs-housekeeping (2026-07-06)** — `docs/architecture.md` refreshed for Phase 5; new `docs/frontend.md`; module docstrings on the 10 bare modules; 5 orphaned JS files removed; this backlog consolidated.
 
 ---
 
-## 🐞 Bugs (correctness & security)
+## 🚀 Pre-launch requirements (deferred by maintainer priority — MUST land before public deploy)
+- **LAUNCH-1 — CSRF**: Flask-WTF `CSRFProtect` + `{{ csrf_token() }}` in forms + `X-CSRFToken` header in the fetch sites (`chat.js`, `settings.js`, `user-contacts.js`); exempt the Stripe webhook. Land atomically with template updates. **Agent-doable now (no secrets).** S2.
+- **LAUNCH-2 — Cookie/transport hardening**: `ProxyFix`, HTTPS enforce + security headers (Talisman), rate limiting (Flask-Limiter) on login/signup/AI/webhook. (Secure/HttpOnly/SameSite already in ProductionConfig.) Pairs with LAUNCH-3. S2.
+- **LAUNCH-3 — Deploy target** (maintainer decision): Dockerize (slim + gunicorn) → managed Postgres + S3; delete the Heroku (`Procfile`/`runtime.txt`) and EB (`.ebextensions/`) loser's artifacts; add `/health`. No Sentry. S2.
+- **LAUNCH-4 — IP roster + "uncensored" tier** (maintainer decision, STRAT-2): replace copyrighted roster with original characters (re-seed `is_template=True` rows — old ones were discarded with the DB); drop the "Uncensored Models" pricing bullet; restore Gemini safety settings. Legal/payments risk. S2.
+- **LAUNCH-5 — Alembic baseline**: all Phase-4 tables are final — delete the 2 stale revisions, `flask db revision --autogenerate -m baseline` against an empty DB, review SQLite→Postgres types. **Agent-doable now.** S2.
+- **LAUNCH-6 — Live-key verification** (needs a populated `.env`): pipeline is mock-tested only. One real chat turn per provider; calendar/email tool round-trip incl. draft→confirm; proactive tick end-to-end; TTS (Gemini + fallback) + `/transcribe`. Verify `gpt-5-mini`/`gemini-3-pro-preview` pricing in `MODEL_REGISTRY` (flagged unverified). Gates deploy.
 
-### BUG-1 — Privilege escalation: `GET /add-credits/<amount>`
-- **Where:** `app.py:1103`. Any logged-in user grants themselves unlimited credits via GET (CSRF-able). **Severity:** S1.
-
-### BUG-2 — Auth bypass on `/send_message`
-- **Where:** `app.py:279` — `@login_required` above `@app.route` ⇒ never applied. `try/except` also commented out (`:336`). **Severity:** S1.
-
-### BUG-3 — Unprotected admin endpoint
-- **Where:** `app.py:1110` `/admin/reset_credits` — no `@login_required`, hardcoded default password (`:1100`), non-constant-time compare. **Severity:** S1.
-
-### BUG-4 — IDOR on `/ai-settings/<id>`
-- **Where:** `app.py:487` — no ownership check (GET or POST); any user reads/overwrites any AI's settings. Fix with a shared ownership helper applied to every id-from-URL route. **Severity:** S1.
-
-### BUG-5 — Stripe fulfillment broken (paid credits never granted)
-- **Where:** `app.py:975` webhook reads `STRIPE_SIGNATURE` (should be `Stripe-Signature`); `handle_checkout_session` (`:1008`) has `@login_required` on a non-route helper; `update_user_subscription` (`:1039`) grants non-existent `user.credits`. **Severity:** S1.
-
-### BUG-6 — Cross-provider attribute error breaks GPT path
-- **Where:** `ai_models.py:148` reads `response.candidates[0].finish_reason` (a Gemini attr) on an OpenAI response → `AttributeError`. **Severity:** S2.
-
-### BUG-7 — `regenerate_message` deletes wrong rows
-- **Where:** `app.py:374` — unordered `timestamp >= message.timestamp` selection; client/DB can diverge in a credit-charging path. **Severity:** S2.
-
-### BUG-8 — Self-comparison in contacts lookup
-- **Where:** `email_service.py:230` — `Contacts.query.filter(user_id == user_id, ...)` compares a param to itself (always true); should be `Contacts.user_id == user_id`. **Severity:** S2.
-
-### BUG-9 — Service auth cache never populated
-- **Where:** `email_service.py:135-162`, `calendar_service.py:115-139` — `_service_cache` checked but never written ⇒ re-auth every call; also class-level dict shared across users (concurrency hazard). **Severity:** S3.
-
-### BUG-10 — Unvalidated input → 500s
-- **Where:** many handlers do `request.form.get('x').strip()` / `data['x']` with no guard (e.g. `app.py:102,131,822`; `edit_contact` `:915`). Add a validation layer (WTForms/pydantic). **Severity:** S3.
-
-### BUG-11 — Dead `google` global
-- **Where:** `app.py:24` imports `google` while still `None`; token refresh (`:1301`) calls a method on `None`. **Severity:** S3.
-
-### BUG-12 — `memory_chunk_size` default mismatch
-- **Where:** `app.py:1358` (6) vs `src/models/users.py:123` (256). Reconcile. **Severity:** S3.
+**SEC-1 (maintainer action):** the Google OAuth tokens + Azure/ElevenLabs keys once in git history were scrubbed from the tree/history, but **rotation/revocation is a separate manual step** — revoke at myaccount.google.com/permissions and regenerate the API keys if those accounts still exist. The maintainer's call; the purge itself is done.
 
 ---
 
-## ⚙️ Production-readiness / Config (Phase 1)
-
-### PROD-1 — Config selection + prod hardening
-- **What:** Env-driven config so `ProductionConfig` is used; remove import-time `app = create_app()` (`app.py:65`); fix `DATABASE_URL` crash (`config.py:33`); fail-closed `SECRET_KEY`; `DEBUG=False` in prod. **Severity:** S1.
-
-### PROD-2 — CSRF, cookie hardening, headers, rate limiting
-- **What:** Flask-WTF CSRF; `Secure`/`HttpOnly`/`SameSite`; `ProxyFix`; HTTPS enforce; Flask-Talisman headers; Flask-Limiter (esp. webhook + AI calls). **Severity:** S2.
-
-### PROD-3 — Regenerate Alembic migration baseline
-- **What:** Live rev `f961159bf1ce` not in repo; committed migrations don't match models. Regenerate clean baseline before `flask db upgrade`. **Severity:** S2.
-
-### PROD-4 — Logging, error handlers, healthcheck, monitoring
-- **What:** Replace all `print()` with structured logging; add `@app.errorhandler`s + `/health`; wire Sentry/APM. **Severity:** S2.
-
-### PROD-5 — Choose one deploy target
-- **What:** Repo has conflicting Heroku + AWS EB configs. Recommend Dockerize → Render/Railway/Fly (managed Postgres + S3); delete the loser's artifacts. **Severity:** S2.
+## 🎯 Frontend framework
+- **FE-REACT** — migrate Flask/Jinja → React, eventual (maintainer-directed 2026-07-03). Proposal: `docs/designs/react-migration-proposal.md` (Tier 3, draft — recommends Vite+React islands, strangler, chat first). **No implementation until sign-off.** Stay Jinja meanwhile.
 
 ---
 
-## 🧹 Technical Debt (Phases 1–2)
-
-### DEBT-1 — Dependency cleanup
-- **What:** Pin all deps (currently 0/31 pinned); remove desktop-audio libs + duplicate `AudioRecorder`; remove unused Azure stack; delete `Aptfile`; drop dead vector-DB dep; add missing `anthropic`/Google-GenAI/`beautifulsoup4`. **Effort:** 3–4h. **Severity:** S2.
-
-### DEBT-2 — Delete dead code
-- **Where:** `src/prototypes/`, `src/deprecated/`, commented `speech_to_text.py`/`text_to_speech.py`, empty `google_service.py`, `calendar_utilities.py`, `ms_voice.py`, `audio_record.py`, `create_app.py`, `save.txt` (root + deprecated). **Effort:** 2h. **Severity:** S3.
-
-### DEBT-3 — Modularize the monolith
-- **What:** App factory + blueprints (`pages/auth/chat/ai/profile/contacts/billing/admin`) + service layer; one transaction per request; ownership-check helper. **Effort:** 1–2 weeks. **Severity:** S2 (maintainability).
-
-### DEBT-4 — Short-term memory out of the session cookie
-- **Where:** `app.py:1390-1472` — rolling queue in Flask session; not multi-worker safe, cookie-size bound. Move to Redis/DB. **Effort:** 1–2d. **Severity:** S3.
-
----
-
-## 🤖 AI Modernization (Phase 3)
-
-### AI-1 — Current model IDs, centralized in config
-- **What:** Replace retired/invalid IDs (`claude-3-5-sonnet-20241022` retired; `claude-3-opus-20241022` never existed; Gemini 1.5). Map tiers to `claude-opus-4-8` / `claude-fable-5` / `claude-sonnet-4-6` / `claude-haiku-4-5`. Centralize in `config.py`; rebuild `calculate_cost` to fail soft. **Severity:** S2.
-
-### AI-2 — Unify multi-provider behind one interface
-- **What:** `LLMProvider` protocol + thin adapters; structured message blocks instead of string-concat (`ai_models.py:130/187/243`); modernize Anthropic call (streaming, adaptive thinking). **Effort:** 3–5d.
-
-### AI-3 — Replace hand-rolled router with native tool-use
-- **What:** Collapse the multi-hop gpt-3.5/gpt-4o-mini `functions=` cascade into a single native tool-use loop (calendar/email/memory as tools). Biggest latency + quality win. **Effort:** 3–5d.
-
-### AI-4 — Consolidate to one vector DB + de-block request path
-- **What:** Pick Pinecone or Chroma; remove `save.txt` write (`memory.py:86`); move voice gen + memory write to background tasks. **Effort:** 3–5d.
-
----
-
-## 🧭 Strategic Spikes (Track B — see design doc §6)
-
-### STRAT-1 — Confirm the product direction
-- **What:** Decide the identity: recommended "a companion that actually acts" (assistant↔companion gap), vs. pure companionship, vs. a niche vertical wedge. Maintainer sign-off required. **Blocks:** all Track-B feature work.
-
-### STRAT-2 — Resolve IP + "uncensored" liabilities
-- **What:** Prebuilt roster uses copyrighted anime/VTuber characters; PocketAI+ advertises "Uncensored Models" (moderation/payments/app-store risk). Replace roster with original characters; decide moderation stance before marketing. **Severity:** S2 (legal/payments risk).
-
-### STRAT-3 — Ship voice input (STT)
-- **What:** The mic button exists but STT is fully commented out — the biggest missing piece for a companion. Implement a real STT path (streaming) once direction is confirmed.
-
-### STRAT-4 — Proactive presence + relationship model
-- **What:** "Initiate conversations" (already on the old roadmap), scheduled check-ins, lightweight affinity/relationship state, mobile/push. Retention mechanics for the companion-that-acts vision.
+## 🔧 Tech debt (post-overhaul, non-blocking)
+- **DEBT-5** — proactive tick: real job queue + per-user fairness (currently bounded batch/tick, FIFO by `scheduled_for`); DST-ambiguous daily-checkin times (zoneinfo fold). S3.
+- **DEBT-6** — integrations cleanup: email/calendar services still carry legacy enum-date methods (unused by the tool layer) + ruff per-file-ignores. S3.
+- **DEBT-7** — pgvector ranking swap once managed Postgres exists (`MemoryStore` interface ready; in-Python cosine fine at current scale). S3.
+- **DEBT-8** — frontend tidy: inline `<script>` duplication (the `is-selected` chip toggle repeats across settings.js + 3 onboarding templates); legal pages may still carry pre-redesign markup. Fold into the React migration or do standalone. S4.
 
 ---
 
 ## Maintenance
-Keep this under ~200 lines. Close items as sprints absorb them; promote anything architectural to `project.md`. Re-derive severities as the code changes.
+Keep under ~120 lines. Close items as sprints absorb them; promote anything architectural to `project.md`. Historical detail lives in `.context/archive/`.

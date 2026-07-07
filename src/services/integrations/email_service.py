@@ -1,3 +1,10 @@
+"""Gmail integration service.
+
+Wraps the Gmail API for a user's stored OAuth credentials: reading emails by date
+(optionally filtered by sender) and composing/sending emails, including generating
+a body from a prompt. Resolves recipients against the user's saved Contacts.
+"""
+
 import base64
 import pytz
 import json

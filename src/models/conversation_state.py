@@ -1,3 +1,10 @@
+"""Short-term conversation state model.
+
+Defines ConversationState: per-(user, ai) server-side scratch state — the
+memory_queue awaiting consolidation, carried-forward past_context, and any
+pending_action (a drafted calendar/email tool call awaiting user confirmation).
+"""
+
 import datetime
 
 from src.extensions import db

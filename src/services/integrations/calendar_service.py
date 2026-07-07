@@ -1,3 +1,10 @@
+"""Google Calendar integration service.
+
+Wraps the Calendar API for a user's stored OAuth credentials: reading events by
+date or time range (today, this week, specific dates, etc.) and creating single
+events. Natural-language date/time parsing is delegated to utils.utilities.
+"""
+
 import json
 import os
 import pytz

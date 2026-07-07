@@ -1,3 +1,10 @@
+"""Google OAuth credential model.
+
+Defines GoogleUser, which stores a user's Google access/refresh tokens
+(Fernet-encrypted at rest via EncryptedString) for the calendar and email
+integrations, keyed one-to-one to a User by google_id.
+"""
+
 from flask_login import UserMixin
 
 from src.utils.crypto import EncryptedString
