@@ -1,6 +1,6 @@
 # Architecture
 
-**Phase 4 (companion features) — current state as of branch `phase-4-companion`.**
+**Current state: Phases 0–5 complete, on `master`.** Backend (factory + blueprints + services + AI core + companion features) and the Flask/Jinja frontend rebuild are all merged. This document covers the **backend/server architecture**; the client (design system, templates, JS, fetch contracts) is documented separately in [frontend.md](frontend.md).
 
 ---
 
@@ -155,19 +155,22 @@ Content is **generated at delivery time** (not pre-written). The companion model
 
 ### `src/blueprints/`
 
-One file per domain. Each file creates a `Blueprint`, defines routes, and delegates everything else to a service. Route paths are frozen — changing them requires updating frontend fetch calls and links.
+One file per domain. Each file creates a `Blueprint`, defines routes, and delegates everything else to a service. Route paths are frozen — changing them requires updating frontend `fetch()` calls and `url_for()` links (see [frontend.md](frontend.md) for the client-side contract).
 
 | File | Routes |
 |------|--------|
-| `pages.py` | `/`, `/pricing`, `/legal/*`, error pages |
-| `auth.py` | `/login`, `/signup`, `/logout`, Google OAuth callback |
-| `chat.py` | `/chat`, `/send_message`, `/regenerate`, `/edit_message`, `/load_messages`, `/transcribe` |
-| `ai.py` | `/ai-onboarding`, `/ai-settings/<id>`, `/change-ai/<id>`, `/profile/delete-ai/<id>` |
-| `profile.py` | `/profile`, `/profile/settings`, `/onboarding` |
-| `contacts.py` | `/contacts/*` |
-| `billing.py` | `/checkout`, `/webhook`, `/cancel` |
-| `admin.py` | `/admin/reset_credits` |
+| `pages.py` | `/`, `/pricing`, `/privacy-policy`, `/terms-of-service`, `/error` |
+| `auth.py` | `/login`, `/signup`, `/logout`; Google OAuth: `/signup/google`, `/login/google`, `/authorize`, `/link/google`, `/authorize/link` |
+| `chat.py` | `/chat`, `/send_message`, `/regenerate_message`, `/edit_message` (PUT), `/load-more-messages`, `/dismiss-draft`, `/transcribe` |
+| `ai.py` | `/ai-settings/<id>` (GET/POST), `/change-ai/<id>`, `/profile/delete-ai/<id>` (DELETE), `/onboarding/ai`, `/onboarding/ai/existing`, `/onboarding/ai/create` |
+| `profile.py` | `/profile` (GET/POST), `/upload-profile-image`, `/onboarding/user`, `/onboarding/world` |
+| `settings.py` | `/settings` (GET), `/settings/proactive` (POST), `/settings/memory` (POST), `/settings/fact/<id>` (PUT/DELETE), `/settings/memory/<id>` (DELETE), `/settings/memory/forget-all` (POST) |
+| `contacts.py` | `/user-settings/contacts` (GET), `/add-contact`, `/edit-contact/<id>` (PUT), `/delete-contact/<id>` (DELETE) |
+| `billing.py` | `/create-checkout-session`, `/webhook`, `/cancel-subscription`, `/payment-success`, `/payment-canceled` |
+| `admin.py` | `/admin/reset_credits` (POST) |
 | `tasks.py` | `/tasks/proactive-tick` (cron endpoint, no user session) |
+
+The **`settings`** blueprint (Phase 4b/5) owns the companion-settings surface: proactive schedule + quiet hours + pause, and the user-sovereign memory view (list / add / edit / forget / forget-all `KeyFact` + `MemoryEntry`, scoped to the active companion). `/settings/proactive` uses the hidden-`off` + checkbox-`on` consent pattern documented in [frontend.md](frontend.md).
 
 ### `src/providers/`
 
@@ -244,7 +247,7 @@ Cross-cutting helpers with no business logic.
 | File | Purpose |
 |------|---------|
 | `crypto.py` | `EncryptedString` TypeDecorator (Fernet); `TOKEN_ENCRYPTION_KEY` from env |
-| `forms.py` | Flask-WTF form definitions |
+| `forms.py` | `form_get()` — safe form-field read that tolerates missing fields (WTForms/CSRF not yet wired; LAUNCH-1) |
 | `utils.py` | Date utilities, `calculate_cost()`, miscellaneous helpers |
 | `AI_model_client.py` | Lazy client singletons (OpenAI, Anthropic, Gemini); conditional on env keys |
 

@@ -1,3 +1,9 @@
+"""Long-term episodic memory model.
+
+Defines MemoryEntry: one embedded memory per (user, ai) pair, with the vector
+stored as raw float32 bytes and ranked by in-Python cosine similarity.
+"""
+
 import datetime
 
 from src.extensions import db

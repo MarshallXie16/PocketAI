@@ -1,3 +1,11 @@
+"""Core account and companion models.
+
+Defines User (accounts, credits, auth), AIModel (companion definition + prompt,
+with is_template guarding the clonable roster), UserSettings and AISettings
+(per-user and per-companion preferences, including proactive-outreach consent),
+Contacts, and the user_ai association table linking users to their companions.
+"""
+
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 

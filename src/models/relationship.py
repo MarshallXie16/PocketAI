@@ -1,3 +1,10 @@
+"""Relationship continuity and structured memory models.
+
+Holds RelationshipState (per user-companion streak/history for prompt context),
+KeyFact (structured, due-dated memory that drives proactive follow-through), and
+ScheduledMessage (planned proactive outreach, rendered at delivery time).
+"""
+
 import datetime
 
 from src.extensions import db

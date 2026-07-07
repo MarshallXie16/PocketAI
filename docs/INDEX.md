@@ -1,6 +1,6 @@
 # Documentation Index
 
-**Last updated:** 2026-07-01
+**Last updated:** 2026-07-06
 
 Table of contents for `docs/`. Quick mental model lives in `../.context/project.md`; deeper reference lives here.
 
@@ -8,7 +8,8 @@ Table of contents for `docs/`. Quick mental model lives in `../.context/project.
 
 ## Reference
 
-- **[architecture.md](architecture.md)** — Request flow (including AI-core detail: agent loop, provider adapters, confirmation gate, episodic memory, proactive outreach), directory map with one-line purpose per module, app factory pattern, conventions, how-to recipes (add a route / service / model / tool / provider / model-id / test), known debt (LAUNCH-1..5).
+- **[architecture.md](architecture.md)** — **Backend/server** architecture: request flow (agent loop, provider adapters, confirmation gate, episodic memory, proactive outreach), the blueprint route table, directory map with one-line purpose per module, app factory pattern, conventions, how-to recipes (add a route / service / model / tool / provider / model-id / test), known debt.
+- **[frontend.md](frontend.md)** — **Client** architecture: the `pocket.css` design system (tokens + components), `_base.html`/`_components.html`, the three vanilla-JS modules, the client↔server fetch contracts, and key patterns (consent hidden+checkbox, draft→confirm mirroring, optimistic send, mic lifecycle). No build step.
 
 ---
 
@@ -17,6 +18,7 @@ Table of contents for `docs/`. Quick mental model lives in `../.context/project.
 - **[designs/overhaul-roadmap.md](designs/overhaul-roadmap.md)** — Executable overhaul plan: Phases 0–4 (purge → stabilize → modularize → modernize AI → companion features), locked maintainer decisions, git strategy, verification steps, key risks. **Start here for strategic context.**
 - **[designs/overhaul-and-repositioning.md](designs/overhaul-and-repositioning.md)** — Full current-state assessment and the strategic repositioning brief (assistant↔companion gap). Original north-star audit document.
 - **[designs/design.md](designs/design.md)** — Brand and UI design direction for "a companion that actually acts": color palette, typography, visual principles, component direction, and the build prompt for implementing the new UI.
+- **[designs/react-migration-proposal.md](designs/react-migration-proposal.md)** — Tier-3 proposal (draft, awaiting sign-off) to migrate the Flask/Jinja frontend to React via Vite+React islands (strangler, chat first). Frontend inventory + toolchain options + migration path.
 
 ---
 

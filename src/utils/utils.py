@@ -1,3 +1,10 @@
+"""Shared helper utilities.
+
+Defines the Utilities class (exposed as the module-level `utilities` singleton)
+with contact lookup, natural-language date/time parsing for the calendar and
+email integrations, HTML-to-text extraction, and text cleanup helpers.
+"""
+
 import datetime
 import pytz
 import re
