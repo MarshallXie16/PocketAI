@@ -1,0 +1,51 @@
+src/templates/ai_settings.html
+  s_4c467e2481b592::t_44b4a2d95f6c14 144-153
+  s_4c467e2481b592::t_9302a29aebde0d 107
+  s_4c467e2481b592::t_dcc7af167d6db8 30,41
+src/static/images/profile_pictures/default_profile_user.svg
+  s_4c467e2481b592::t_8f64b53c2b5f48 1-5
+.gitignore
+  s_4c467e2481b592::t_aeaada32b30e5d 31,33-34
+src/static/css/pocket.css
+  s_4c467e2481b592::t_f008ffd56a6405 804-805
+src/templates/profile.html
+  s_4c467e2481b592::t_dcc7af167d6db8 48,122
+.context/sprints/bootstrap/phase5-ui-review.md
+  s_4c467e2481b592::t_308c2c69e5116d 1-2,5,7,10,12,38
+  s_4c467e2481b592::t_6abac39e266c00 3-4,6,8-9,11,13-37,39-40
+src/static/js/settings.js
+  s_4c467e2481b592::t_1e80f36892f87f 45-46
+  s_4c467e2481b592::t_6af2f99847cf72 18-44,47-55
+src/templates/settings.html
+  s_4c467e2481b592::t_3d7f3a046ecfa5 77,79
+  s_4c467e2481b592::t_0828e9cc2d3d6c 153,156,159-160
+  s_4c467e2481b592::t_2fb0af9a6b7efc 201
+src/templates/pricing.html
+  s_4c467e2481b592::t_2f9da41ab8dec0 63-68,70
+  s_4c467e2481b592::t_72ffab2912d390 35-37,39
+src/templates/onboarding-ai-create.html
+  s_4c467e2481b592::t_77c2dfa0dbe1b6 207-216
+  s_4c467e2481b592::t_dcc7af167d6db8 70
+src/templates/onboarding-user.html
+  s_4c467e2481b592::t_dcc7af167d6db8 48
+src/static/images/profile_pictures/default_profile_ai.svg
+  s_4c467e2481b592::t_ed2fac41d55e62 1-4
+src/blueprints/profile.py
+  s_4c467e2481b592::t_4942722dce1fb3 54-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c47f82f5b35f30e2f1db4e4771ffa8b08f97d068",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
