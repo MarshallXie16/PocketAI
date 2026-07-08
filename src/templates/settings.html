@@ -74,7 +74,9 @@
         {{ monogram(ai_name, 40) }}
         <div>
           <div class="name">{{ ai_name }}</div>
+          {% if days_together and days_together > 0 %}
           <div class="relationship-line">day {{ days_together }} together</div>
+          {% endif %}
         </div>
       </div>
       <div class="divider"></div>
@@ -148,16 +150,14 @@
           <div class="s-card">
             <div class="head" style="margin-bottom: 12px;">Quiet hours</div>
             <div class="quiet-inputs">
-              <input type="time" name="quiet_start" aria-label="Quiet hours start"
+              <input type="time" name="quiet_start" id="quiet_start" class="input" aria-label="Quiet hours start"
                      value="{{ user_settings.quiet_hours_start.strftime('%H:%M') if user_settings and user_settings.quiet_hours_start else '23:00' }}">
               <span class="text-muted">to</span>
-              <input type="time" name="quiet_end" aria-label="Quiet hours end"
+              <input type="time" name="quiet_end" id="quiet_end" class="input" aria-label="Quiet hours end"
                      value="{{ user_settings.quiet_hours_end.strftime('%H:%M') if user_settings and user_settings.quiet_hours_end else '07:30' }}">
             </div>
-            <div class="quiet-bar" aria-hidden="true">
-              <span class="seg" style="left:0; width:31%; border-radius:8px 0 0 8px;"></span>
-              <span class="seg" style="right:0; width:4%; border-radius:0 8px 8px 0;"></span>
-            </div>
+            {# segments drawn by settings.js from the two inputs above #}
+            <div class="quiet-bar" id="quiet-bar" aria-hidden="true"></div>
             <div class="quiet-scale"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>
             <div class="sub" style="margin-top: 12px;">No messages, no actions in the dark hours — urgent or not.</div>
           </div>
@@ -198,7 +198,7 @@
           {% endif %}
         </div>
         <div class="mem-add">
-          <input type="text" id="mem-add-input" aria-label="Add something {{ ai_name }} should know" placeholder="Add something {{ ai_name }} should know…" maxlength="300">
+          <input type="text" id="mem-add-input" class="input" aria-label="Add something {{ ai_name }} should know" placeholder="Add something {{ ai_name }} should know…" maxlength="300">
           <button type="button" class="btn btn-tertiary" id="mem-add-btn">Add</button>
         </div>
       </div>

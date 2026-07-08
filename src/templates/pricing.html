@@ -32,7 +32,11 @@
           </div>
         </div>
         <div class="plan-foot">Full conversations &middot; remembers everything you share &middot; helps when you ask</div>
+        {% if current_user.is_authenticated %}
+        <a class="btn btn-secondary" href="{{ url_for('chat.chat') }}">Open chat</a>
+        {% else %}
         <a class="btn btn-secondary" href="{{ url_for('auth.signup') }}">Start free</a>
+        {% endif %}
       </div>
 
       <!-- Plus day -->
@@ -56,7 +60,14 @@
           </div>
         </div>
         <div class="plan-foot">Everything in Free &middot; Mira texts first &middot; calendar &amp; email actions &middot; voice replies</div>
+        {% if current_user.is_authenticated %}
+        <form action="{{ url_for('billing.create_checkout_session') }}" method="POST">
+          <input type="hidden" name="lookup_key" value="premium">
+          <button type="submit" class="btn btn-primary-clay">Get Plus</button>
+        </form>
+        {% else %}
         <a class="btn btn-primary-clay" href="{{ url_for('auth.signup') }}">Get Plus</a>
+        {% endif %}
       </div>
     </div>
 

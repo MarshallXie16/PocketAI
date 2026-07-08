@@ -801,7 +801,8 @@ h1, h2, h3, h4, p { margin: 0; }
 .teaser-card.plus { border: 1.5px solid var(--ink); background: var(--white); }
 .teaser-card .plan-name { font-weight: 700; font-size: 18px; margin-bottom: 8px; }
 .teaser-card p { font-size: 15px; line-height: 1.55; color: var(--secondary); }
-.teaser-card .plan-line { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+/* shared by the landing teaser and the pricing page's plan headers */
+.plan-line { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
 .teaser-card .plan-tag { font-size: 13px; font-weight: 700; color: var(--clay); }
 
 /* ============================================================================

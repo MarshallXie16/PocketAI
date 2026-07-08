@@ -27,7 +27,7 @@
 <div class="ais-wrap">
   <div class="ais-head">
     <img class="preview"
-         src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
+         src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.svg') }}"
            onerror="this.style.visibility='hidden'"
          alt="{{ ai_model.name }}">
     <h1>{{ ai_model.name }} settings</h1>
@@ -38,7 +38,7 @@
 
     <div class="avatar-upload">
       <img id="avatar-preview" class="preview"
-           src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}"
+           src="{{ ai_model.profile_image_url or url_for('static', filename='images/profile_pictures/default_profile_ai.svg') }}"
            onerror="this.style.visibility='hidden'"
            alt="{{ ai_model.name }}">
       <div>
@@ -104,7 +104,7 @@
           <span class="toggle-track"></span>
         </label>
       </div>
-      <div class="voice-selects">
+      <div class="voice-selects" id="voice-selects">
         <div class="field" style="margin-bottom: 0;">
           <label for="voice-id">Voice</label>
           <select id="voice-id" name="voice-id">
@@ -141,5 +141,15 @@
     reader.onload = function (ev) { document.getElementById('avatar-preview').src = ev.target.result; };
     reader.readAsDataURL(file);
   });
+
+  // Dim the voice pickers while voice is off (not disabled — values must still post)
+  var voiceToggle = document.getElementById('voice-enabled');
+  var voiceSelects = document.getElementById('voice-selects');
+  function syncVoiceSelects() {
+    voiceSelects.style.opacity = voiceToggle.checked ? '' : '0.45';
+    voiceSelects.style.pointerEvents = voiceToggle.checked ? '' : 'none';
+  }
+  syncVoiceSelects();
+  voiceToggle.addEventListener('change', syncVoiceSelects);
 </script>
 {% endblock %}

@@ -67,7 +67,7 @@
 
       <div class="avatar-upload">
         <img id="avatar-preview" class="preview"
-             src="{{ url_for('static', filename='images/profile_pictures/default_profile_ai.png') }}" alt="Their picture">
+             src="{{ url_for('static', filename='images/profile_pictures/default_profile_ai.svg') }}" alt="Their picture">
         <input type="file" id="profile-image-input" name="profile-image" hidden accept=".png,.jpg,.jpeg,.gif">
         <label for="profile-image-input">Add a photo (optional)</label>
       </div>
@@ -204,5 +204,15 @@
   }
   wireRadioGroup(document.getElementById('model-grid'), 'is-selected');
   wireRadioGroup(document.getElementById('mode-chips'), 'is-selected');
+
+  // Dim the voice pickers while voice is off (not disabled — values must still post)
+  var voiceToggle = document.getElementById('voice-enabled');
+  var voiceSelects = document.getElementById('voice-selects');
+  function syncVoiceSelects() {
+    voiceSelects.style.opacity = voiceToggle.checked ? '' : '0.45';
+    voiceSelects.style.pointerEvents = voiceToggle.checked ? '' : 'none';
+  }
+  syncVoiceSelects();
+  voiceToggle.addEventListener('change', syncVoiceSelects);
 </script>
 {% endblock %}

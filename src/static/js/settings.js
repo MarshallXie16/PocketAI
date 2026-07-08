@@ -15,6 +15,44 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // --- Quiet-hours bar: draw the dark segment(s) from the actual inputs ----
+  var quietStart = document.getElementById('quiet_start');
+  var quietEnd = document.getElementById('quiet_end');
+  var quietBar = document.getElementById('quiet-bar');
+  function drawQuietBar() {
+    if (!quietBar) return;
+    quietBar.innerHTML = '';
+    function pct(value) {
+      var m = /^(\d{1,2}):(\d{2})$/.exec(value || '');
+      if (!m) return null;
+      return ((+m[1] * 60 + +m[2]) / 1440) * 100;
+    }
+    var start = pct(quietStart && quietStart.value);
+    var end = pct(quietEnd && quietEnd.value);
+    if (start == null || end == null || start === end) return;
+    function seg(left, width, radius) {
+      var s = document.createElement('span');
+      s.className = 'seg';
+      s.style.left = left + '%';
+      s.style.width = width + '%';
+      if (radius) s.style.borderRadius = radius;
+      quietBar.appendChild(s);
+    }
+    if (start < end) {
+      seg(start, end - start, '8px');
+    } else {
+      // overnight window: start→midnight + midnight→end
+      seg(start, 100 - start, '0 8px 8px 0');
+      seg(0, end, '8px 0 0 8px');
+    }
+  }
+  if (quietBar) {
+    drawQuietBar();
+    [quietStart, quietEnd].forEach(function (el) {
+      if (el) el.addEventListener('input', drawQuietBar);
+    });
+  }
+
   // --- Pause everything: auto-submit the proactive form on toggle ----------
   var pause = document.getElementById('paused-toggle');
   var proactiveForm = document.getElementById('proactive-form');

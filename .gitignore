@@ -28,8 +28,10 @@ venv/
 .DS_Store
 .tmp*
 
-# User uploads (served from S3 in prod)
+# User uploads (served from S3 in prod) — but keep the shipped default avatars
 src/static/images/profile_pictures/*
+!src/static/images/profile_pictures/default_profile_user.svg
+!src/static/images/profile_pictures/default_profile_ai.svg
 
 # Legacy deploy artifacts (removal pending)
 .ebextensions

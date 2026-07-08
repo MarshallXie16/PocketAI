@@ -51,8 +51,12 @@ def profile():
         current_user.username = username
         db.session.commit()
 
-        # TODO: password change validation
-        if password != '*****':
+        # '*****' is the template's keep-current sentinel; an emptied field
+        # must not silently set an empty password
+        if password and password != '*****':
+            if len(password) < 8:
+                flash('Password must be at least 8 characters.', 'error')
+                return redirect('/profile')
             User.set_password(current_user, password)
 
         # update timezone and context length
