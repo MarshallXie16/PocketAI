@@ -1,0 +1,21 @@
+.context/checkpoints/current.md
+  s_4c467e2481b592::t_14317ad4d15e63 3-6,9,11,14,17,19-22,25
+.context/sprints/bootstrap/phase5-ui-review.md
+  s_4c467e2481b592::t_7fcf1b34a37157 39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f9573574fecd871139ef3c70f7f5ab3ccd798525",
+  "prompts": {},
+  "sessions": {
+    "s_4c467e2481b592": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88843573-6f2a-486b-98e4-164a3c70bd56",
+        "model": "claude-fable-5"
+      },
+      "human_author": "MarshallXieDialpad <marshall.xie@dialpad.com>"
+    }
+  }
+}
