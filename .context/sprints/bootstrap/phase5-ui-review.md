@@ -36,5 +36,5 @@ Read every template, all 3 JS modules, pocket.css, and the 6 blueprints that bac
 All chat.js fetch contracts match blueprints (`user_message_id`, `pending_action`, `deleted_ids[1:]`, load-more shape incl. `initiated`/`voice_url`); draft-card Jinja macro ↔ JS renderer in sync; consent hidden+checkbox ordering correct in both forms + both handlers; `voice-enabled` plain checkbox is fine ('voice-enabled' in request.form); contacts CRUD contract matches; regenerate walk-back + welcome-regen path OK; monogram/beta-tag/toggle CSS all present.
 
 ## Status
-Phase: implementation (fix batch on `ui-review-fixes`)
-Next: apply fixes 1–7 → pytest + re-screenshot affected pages → present to maintainer (they said they spotted issues themselves — reconcile lists before merge).
+Fixes 1–7 (+ voice-picker dimming) COMMITTED on `ui-review-fixes` (c47f82f). 177 tests green, ruff clean, node --check clean; fixed pages re-screenshot-verified (avatars render, quiet bar correct for 22:00–09:30 and live-updates, pricing header spaced, authed Get Plus posts checkout). Default SVGs needed a .gitignore exemption (profile_pictures/* is ignored).
+AWAITING: maintainer's own spotted-issues list — reconcile before merging to master. Dev preview server: /tmp/ui_review/boot.py on :5057 (marshall/password123).
